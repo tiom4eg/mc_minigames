@@ -33,6 +33,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
 
 final class FurryQuestSession extends PartySurvivalSession {
@@ -53,6 +55,7 @@ final class FurryQuestSession extends PartySurvivalSession {
     private long lastMarkTick = -1;
     private long nextShot;
     private boolean aiming;
+    private Player blindedHunter;
     private long chaseEndsAt;
     private long chaseReadyAt;
     private long lastAxeUseTick = -1;
@@ -151,6 +154,8 @@ final class FurryQuestSession extends PartySurvivalSession {
                 agent.sync();
                 Input input = agent.player.getCurrentInput();
                 Location body = agent.player.getLocation();
+                if (quest.unfinished(id, FurryQuest.Site.TROUGH) && agent.player.isOnGround()
+                        && quest.stepOnBowl(id, arena.bowlAt(body))) completeTask(agent, FurryQuest.Site.TROUGH);
                 if (quest.contactTick(id, body.distanceSquared(contact))) completeTask(agent, FurryQuest.Site.CONTACT);
                 if (quest.woolTicks(id) >= 0) {
                     var station = quest.station(id, FurryQuest.Site.PARCEL);
@@ -165,7 +170,7 @@ final class FurryQuestSession extends PartySurvivalSession {
                     agent.player.playSound(splash, Sound.ENTITY_FISHING_BOBBER_SPLASH, .7f, 1);
                 }
                 for (var task : quest.assignments(id)) {
-                    if (task.plot == null || !task.stops.isEmpty()) continue;
+                    if (task.plot == null || task == FurryQuest.Site.TROUGH || !task.stops.isEmpty()) continue;
                     if (quest.act(id, task, body.getX() - (task.plot.x() + .5), body.getZ() - (task.plot.z() + .5),
                             Math.abs(body.getY() - (FurryQuestArena.FLOOR + 1)) <= 2, input.isSneak(), input.isJump()))
                         completeTask(agent, task);
@@ -185,6 +190,9 @@ final class FurryQuestSession extends PartySurvivalSession {
         playTaskEffect(agent, site);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, .7f, 1.4f);
         player.sendMessage(message("complete", quest.completed(id), FurryQuest.TASKS));
+        Component notice = message("teammate_complete", player.getName(), message("name." + key(site)));
+        for (var teammate : agents.values())
+            if (teammate != agent) teammate.player.sendMessage(notice);
         if (quest.completed(id) == FurryQuest.TASKS) player.sendMessage(message("finished"));
         checkFinalHunt();
     }
@@ -369,7 +377,7 @@ final class FurryQuestSession extends PartySurvivalSession {
             event.setCancelled(true);
             if (elapsed() < chaseEndsAt && player.hasLineOfSight(animal)) {
                 world.playSound(animal.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1f, .85f);
-                hitAnimal(animal);
+                hitAnimal(player, animal);
             }
         } else if (held == MARKER && chaseEndsAt == 0) {
             event.setCancelled(true);
@@ -439,13 +447,22 @@ final class FurryQuestSession extends PartySurvivalSession {
             player.sendActionBar(message("miss"));
             return;
         }
-        hitAnimal(animal);
+        arena.scatter(animal.getLocation(), elapsed());
+        hitAnimal(player, animal);
     }
 
-    private void hitAnimal(Animals animal) {
+    private void hitAnimal(Player hunter, Animals animal) {
         FurryQuestDisguise agent = owners.get(animal.getUniqueId());
-        if (agent == null) quest.wrongShot();
-        else eliminate(agent.player);
+        if (agent != null) {
+            eliminate(agent.player);
+            return;
+        }
+        quest.wrongShot();
+        if (quest.outcome() == null) {
+            hunter.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 10 * 20, 0, false, false));
+            blindedHunter = hunter;
+            hunter.sendMessage(message("livestock_mistake", quest.mistakesLeft()));
+        }
     }
 
     @Override
@@ -481,6 +498,7 @@ final class FurryQuestSession extends PartySurvivalSession {
     }
 
     private Component taskInstructions(UUID id, FurryQuest.Site site) {
+        if (site == FurryQuest.Site.TROUGH) return message("task.trough", quest.bowlsVisited(id), FurryQuest.BOWLS);
         if (site == FurryQuest.Site.CONTACT)
             return message("task.contact", Component.translatable(arena.doubleAgent().getType().translationKey()),
                     quest.contactSecondsLeft(id));
@@ -507,6 +525,7 @@ final class FurryQuestSession extends PartySurvivalSession {
         UUID id = player.getUniqueId();
         if (quest.sniper().equals(id)) {
             lines.add(message("remaining", quest.remaining()));
+            lines.add(message("mistakes_left", quest.mistakesLeft()));
             if (chaseEndsAt != 0) lines.add(message("chase_active", (chaseEndsAt - elapsed() + 19) / 20));
             else if (elapsed() < chaseReadyAt) lines.add(message("chase_cooldown", (chaseReadyAt - elapsed() + 19) / 20));
             else lines.add(message("chase_ready"));
@@ -523,6 +542,7 @@ final class FurryQuestSession extends PartySurvivalSession {
 
     @Override
     void playerOut(Player player) {
+        if (player == blindedHunter) clearBlindness();
         Team team = contactTeams.remove(player.getUniqueId());
         if (team != null) team.unregister();
         if (quest != null) {
@@ -546,11 +566,19 @@ final class FurryQuestSession extends PartySurvivalSession {
 
     @Override
     void cleanup() {
+        clearBlindness();
         clearHunterMarks();
         contactTeams.values().forEach(Team::unregister);
         contactTeams.clear();
         for (UUID id : List.copyOf(agents.keySet())) removeAgent(id);
         if (arena != null) arena.cleanup();
+    }
+
+    private void clearBlindness() {
+        if (blindedHunter != null) {
+            blindedHunter.removePotionEffect(PotionEffectType.BLINDNESS);
+            blindedHunter = null;
+        }
     }
 
     private void clearHunterMarks() {

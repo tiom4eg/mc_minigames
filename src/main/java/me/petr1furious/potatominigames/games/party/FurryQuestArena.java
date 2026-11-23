@@ -8,7 +8,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.EntityType;
@@ -17,6 +19,10 @@ final class FurryQuestArena {
     static final int FLOOR = 70;
     static final int EDGE = 22;
     static final int DECK = 9;
+    private static final int[] FLEE_TURNS = {0, 1, -1, 2, -2, 3, -3, 4};
+    private static final List<FurryQuest.Plot> PATROL = List.of(
+            new FurryQuest.Plot(-6, -5), new FurryQuest.Plot(7, -5),
+            new FurryQuest.Plot(7, 5), new FurryQuest.Plot(-6, 5));
     private static final List<EntityType> SPECIES =
             List.of(EntityType.SHEEP, EntityType.COW, EntityType.PIG, EntityType.CHICKEN, EntityType.GOAT);
 
@@ -25,6 +31,8 @@ final class FurryQuestArena {
         boolean claimed;
         Location destination;
         long nextWander;
+        Location fleeFrom;
+        long fleeUntil;
 
         Walker(Animals body, int delay) {
             this.body = body;
@@ -36,6 +44,10 @@ final class FurryQuestArena {
     private final Random random;
     private final Map<UUID, Walker> herd = new LinkedHashMap<>();
     private Animals doubleAgent;
+    private int waypoint;
+    private long nextPatrolCheck;
+    private Location patrolSample;
+    private int stalledChecks;
 
     FurryQuestArena(World world, Random random) {
         this.world = world;
@@ -45,14 +57,19 @@ final class FurryQuestArena {
     void build() {
         new FurryQuestFarm(world).build();
         int contactIndex = random.nextInt(40);
+        waypoint = random.nextInt(PATROL.size());
         for (int i = 0; i < 40; i++) {
-            Animals body = (Animals) world.spawnEntity(meadow(), SPECIES.get(i % SPECIES.size()));
+            Animals body = (Animals) world.spawnEntity(i == contactIndex ? patrolTarget() : meadow(), SPECIES.get(i % SPECIES.size()));
             body.setAdult();
             body.setAgeLock(true);
             body.setInvulnerable(true);
             body.setRemoveWhenFarAway(false);
             herd.put(body.getUniqueId(), new Walker(body, random.nextInt(100)));
-            if (i == contactIndex) doubleAgent = body;
+            if (i == contactIndex) {
+                doubleAgent = body;
+                body.getAttribute(Attribute.MOVEMENT_SPEED).setBaseValue(.14);
+                nextWaypoint();
+            }
         }
     }
 
@@ -97,6 +114,14 @@ final class FurryQuestArena {
                 return station;
         }
         return null;
+    }
+
+    int bowlAt(Location feet) {
+        Block support = feet.clone().subtract(0, .01, 0).getBlock();
+        var row = FurryQuest.Site.TROUGH.plot;
+        if (support.getY() != FLOOR + 1 || support.getZ() != row.z()
+                || support.getType() != Material.WATER_CAULDRON) return -1;
+        return support.getX() - row.x() - FurryQuest.FIRST_BOWL_OFFSET;
     }
 
     private boolean open(int x, int z) {
@@ -156,10 +181,91 @@ final class FurryQuestArena {
         herd.get(animal.getUniqueId()).claimed = true;
     }
 
+    private Location patrolTarget() {
+        var point = PATROL.get(waypoint);
+        return new Location(world, point.x() + .5, FLOOR + 1, point.z() + .5);
+    }
+
+    private void nextWaypoint() {
+        waypoint = (waypoint + 1) % PATROL.size();
+    }
+
+    private void patrol(long tick) {
+        Location here = doubleAgent.getLocation();
+        if (here.distanceSquared(patrolTarget()) < 1.5) {
+            nextWaypoint();
+            stalledChecks = 0;
+        }
+        if (tick >= nextPatrolCheck) {
+            if (patrolSample != null && here.distanceSquared(patrolSample) < .25) {
+                nextWaypoint();
+                // Retry a different leg first; recover a mob physically wedged in scenery.
+                if (++stalledChecks >= 2) {
+                    doubleAgent.teleport(patrolTarget());
+                    nextWaypoint();
+                    stalledChecks = 0;
+                }
+            } else stalledChecks = 0;
+            patrolSample = doubleAgent.getLocation();
+            nextPatrolCheck = tick + 40;
+        }
+        doubleAgent.getPathfinder().moveTo(patrolTarget(), .65);
+    }
+
+    void scatter(Location impact, long tick) {
+        for (Walker walker : herd.values()) {
+            if (walker.claimed || walker.body.getLocation().distanceSquared(impact) > 8 * 8) continue;
+            walker.fleeFrom = impact;
+            walker.fleeUntil = tick + 60;
+            flee(walker);
+        }
+    }
+
+    private void flee(Walker walker) {
+        Location here = walker.body.getLocation();
+        double dx = here.getX() - walker.fleeFrom.getX(), dz = here.getZ() - walker.fleeFrom.getZ();
+        double away = dx * dx + dz * dz < .01 ? random.nextDouble() * 2 * Math.PI : Math.atan2(dz, dx);
+        var navigation = walker.body.getPathfinder();
+        // Try sideways exits too, so animals at a fence can run along it.
+        for (int turn : FLEE_TURNS) {
+            double angle = away + turn * Math.PI / 4;
+            int x = (int) Math.floor(here.getX() + 6 * Math.cos(angle));
+            int z = (int) Math.floor(here.getZ() + 6 * Math.sin(angle));
+            Location target = destination(world.getBlockAt(x, FLOOR, z));
+            if (target == null || target.distanceSquared(here) < 4) continue;
+            var path = navigation.findPath(target);
+            if (path != null && path.getFinalPoint() != null && path.getFinalPoint().distanceSquared(target) < 2.25
+                    && navigation.moveTo(path, 2.0)) {
+                walker.destination = target;
+                return;
+            }
+        }
+        walker.destination = null;
+    }
+
     void tick(long tick) {
-        if (tick % 10 != 0) return;
         for (Walker walker : herd.values()) {
             if (walker.claimed) continue;
+            if (walker.fleeFrom != null) {
+                if (tick < walker.fleeUntil) {
+                    if (tick % 5 == 0 && (walker.destination == null || !walker.body.getPathfinder().hasPath()
+                            || walker.body.getLocation().distanceSquared(walker.destination) < 2.25)) flee(walker);
+                    continue;
+                }
+                walker.body.getPathfinder().stopPathfinding();
+                walker.fleeFrom = null;
+                walker.destination = null;
+                walker.nextWander = tick + 20;
+                if (walker.body == doubleAgent) {
+                    patrolSample = null;
+                    stalledChecks = 0;
+                }
+            }
+            if (tick % 10 != 0) continue;
+            if (walker.body == doubleAgent) {
+                patrol(tick);
+                continue;
+            }
             if (walker.destination != null && walker.body.getLocation().distanceSquared(walker.destination) < 2.25) {
                 walker.destination = null;
                 walker.nextWander = tick + 60 + random.nextInt(100);
