@@ -15,6 +15,9 @@ import java.util.UUID;
 final class FurryQuest {
     static final int SECONDS = 150;
     static final int FINAL_SECONDS = 10;
+    static final int MISTAKE_LIMIT = 3;
+    static final int BOWLS = 6;
+    static final int FIRST_BOWL_OFFSET = -2;
     private static final int CONTACT_TICKS = 15 * 20;
 
     enum Station {
@@ -109,6 +112,7 @@ final class FurryQuest {
         final Site site;
         int progress;
         int repetitions;
+        int ticksAway;
         int woolTicks = -1;
         double previousAngle = Double.NaN;
         double turn;
@@ -157,9 +161,9 @@ final class FurryQuest {
             boolean peck = crouch && !crouching, ring = jump && !jumping;
             crouching = crouch;
             jumping = jump;
-            if (!site.stops.isEmpty()) return false;
+            if (!site.stops.isEmpty() || site == Site.TROUGH || site == Site.CONTACT) return false;
             double radius2 = dx * dx + dz * dz;
-            if (!level || radius2 > (site == Site.TREE || site == Site.TROUGH ? 30.25 : 16)) {
+            if (!level || radius2 > (site == Site.TREE ? 30.25 : 16)) {
                 progress = 0;
                 previousAngle = Double.NaN;
                 turn = 0;
@@ -172,15 +176,8 @@ final class FurryQuest {
                 }
                 case HAY -> peck && ++progress == 3;
                 case TREE -> circle(dx, dz);
-                case TROUGH -> {
-                    if (Math.abs(dz) <= 2) {
-                        if (dx <= -2.75) progress |= 1;
-                        if (dx >= 3.75) progress |= 2;
-                    }
-                    yield progress == 3;
-                }
                 case BELL -> ring;
-                case PARCEL, FISH, CHIMES, SWAP, CONTACT -> false;
+                case PARCEL, FISH, CHIMES, SWAP, CONTACT, TROUGH -> false;
             };
         }
 
@@ -201,6 +198,7 @@ final class FurryQuest {
     private final Map<UUID, Route> routes = new LinkedHashMap<>();
     private Outcome outcome;
     private boolean finalHunt;
+    private int mistakes;
 
     FurryQuest(Collection<UUID> players, Random random) {
         if (players.size() < 2) throw new IllegalArgumentException("Furry Quest requires two players");
@@ -256,10 +254,28 @@ final class FurryQuest {
     boolean contactTick(UUID id, double distanceSquared) {
         TaskProgress task = pending(id, Site.CONTACT);
         if (task == null) return false;
-        task.progress = distanceSquared <= 16 ? task.progress + 1 : 0;
+        if (distanceSquared > 16) {
+            if (++task.ticksAway >= 5 * 20) task.progress = 0;
+            return false;
+        }
+        task.ticksAway = 0;
+        task.progress++;
         if (task.progress < CONTACT_TICKS) return false;
         routes.get(id).complete(Site.CONTACT);
         return true;
+    }
+
+    boolean stepOnBowl(UUID id, int index) {
+        TaskProgress task = pending(id, Site.TROUGH);
+        if (task == null || index < 0 || index >= BOWLS) return false;
+        task.progress |= 1 << index;
+        if (Integer.bitCount(task.progress) < BOWLS) return false;
+        routes.get(id).complete(Site.TROUGH);
+        return true;
+    }
+
+    int bowlsVisited(UUID id) {
+        return Integer.bitCount(routes.get(id).pending.get(Site.TROUGH).progress);
     }
 
     Station station(UUID id, Site site) {
@@ -309,8 +325,10 @@ final class FurryQuest {
     }
 
     void wrongShot() {
-        if (outcome == null) outcome = Outcome.LIVESTOCK;
+        if (outcome == null && ++mistakes > MISTAKE_LIMIT) outcome = Outcome.LIVESTOCK;
     }
+
+    int mistakesLeft() { return Math.max(0, MISTAKE_LIMIT - mistakes); }
 
     void timeout() {
         if (outcome == null) outcome = finalHunt ? Outcome.MISSIONS : Outcome.TIME;

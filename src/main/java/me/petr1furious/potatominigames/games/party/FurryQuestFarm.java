@@ -216,7 +216,8 @@ final class FurryQuestFarm {
     }
 
     private void field(int x, int z) {
-        for (int dx = -2; dx <= 3; dx++) put(x + dx, 1, z, WATER_CAULDRON);
+        for (int i = 0; i < FurryQuest.BOWLS; i++)
+            put(x + FurryQuest.FIRST_BOWL_OFFSET + i, 1, z, WATER_CAULDRON);
         for (int dx = -3; dx <= 5; dx++) {
             for (int dz = 5; dz <= 11; dz++) {
                 if (dx == 1) {

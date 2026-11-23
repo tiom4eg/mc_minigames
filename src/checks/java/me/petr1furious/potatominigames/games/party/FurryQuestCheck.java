@@ -30,10 +30,14 @@ public final class FurryQuestCheck {
                     for (int i = 0; i < 299; i++)
                         require(!game.contactTick(id, 16), "Waiting at the edge of the contact radius");
                     require(game.contactSecondsLeft(id) == 1, "One second left on the guide");
+                    for (int i = 0; i < 99; i++)
+                        require(!game.contactTick(id, 16.01) && game.contactSecondsLeft(id) == 1,
+                                "Progress pauses during the grace period");
                     require(!game.contactTick(id, 16.01) && game.contactSecondsLeft(id) == 15,
-                            "Leaving the moving double agent resets the timer");
+                            "Five seconds continuously outside resets progress");
                     for (int i = 0; i < 299; i++)
                         require(!game.contactTick(id, 0), "A fresh fifteen seconds are required");
+                    game.contactTick(id, 17);
                     boolean contacted = game.contactTick(id, 0);
                     require(!game.contactTick(id, 0), "Contact scores only once");
                     yield contacted;
@@ -73,9 +77,14 @@ public final class FurryQuestCheck {
                     yield lap;
                 }
                 case TROUGH -> {
-                    game.act(id, site, -3, 0, true, false, false);
-                    require(!game.act(id, site, 2, 1, true, false, false), "The middle bowls are not the far end");
-                    yield game.act(id, site, 4, 0, true, false, false);
+                    require(!game.act(id, site, -3, 0, true, false, false)
+                            && !game.act(id, site, 4, 0, true, false, false), "Walking beside the bowls cannot score");
+                    require(!game.stepOnBowl(id, -1) && !game.stepOnBowl(id, 6), "Only actual bowls count");
+                    for (int i = 5; i > 0; i--) {
+                        require(!game.stepOnBowl(id, i) && !game.stepOnBowl(id, i), "Visit distinct bowls");
+                        require(game.bowlsVisited(id) == 6 - i, "Repeated steps count once");
+                    }
+                    yield game.stepOnBowl(id, 0);
                 }
                 case BELL -> {
                     game.act(id, site, 12, 0, true, false, true);
@@ -191,6 +200,10 @@ public final class FurryQuestCheck {
         require(game.result(Set.copyOf(PLAYERS)).places().equals(List.of(List.of(second))),
                 "Only agents still alive at the end win");
         game = round();
+        for (int mistake = 1; mistake <= 3; mistake++) {
+            game.wrongShot();
+            require(game.outcome() == null && game.mistakesLeft() == 3 - mistake, "Three mistakes are allowed");
+        }
         game.wrongShot();
         require(game.result(Set.copyOf(PLAYERS)).places().getFirst().containsAll(spies), "Livestock loss");
         game = round();
