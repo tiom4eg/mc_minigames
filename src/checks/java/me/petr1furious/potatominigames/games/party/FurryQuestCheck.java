@@ -21,7 +21,7 @@ public final class FurryQuestCheck {
         if (!assigned.contains(FurryQuest.Site.CONTACT))
             require(game.contactSecondsLeft(id) == 0 && !game.contactTick(id, 0), "Contact requires an assignment");
         for (var site : assigned.reversed()) {
-            var focus = game.site(id);
+            require(game.unfinished(id, site), "Each assigned task is available from the start");
             require(seen.add(site), "Each landmark appears once");
             require(!game.act(id, site, 20, 20, true, false, false), "Outside the zone");
             boolean done = switch (site) {
@@ -63,17 +63,19 @@ public final class FurryQuestCheck {
                     }
                     // A hider can walk this close to the one-block trunk, even at the corners.
                     boolean lap = false;
-                    for (int step = 0; step <= 96 && !lap; step++) {
-                        double angle = (clockwise ? 1 : -1) * step * 2 * Math.PI / 96;
-                        lap = game.act(id, site, 1.2 * Math.cos(angle), 1.2 * Math.sin(angle), true, false, false);
+                    for (int n = 1; n <= 3; n++) {
+                        for (int step = 0; step <= 96; step++) {
+                            double angle = (clockwise == (n % 2 == 1) ? 1 : -1) * step * 2 * Math.PI / 96;
+                            lap = game.act(id, site, 1.2 * Math.cos(angle), 1.2 * Math.sin(angle), true, false, false);
+                            require(lap == (n == 3 && step == 96), "Exactly three full laps in either direction");
+                        }
                     }
-                    require(lap, "A close lap around the oak completes in either direction");
                     yield lap;
                 }
                 case TROUGH -> {
-                    game.act(id, site, -2, 0, true, false, false);
-                    require(!game.act(id, site, -2, 1, true, false, false), "Both ends required");
-                    yield game.act(id, site, 2, 0, true, false, false);
+                    game.act(id, site, -3, 0, true, false, false);
+                    require(!game.act(id, site, 2, 1, true, false, false), "The middle bowls are not the far end");
+                    yield game.act(id, site, 4, 0, true, false, false);
                 }
                 case BELL -> {
                     game.act(id, site, 12, 0, true, false, true);
@@ -86,9 +88,14 @@ public final class FurryQuestCheck {
                             "No delivery before pickup");
                     require(game.click(id, FurryQuest.Station.BARN_BARREL, false, 1) == FurryQuest.Interaction.NEXT,
                             "Pick up wool at the barn");
-                    game.act(id, site, 18, 6, true, false, false);
+                    game.woolTick(id, true);
+                    game.woolTick(id, false);
+                    require(game.woolTicks(id) == -1, "Walking away interrupts collection");
+                    game.click(id, FurryQuest.Station.BARN_BARREL, false, 2);
+                    require(workWool(game, id) == FurryQuest.Interaction.NEXT, "Collect for five seconds");
                     require(game.station(id, site) == FurryQuest.Station.LOOM, "Keep the parcel while crossing the farm");
-                    yield game.click(id, FurryQuest.Station.LOOM, false, 22) == FurryQuest.Interaction.COMPLETE;
+                    game.click(id, FurryQuest.Station.LOOM, false, 122);
+                    yield workWool(game, id) == FurryQuest.Interaction.COMPLETE;
                 }
                 case FISH -> {
                     var post = FurryQuest.Station.DOCK_POST;
@@ -97,6 +104,12 @@ public final class FurryQuestCheck {
                     game.click(id, post, false, 12);
                     long late = game.biteTick(id) + FurryQuest.BITE_WINDOW;
                     require(game.click(id, post, false, late) == FurryQuest.Interaction.CAST, "Missed bite allows recast");
+                    for (int n = 1; n <= 2; n++) {
+                        long bite = game.biteTick(id);
+                        require(game.click(id, post, false, bite) == FurryQuest.Interaction.NEXT
+                                && game.repetitions(id, site) == n, "Count one fish per bite");
+                        require(game.click(id, post, false, bite + 1) == FurryQuest.Interaction.CAST, "Cast again");
+                    }
                     yield game.click(id, post, false, game.biteTick(id)) == FurryQuest.Interaction.COMPLETE;
                 }
                 case CHIMES -> {
@@ -113,13 +126,12 @@ public final class FurryQuestCheck {
                     yield game.click(id, FurryQuest.Station.SCARECROW, true, 2) == FurryQuest.Interaction.COMPLETE;
                 }
             };
-            if (focus != site) require(game.site(id) == focus, "Off-marker tasks preserve the selected guide");
+            require(!game.unfinished(id, site), "Completed tasks leave the active guide");
             require(done && game.completed(id) == seen.size(), "One personal completion for " + site);
         }
-        require(game.site(id) == null, "Completed routes have no pending marker");
-        require(seen.size() == 5, "All five different tasks");
+        require(seen.size() == 4, "All four different tasks");
         require(seen.stream().filter(site -> site.difficulty == FurryQuest.Difficulty.HARD).count() == 1,
-                "Every five-task route has exactly one Hard task");
+                "Every four-task route has exactly one Hard task");
         return seen;
     }
 
@@ -139,7 +151,7 @@ public final class FurryQuestCheck {
         UUID sniper = game.sniper();
         List<UUID> spies = PLAYERS.stream().filter(id -> !id.equals(sniper)).toList();
         UUID first = spies.getFirst(), second = spies.getLast();
-        require(game.remaining() == 2 && game.site(sniper) == null, "One sniper and two agents");
+        require(game.remaining() == 2 && !game.unfinished(sniper, FurryQuest.Site.TREE), "One sniper and two agents");
         finishRoute(game, first, true);
         require(game.outcome() == null && game.completed(second) == 0, "Personal tasks cannot be pooled");
         require(!game.startFinalHuntIfReady(), "Wait for every living agent");
@@ -217,23 +229,28 @@ public final class FurryQuestCheck {
         }
     }
 
+    private static FurryQuest.Interaction workWool(FurryQuest game, UUID id) {
+        for (int tick = 1; tick < 100; tick++)
+            require(game.woolTick(id, true) == FurryQuest.Interaction.IGNORED, "Wool needs a full five seconds");
+        return game.woolTick(id, true);
+    }
+
     private static void checkInterleavedTasks() {
         var players = PLAYERS.subList(0, 2);
-        // Deals a parcel, hat swap, chimes, trough and tree to the hider.
-        var game = new FurryQuest(players, new Random(3));
+        // Deals wool, hat swap, chimes and oak laps.
+        var game = new FurryQuest(players, new Random(85));
         UUID id = players.stream().filter(p -> !p.equals(game.sniper())).findFirst().orElseThrow();
         require(game.click(id, FurryQuest.Station.BARN_BARREL, false, 0) == FurryQuest.Interaction.NEXT,
                 "Collect a parcel before starting the tune");
+        require(workWool(game, id) == FurryQuest.Interaction.NEXT, "Wool is ready to take to the loom");
         require(game.click(id, FurryQuest.Station.BLUE, false, 1) == FurryQuest.Interaction.NEXT, "Begin the tune");
-        var focus = game.site(id);
-        game.cycle(id);
-        require(game.site(id) != focus, "Cycle to a different guide");
         require(game.click(id, FurryQuest.Station.SCARECROW, true, 2) == FurryQuest.Interaction.COMPLETE,
                 "Swap the hat while the tune and parcel are unfinished");
         require(game.click(id, FurryQuest.Station.GOLD, false, 2) == FurryQuest.Interaction.NEXT
                         && game.click(id, FurryQuest.Station.RED, false, 3) == FurryQuest.Interaction.COMPLETE,
                 "Resume a partially played tune");
-        require(game.click(id, FurryQuest.Station.LOOM, false, 4) == FurryQuest.Interaction.COMPLETE,
+        require(game.click(id, FurryQuest.Station.LOOM, false, 4) == FurryQuest.Interaction.NEXT
+                        && workWool(game, id) == FurryQuest.Interaction.COMPLETE,
                 "Deliver the original parcel after completing other tasks");
         require(game.click(id, FurryQuest.Station.DOCK_POST, false, 5) == FurryQuest.Interaction.IGNORED
                         && game.completed(id) == 3, "Unassigned tasks cannot score");

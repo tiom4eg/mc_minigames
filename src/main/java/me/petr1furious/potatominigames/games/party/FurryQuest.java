@@ -71,7 +71,9 @@ final class FurryQuest {
         }
     }
 
-    static final int TASKS = 5;
+    static final int TASKS = 4;
+    static final int REPEATS = 3;
+    static final int WOOL_TICKS = 5 * 20;
     static final int BITE_WINDOW = 20;
     enum Interaction { IGNORED, NEXT, CAST, EARLY, WRONG_NOTE, COMPLETE }
     enum Outcome { MISSIONS, LIVESTOCK, ALL_CAUGHT, TIME, SNIPER_LEFT }
@@ -81,7 +83,6 @@ final class FurryQuest {
         final Random random;
         boolean active = true;
         final Map<Site, TaskProgress> pending = new EnumMap<>(Site.class);
-        Site focus;
 
         Route(Random random) {
             this.random = random;
@@ -97,34 +98,20 @@ final class FurryQuest {
             Collections.shuffle(route, random);
             sites = List.copyOf(route);
             for (Site site : sites) pending.put(site, new TaskProgress(site));
-            focus = sites.getFirst();
-        }
-
-        void cycle() {
-            if (pending.isEmpty()) {
-                focus = null;
-                return;
-            }
-            int start = sites.indexOf(focus);
-            for (int step = 1; step <= sites.size(); step++) {
-                Site next = sites.get((start + step) % sites.size());
-                if (pending.containsKey(next)) {
-                    focus = next;
-                    return;
-                }
-            }
         }
 
         void complete(Site site) {
             pending.remove(site);
-            if (site == focus) cycle();
         }
     }
 
     private static final class TaskProgress {
         final Site site;
         int progress;
-        int previousSector = -1;
+        int repetitions;
+        int woolTicks = -1;
+        double previousAngle = Double.NaN;
+        double turn;
         long biteTick = -1;
         boolean crouching, jumping;
 
@@ -145,6 +132,11 @@ final class FurryQuest {
                 return Interaction.IGNORED;
             }
             if (site == Site.SWAP && !sneak) return Interaction.IGNORED;
+            if (site == Site.PARCEL) {
+                if (woolTicks >= 0) return Interaction.IGNORED;
+                woolTicks = 0;
+                return Interaction.NEXT;
+            }
             if (site == Site.FISH) {
                 if (biteTick < 0 || tick >= biteTick + BITE_WINDOW) {
                     biteTick = tick + 24 + random.nextInt(33);
@@ -154,6 +146,8 @@ final class FurryQuest {
                     biteTick = -1;
                     return Interaction.EARLY;
                 }
+                biteTick = -1;
+                return ++repetitions == REPEATS ? Interaction.COMPLETE : Interaction.NEXT;
             }
             if (++progress < site.stops.size()) return Interaction.NEXT;
             return Interaction.COMPLETE;
@@ -165,9 +159,10 @@ final class FurryQuest {
             jumping = jump;
             if (!site.stops.isEmpty()) return false;
             double radius2 = dx * dx + dz * dz;
-            if (!level || radius2 > (site == Site.TREE ? 30.25 : 16)) {
+            if (!level || radius2 > (site == Site.TREE || site == Site.TROUGH ? 30.25 : 16)) {
                 progress = 0;
-                previousSector = -1;
+                previousAngle = Double.NaN;
+                turn = 0;
                 return false;
             }
             return switch (site) {
@@ -178,8 +173,10 @@ final class FurryQuest {
                 case HAY -> peck && ++progress == 3;
                 case TREE -> circle(dx, dz);
                 case TROUGH -> {
-                    if (Math.abs(dz) <= 2 && Math.abs(dx) >= 1.75)
-                        progress |= dx < 0 ? 1 : 2;
+                    if (Math.abs(dz) <= 2) {
+                        if (dx <= -2.75) progress |= 1;
+                        if (dx >= 3.75) progress |= 2;
+                    }
                     yield progress == 3;
                 }
                 case BELL -> ring;
@@ -188,16 +185,15 @@ final class FurryQuest {
         }
 
         private boolean circle(double dx, double dz) {
-            int sector = Math.floorMod((int) Math.floor(Math.atan2(dz, dx) / (Math.PI / 2) + .5), 4);
-            if (previousSector != -1) {
-                switch (Math.floorMod(sector - previousSector, 4)) {
-                    case 1 -> progress++;
-                    case 3 -> progress--;
-                    case 2 -> progress = 0;
-                }
+            double angle = Math.atan2(dz, dx);
+            if (!Double.isNaN(previousAngle)) {
+                double delta = Math.IEEEremainder(angle - previousAngle, 2 * Math.PI);
+                turn = Math.abs(delta) > Math.PI / 2 + 1e-6 ? 0 : turn + delta;
             }
-            previousSector = sector;
-            return Math.abs(progress) >= 4;
+            previousAngle = angle;
+            if (Math.abs(turn) + 1e-6 < 2 * Math.PI) return false;
+            turn -= Math.copySign(2 * Math.PI, turn);
+            return ++repetitions == REPEATS;
         }
     }
 
@@ -218,13 +214,31 @@ final class FurryQuest {
     int completed(UUID id) { return TASKS - routes.get(id).pending.size(); }
     List<Site> assignments(UUID id) { return routes.get(id).sites; }
 
-    Site site(UUID id) {
-        Route route = routes.get(id);
-        return route == null || !route.active ? null : route.focus;
+    boolean unfinished(UUID id, Site site) {
+        return pending(id, site) != null;
     }
 
-    void cycle(UUID id) {
-        if (site(id) != null) routes.get(id).cycle();
+    int repetitions(UUID id, Site site) {
+        return routes.get(id).pending.get(site).repetitions;
+    }
+
+    int woolTicks(UUID id) {
+        TaskProgress task = pending(id, Site.PARCEL);
+        return task == null ? -1 : task.woolTicks;
+    }
+
+    Interaction woolTick(UUID id, boolean nearby) {
+        TaskProgress task = pending(id, Site.PARCEL);
+        if (task == null || task.woolTicks < 0) return Interaction.IGNORED;
+        if (!nearby) {
+            task.woolTicks = -1;
+            return Interaction.IGNORED;
+        }
+        if (++task.woolTicks < WOOL_TICKS) return Interaction.IGNORED;
+        task.woolTicks = -1;
+        if (++task.progress < Site.PARCEL.stops.size()) return Interaction.NEXT;
+        routes.get(id).complete(Site.PARCEL);
+        return Interaction.COMPLETE;
     }
 
     private TaskProgress pending(UUID id, Site site) {
