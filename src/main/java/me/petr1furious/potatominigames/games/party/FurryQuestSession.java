@@ -189,11 +189,16 @@ final class FurryQuestSession extends PartySurvivalSession {
         UUID id = player.getUniqueId();
         playTaskEffect(agent, site);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, .7f, 1.4f);
-        player.sendMessage(message("complete", quest.completed(id), FurryQuest.TASKS));
-        Component notice = message("teammate_complete", player.getName(), message("name." + key(site)));
+        int completed = quest.completed(id);
+        player.sendMessage(message("complete", completed, FurryQuest.TASKS));
+        Component notice = message("teammate_complete", player.getName(), message("name." + key(site)),
+                completed, FurryQuest.TASKS);
         for (var teammate : agents.values())
             if (teammate != agent) teammate.player.sendMessage(notice);
-        if (quest.completed(id) == FurryQuest.TASKS) player.sendMessage(message("finished"));
+        if (completed == FurryQuest.TASKS) {
+            player.sendMessage(message("finished"));
+            say(message("hider_finished", player.getName(), completed, FurryQuest.TASKS));
+        }
         checkFinalHunt();
     }
 
