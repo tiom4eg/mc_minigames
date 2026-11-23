@@ -16,9 +16,10 @@ final class FurryQuestHunterMarks {
     private final Team lowlight;
     private final Set<Animals> marked = new HashSet<>();
 
-    FurryQuestHunterMarks(Player hunter, PrivatePlayerGlow glow) {
+    FurryQuestHunterMarks(Player hunter, PrivatePlayerGlow glow, Animals doubleAgent) {
         this.hunter = hunter;
         this.glow = glow;
+        marked.add(doubleAgent);
         var board = hunter.getScoreboard();
         highlight = board.registerNewTeam("fq_highlight");
         highlight.color(NamedTextColor.GOLD);

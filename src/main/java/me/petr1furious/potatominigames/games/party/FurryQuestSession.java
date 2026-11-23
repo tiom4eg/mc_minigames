@@ -12,6 +12,7 @@ import io.papermc.paper.event.player.PlayerStopUsingItemEvent;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import me.petr1furious.potatominigames.i18n.I18n;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameRules;
@@ -33,12 +34,12 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scoreboard.Team;
 
 final class FurryQuestSession extends PartySurvivalSession {
     static final String ID = "furry_quest";
     private static final int RANGE = 72;
-    private static final Material HIGHLIGHTER = Material.BLAZE_ROD;
-    private static final Material LOWLIGHTER = Material.CHARCOAL;
+    private static final Material MARKER = Material.BLAZE_ROD;
     private static final Material CHASE_AXE = Material.IRON_AXE;
     private static final int CHASE_TICKS = 15 * 20;
     private static final int CHASE_COOLDOWN_TICKS = 15 * 20;
@@ -48,6 +49,7 @@ final class FurryQuestSession extends PartySurvivalSession {
     private final Map<UUID, FurryQuestDisguise> agents = new HashMap<>();
     private final Map<UUID, FurryQuestDisguise> owners = new HashMap<>();
     private PrivatePlayerGlow privateGlow;
+    private final Map<UUID, Team> contactTeams = new HashMap<>();
     private FurryQuestHunterMarks hunterMarks;
     private long lastMarkTick = -1;
     private long nextShot;
@@ -86,15 +88,19 @@ final class FurryQuestSession extends PartySurvivalSession {
             return;
         }
         privateGlow = new PrivatePlayerGlow(services.plugin());
-        quest = new FurryQuest(players.stream().map(Player::getUniqueId).toList(), arena.doubleAgent().getUniqueId(), random);
+        quest = new FurryQuest(players.stream().map(Player::getUniqueId).toList(), random);
         var animals = arena.shuffledDisguises().iterator();
         for (Player player : players) {
             UUID id = player.getUniqueId();
+            Team contactTeam = player.getScoreboard().registerNewTeam("fq_contact");
+            contactTeam.color(NamedTextColor.DARK_PURPLE);
+            contactTeam.addEntity(arena.doubleAgent());
+            contactTeams.put(id, contactTeam);
             if (id.equals(quest.sniper())) {
+                hunterMarks = new FurryQuestHunterMarks(player, privateGlow, arena.doubleAgent());
                 teleport(player, viewpoint());
                 player.getInventory().setItem(0, new ItemStack(Material.SPYGLASS));
-                player.getInventory().setItem(1, hunterTool(HIGHLIGHTER, "highlighter", player));
-                player.getInventory().setItem(2, hunterTool(LOWLIGHTER, "lowlighter", player));
+                player.getInventory().setItem(1, hunterTool(MARKER, "marker", player));
                 player.getInventory().setItem(3, hunterTool(CHASE_AXE, "chase_axe", player));
                 player.sendMessage(message("sniper"));
                 player.sendMessage(message("mark_guide"));
@@ -112,16 +118,17 @@ final class FurryQuestSession extends PartySurvivalSession {
             }
             player.getInventory().setHeldItemSlot(0);
         }
-        refreshTeammateOutlines();
+        refreshOutlines();
     }
 
-    private void refreshTeammateOutlines() {
+    private void refreshOutlines() {
+        if (hunterMarks != null) hunterMarks.refresh();
         for (var viewer : agents.values()) {
-            var teammates = agents.values().stream()
-                    .filter(teammate -> teammate != viewer)
-                    .map(teammate -> teammate.animal)
-                    .toList();
-            privateGlow.updateTargets(viewer.player, teammates);
+            var targets = new ArrayList<Animals>();
+            targets.add(arena.doubleAgent());
+            for (var teammate : agents.values())
+                if (teammate != viewer) targets.add(teammate.animal);
+            privateGlow.updateTargets(viewer.player, targets);
         }
     }
 
@@ -132,20 +139,22 @@ final class FurryQuestSession extends PartySurvivalSession {
         if (quest.outcome() == null) {
             tickHunter(elapsed);
             arena.tick(elapsed);
-            if (elapsed % 10 == 0) {
-                refreshTeammateOutlines();
-                if (hunterMarks != null) hunterMarks.refresh();
-            }
+            if (elapsed % 10 == 0) refreshOutlines();
+            Location contact = arena.doubleAgent().getLocation();
             for (var entry : agents.entrySet()) {
                 UUID id = entry.getKey();
                 FurryQuestDisguise agent = entry.getValue();
-                if (!world.equals(agent.player.getWorld())) continue;
+                if (!world.equals(agent.player.getWorld())) {
+                    quest.contactTick(id, Double.POSITIVE_INFINITY);
+                    continue;
+                }
                 agent.sync();
                 Input input = agent.player.getCurrentInput();
                 FurryQuest.Site site = quest.site(id);
                 if (site == null) continue;
                 Location body = agent.player.getLocation();
-                if (elapsed % 10 == 0) {
+                if (quest.contactTick(id, body.distanceSquared(contact))) completeTask(agent, FurryQuest.Site.CONTACT);
+                if (elapsed % 10 == 0 && site != FurryQuest.Site.CONTACT) {
                     var station = quest.station(id, site);
                     Location target = station == null ? arena.landmark(site) : arena.station(station);
                     if (station == null) showTaskMarker(agent.player, site, target);
@@ -190,10 +199,7 @@ final class FurryQuestSession extends PartySurvivalSession {
     }
 
     private void showTaskMarker(Player player, FurryQuest.Site site, Location target) {
-        if (site == FurryQuest.Site.CONTACT) {
-            player.spawnParticle(Particle.HAPPY_VILLAGER, target.clone().add(0, arena.doubleAgent().getHeight() + .25, 0),
-                    3, .1, .06, .1, 0);
-        } else if (site == FurryQuest.Site.TREE) {
+        if (site == FurryQuest.Site.TREE) {
             for (int i = 0; i < 8; i++) {
                 double angle = i * Math.PI / 4;
                 player.spawnParticle(Particle.HAPPY_VILLAGER, target.getX() + 1.2 * Math.cos(angle),
@@ -266,7 +272,7 @@ final class FurryQuestSession extends PartySurvivalSession {
 
     private void playTaskEffect(FurryQuestDisguise agent, FurryQuest.Site site) {
         if (site == FurryQuest.Site.HAY) {
-            world.spawnParticle(Particle.BLOCK, agent.animal.getEyeLocation(), 28, .45, .3, .45, .08,
+            world.spawnParticle(Particle.BLOCK, agent.animal.getEyeLocation(), 5, .12, .08, .12, .02,
                     Material.HAY_BLOCK.createBlockData());
         } else if (site == FurryQuest.Site.BELL) {
             if (arena.landmark(site).getBlock().getRelative(0, 1, 0).getState() instanceof Bell bell)
@@ -298,14 +304,9 @@ final class FurryQuestSession extends PartySurvivalSession {
         if (quest.sniper().equals(player.getUniqueId())) {
             if (event.getHand() != EquipmentSlot.HAND || chaseEndsAt != 0) return;
             Material held = player.getInventory().getItemInMainHand().getType();
-            if (held == HIGHLIGHTER)
+            if (held == MARKER)
                 markAnimal(player, false);
-            return;
         }
-        if (!agents.containsKey(player.getUniqueId())) return;
-        if (event.getHand() == EquipmentSlot.HAND && player.getLocation().distanceSquared(animal.getLocation()) <= 16
-                && player.hasLineOfSight(animal) && quest.contact(player.getUniqueId(), animal.getUniqueId()))
-            completeTask(agents.get(player.getUniqueId()), FurryQuest.Site.CONTACT);
     }
 
     @Override
@@ -324,9 +325,9 @@ final class FurryQuestSession extends PartySurvivalSession {
             if (event.getAction().isRightClick() && held == Material.SPYGLASS) {
                 event.setUseItemInHand(Event.Result.ALLOW);
                 aiming = true;
-            } else if (event.getAction().isRightClick() && held == HIGHLIGHTER) {
+            } else if (event.getAction().isRightClick() && held == MARKER) {
                 markAnimal(player, false);
-            } else if (event.getAction().isLeftClick() && held == LOWLIGHTER) {
+            } else if (event.getAction().isLeftClick() && held == MARKER) {
                 markAnimal(player, true);
             }
         } else if (event.getAction().isRightClick() && event.getClickedBlock() != null) {
@@ -348,7 +349,7 @@ final class FurryQuestSession extends PartySurvivalSession {
                 world.playSound(animal.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1f, .85f);
                 hitAnimal(animal);
             }
-        } else if (held == LOWLIGHTER && chaseEndsAt == 0) {
+        } else if (held == MARKER && chaseEndsAt == 0) {
             event.setCancelled(true);
             markAnimal(player, true);
         }
@@ -367,7 +368,14 @@ final class FurryQuestSession extends PartySurvivalSession {
                 case GOLD -> 1f;
                 default -> 1.25f;
             };
-            world.playSound(arena.station(station), Sound.BLOCK_NOTE_BLOCK_CHIME, .55f, pitch);
+            Location source = arena.station(station);
+            for (Player listener : world.getPlayers()) {
+                if (listener.getUniqueId().equals(quest.sniper())) {
+                    listener.playSound(listener.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, .7f, pitch);
+                } else if (listener.getLocation().distanceSquared(source) <= 16 * 16) {
+                    listener.playSound(source, Sound.BLOCK_NOTE_BLOCK_CHIME, .55f, pitch);
+                }
+            }
         }
         switch (result) {
             case COMPLETE -> completeTask(agent, site);
@@ -448,7 +456,10 @@ final class FurryQuestSession extends PartySurvivalSession {
             hunter.sendActionBar(message("mark_no_target"));
             return;
         }
-        if (hunterMarks == null) hunterMarks = new FurryQuestHunterMarks(hunter, privateGlow);
+        if (animal.equals(arena.doubleAgent())) {
+            hunter.sendActionBar(message("double_agent"));
+            return;
+        }
         boolean applied = hunterMarks.toggle(animal, dim);
         String key = applied ? (dim ? "mark_lowlight" : "mark_highlight") : "mark_clear";
         hunter.sendActionBar(message(key, Component.translatable(animal.getType().translationKey())));
@@ -461,7 +472,8 @@ final class FurryQuestSession extends PartySurvivalSession {
 
     private Component taskInstructions(UUID id, FurryQuest.Site site) {
         if (site == FurryQuest.Site.CONTACT)
-            return message("task.contact", Component.translatable(arena.doubleAgent().getType().translationKey()));
+            return message("task.contact", Component.translatable(arena.doubleAgent().getType().translationKey()),
+                    quest.contactSecondsLeft(id));
         var station = quest.station(id, site);
         if (station == null) return message("task." + key(site));
         if (site == FurryQuest.Site.FISH && quest.biteTick(id) >= 0
@@ -488,6 +500,8 @@ final class FurryQuestSession extends PartySurvivalSession {
 
     @Override
     void playerOut(Player player) {
+        Team team = contactTeams.remove(player.getUniqueId());
+        if (team != null) team.unregister();
         if (quest != null) {
             if (quest.sniper().equals(player.getUniqueId())) clearHunterMarks();
             quest.out(player.getUniqueId());
@@ -510,6 +524,8 @@ final class FurryQuestSession extends PartySurvivalSession {
     @Override
     void cleanup() {
         clearHunterMarks();
+        contactTeams.values().forEach(Team::unregister);
+        contactTeams.clear();
         for (UUID id : List.copyOf(agents.keySet())) removeAgent(id);
         if (arena != null) arena.cleanup();
     }

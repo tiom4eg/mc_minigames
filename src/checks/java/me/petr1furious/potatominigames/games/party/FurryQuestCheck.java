@@ -13,26 +13,29 @@ public final class FurryQuestCheck {
         if (!condition) throw new AssertionError(detail);
     }
 
-    private static final UUID CONTACT = new UUID(1, 1);
-
-    private static FurryQuest round() { return new FurryQuest(PLAYERS, CONTACT, new Random(42)); }
+    private static FurryQuest round() { return new FurryQuest(PLAYERS, new Random(42)); }
 
     private static Set<FurryQuest.Site> finishRoute(FurryQuest game, UUID id, boolean clockwise) {
         var seen = EnumSet.noneOf(FurryQuest.Site.class);
         var assigned = game.assignments(id);
         if (!assigned.contains(FurryQuest.Site.CONTACT))
-            require(!game.contact(id, CONTACT), "Checking in without a contact assignment cannot score");
+            require(game.contactSecondsLeft(id) == 0 && !game.contactTick(id, 0), "Contact requires an assignment");
         for (var site : assigned.reversed()) {
             var focus = game.site(id);
             require(seen.add(site), "Each landmark appears once");
             require(!game.act(id, site, 20, 20, true, false, false), "Outside the zone");
             boolean done = switch (site) {
                 case CONTACT -> {
-                    require(!game.contact(id, new UUID(1, 2)), "A different herd member cannot confirm contact");
-                    require(!game.act(id, site, 0, 0, true, true, true), "Proximity alone cannot confirm contact");
-                    require(!game.contact(game.sniper(), CONTACT), "Only an assigned hider can make contact");
-                    boolean contacted = game.contact(id, CONTACT);
-                    require(!game.contact(id, CONTACT), "A repeated interaction cannot score twice");
+                    require(!game.contactTick(game.sniper(), 0), "The hunter cannot make contact");
+                    for (int i = 0; i < 299; i++)
+                        require(!game.contactTick(id, 16), "Waiting at the edge of the contact radius");
+                    require(game.contactSecondsLeft(id) == 1, "One second left on the guide");
+                    require(!game.contactTick(id, 16.01) && game.contactSecondsLeft(id) == 15,
+                            "Leaving the moving double agent resets the timer");
+                    for (int i = 0; i < 299; i++)
+                        require(!game.contactTick(id, 0), "A fresh fifteen seconds are required");
+                    boolean contacted = game.contactTick(id, 0);
+                    require(!game.contactTick(id, 0), "Contact scores only once");
                     yield contacted;
                 }
                 case POND -> {
@@ -121,10 +124,13 @@ public final class FurryQuestCheck {
     }
 
     public static void main(String[] args) {
+        checkChimeLayout();
+        require(FurryQuest.Site.HAY.difficulty == FurryQuest.Difficulty.EASY, "Foraging at hay bales is low exposure");
+        require(FurryQuest.Site.CONTACT.difficulty == FurryQuest.Difficulty.HARD, "Loitering by the visible agent is high exposure");
         require(FurryQuest.Site.BELL.difficulty == FurryQuest.Difficulty.HARD, "Ringing the bell is high exposure");
         var pool = EnumSet.noneOf(FurryQuest.Site.class);
         for (int seed = 0; seed < 32; seed++) {
-            var sample = new FurryQuest(PLAYERS, CONTACT, new Random(seed));
+            var sample = new FurryQuest(PLAYERS, new Random(seed));
             for (UUID id : PLAYERS) if (!id.equals(sample.sniper())) pool.addAll(finishRoute(sample, id, true));
         }
         require(pool.equals(EnumSet.allOf(FurryQuest.Site.class)), "Every mission can appear and be completed");
@@ -193,10 +199,28 @@ public final class FurryQuestCheck {
         System.out.println("Furry Quest personal routes, final countdown and survivor awards passed");
     }
 
+    private static void checkChimeLayout() {
+        var bell = FurryQuest.Site.BELL.plot;
+        var chimes = FurryQuest.Site.CHIMES.stops;
+        for (var chime : chimes) {
+            for (double x : new double[]{-2.25, 2.25}) {
+                for (double z : new double[]{-2.25, 2.25}) {
+                    double bx = bell.x() - x, bz = bell.z() - z;
+                    double cx = chime.x - x, cz = chime.z - z;
+                    double dot = (bx * cx + bz * cz) / (Math.hypot(bx, bz) * Math.hypot(cx, cz));
+                    require(dot < Math.cos(Math.toRadians(130)), "Hunter must turn away from the bell at every deck corner");
+                }
+            }
+            for (var other : chimes)
+                if (other != chime) require(Math.hypot(chime.x - other.x, chime.z - other.z) >= 6,
+                        "Each note requires moving to a different chime");
+        }
+    }
+
     private static void checkInterleavedTasks() {
         var players = PLAYERS.subList(0, 2);
-        // Deals a parcel, hat swap, chimes, trough and contact to the hider.
-        var game = new FurryQuest(players, CONTACT, new Random(14138));
+        // Deals a parcel, hat swap, chimes, trough and tree to the hider.
+        var game = new FurryQuest(players, new Random(3));
         UUID id = players.stream().filter(p -> !p.equals(game.sniper())).findFirst().orElseThrow();
         require(game.click(id, FurryQuest.Station.BARN_BARREL, false, 0) == FurryQuest.Interaction.NEXT,
                 "Collect a parcel before starting the tune");
@@ -204,7 +228,8 @@ public final class FurryQuestCheck {
         var focus = game.site(id);
         game.cycle(id);
         require(game.site(id) != focus, "Cycle to a different guide");
-        require(game.contact(id, CONTACT), "Make contact while another task is marked");
+        require(game.click(id, FurryQuest.Station.SCARECROW, true, 2) == FurryQuest.Interaction.COMPLETE,
+                "Swap the hat while the tune and parcel are unfinished");
         require(game.click(id, FurryQuest.Station.GOLD, false, 2) == FurryQuest.Interaction.NEXT
                         && game.click(id, FurryQuest.Station.RED, false, 3) == FurryQuest.Interaction.COMPLETE,
                 "Resume a partially played tune");

@@ -15,10 +15,11 @@ import java.util.UUID;
 final class FurryQuest {
     static final int SECONDS = 150;
     static final int FINAL_SECONDS = 10;
+    private static final int CONTACT_TICKS = 15 * 20;
 
     enum Station {
         BARN_BARREL(16, 1, -14), LOOM(-15, 1, 3), DOCK_POST(-11, 1, -9),
-        BLUE(-5, 1, 14), GOLD(-4, 1, 14), RED(-3, 1, 14), SCARECROW(18, 3, 16);
+        BLUE(-8, 1, -17), GOLD(0, 1, -18), RED(6, 1, -16), SCARECROW(18, 3, 16);
 
         final int x, y, z;
         Station(int x, int y, int z) {
@@ -45,11 +46,11 @@ final class FurryQuest {
     enum Difficulty { EASY, MEDIUM, HARD }
 
     enum Site {
-        POND(Difficulty.EASY, -13, -10), HAY(Difficulty.HARD, 12, -11),
+        POND(Difficulty.EASY, -13, -10), HAY(Difficulty.EASY, 12, -11),
         TREE(Difficulty.MEDIUM, -12, 10), TROUGH(Difficulty.EASY, 13, 8), BELL(Difficulty.HARD, 1, 15),
         PARCEL(Difficulty.MEDIUM, Station.BARN_BARREL, Station.LOOM), FISH(Difficulty.MEDIUM, Station.DOCK_POST),
         CHIMES(Difficulty.HARD, Station.BLUE, Station.GOLD, Station.RED),
-        SWAP(Difficulty.MEDIUM, Station.SCARECROW), CONTACT(Difficulty.EASY);
+        SWAP(Difficulty.MEDIUM, Station.SCARECROW), CONTACT(Difficulty.HARD);
 
         final Difficulty difficulty;
         final Plot plot;
@@ -201,14 +202,12 @@ final class FurryQuest {
     }
 
     private final UUID sniper;
-    private final UUID doubleAgent;
     private final Map<UUID, Route> routes = new LinkedHashMap<>();
     private Outcome outcome;
     private boolean finalHunt;
 
-    FurryQuest(Collection<UUID> players, UUID doubleAgent, Random random) {
+    FurryQuest(Collection<UUID> players, Random random) {
         if (players.size() < 2) throw new IllegalArgumentException("Furry Quest requires two players");
-        this.doubleAgent = doubleAgent;
         var ids = new ArrayList<>(players);
         sniper = ids.remove(random.nextInt(ids.size()));
         for (UUID id : ids) routes.put(id, new Route(random));
@@ -235,8 +234,16 @@ final class FurryQuest {
 
     Outcome outcome() { return outcome; }
 
-    boolean contact(UUID id, UUID animal) {
-        if (pending(id, Site.CONTACT) == null || !doubleAgent.equals(animal)) return false;
+    int contactSecondsLeft(UUID id) {
+        TaskProgress task = pending(id, Site.CONTACT);
+        return task == null ? 0 : (CONTACT_TICKS - task.progress + 19) / 20;
+    }
+
+    boolean contactTick(UUID id, double distanceSquared) {
+        TaskProgress task = pending(id, Site.CONTACT);
+        if (task == null) return false;
+        task.progress = distanceSquared <= 16 ? task.progress + 1 : 0;
+        if (task.progress < CONTACT_TICKS) return false;
         routes.get(id).complete(Site.CONTACT);
         return true;
     }
