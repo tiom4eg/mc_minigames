@@ -29,7 +29,9 @@ public final class WaitForItCheck {
         allGoalsCountExactlyOncePerTask();
         advancingRebuildsOnlyTheRacersBay();
         craftingDragStaysInTheGrid();
-        System.out.println("Wait For It race, cutoff, rankings, bay isolation, crafting and 24-task pool passed");
+        System.out.println(
+                "Wait For It race, cutoff, rankings, bay isolation, crafting and 24-task pool"
+                        + " passed");
     }
 
     private static void advancingRebuildsOnlyTheRacersBay() {
@@ -39,29 +41,39 @@ public final class WaitForItCheck {
         int floor = WaitForItArena.FLOOR;
         var firstWorkbench = blocks.block(7, floor + 1, 10);
         var secondWorkbench = blocks.block(secondBay + 7, floor + 1, 10);
-        check(firstWorkbench.getType() == Material.AIR && secondWorkbench.getType() == Material.AIR,
+        check(
+                firstWorkbench.getType() == Material.AIR
+                        && secondWorkbench.getType() == Material.AIR,
                 "No task fixture exists until a bay opens");
         arena.prepare(0, CHECKPOINTS, new Random(5));
         arena.prepare(1, CHECKPOINTS, new Random(7));
-        check(blocks.block(3, floor, 10).getType() == Material.LIME_CONCRETE
-                        && blocks.block(secondBay + 3, floor, 10).getType() == Material.LIME_CONCRETE,
+        check(
+                blocks.block(3, floor, 10).getType() == Material.LIME_CONCRETE
+                        && blocks.block(secondBay + 3, floor, 10).getType()
+                                == Material.LIME_CONCRETE,
                 "Both bays see the same task");
         arena.prepare(0, STAIRS, new Random(8));
-        check(firstWorkbench.getType() == Material.CRAFTING_TABLE
+        check(
+                firstWorkbench.getType() == Material.CRAFTING_TABLE
                         && secondWorkbench.getType() == Material.AIR,
                 "Only the advancing racer receives the next task");
-        check(blocks.block(3, floor, 10).getType() == Material.SMOOTH_STONE
-                        && blocks.block(secondBay + 3, floor, 10).getType() == Material.LIME_CONCRETE,
+        check(
+                blocks.block(3, floor, 10).getType() == Material.SMOOTH_STONE
+                        && blocks.block(secondBay + 3, floor, 10).getType()
+                                == Material.LIME_CONCRETE,
                 "A bay transition does not clear another racer's current task");
         arena.prepare(1, STAIRS, new Random(9));
-        check(secondWorkbench.getType() == Material.CRAFTING_TABLE,
+        check(
+                secondWorkbench.getType() == Material.CRAFTING_TABLE,
                 "The second racer gets their workbench when they advance");
     }
 
     private static void craftingDragStaysInTheGrid() {
-        check(WaitForItSession.craftingSlotsOnly(Set.of(1, 2, 3, 9), 10),
+        check(
+                WaitForItSession.craftingSlotsOnly(Set.of(1, 2, 3, 9), 10),
                 "A normal right drag across matrix slots is allowed");
-        check(!WaitForItSession.craftingSlotsOnly(Set.of(0, 1), 10)
+        check(
+                !WaitForItSession.craftingSlotsOnly(Set.of(0, 1), 10)
                         && !WaitForItSession.craftingSlotsOnly(Set.of(9, 10), 10)
                         && !WaitForItSession.craftingSlotsOnly(Set.of(), 10),
                 "Dragging across the output or player inventory is rejected");
@@ -215,7 +227,7 @@ public final class WaitForItCheck {
                                         List.of(oneTaskAndSomeProgress, oneTask),
                                         List.of(noTasks))),
                 "Finishers rank by time, then unfinished racers by tasks cleared, with shared"
-                    + " places");
+                        + " places");
         check(
                 result.place(BOB) == 3 && result.place(oneTask) == 4 && result.place(noTasks) == 6,
                 "Tied groups occupy the corresponding competition places");

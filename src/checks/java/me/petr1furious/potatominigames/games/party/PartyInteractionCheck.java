@@ -145,9 +145,10 @@ public final class PartyInteractionCheck {
                 session
                         .sidebarLines(PLAYER, net.kyori.adventure.text.Component.text("Race"))
                         .stream()
-                        .map(c ->
-                                me.petr1furious.potatominigames.i18n.I18n.plain(
-                                        c, Locale.forLanguageTag("ru")))
+                        .map(
+                                c ->
+                                        me.petr1furious.potatominigames.i18n.I18n.plain(
+                                                c, Locale.forLanguageTag("ru")))
                         .toList();
         check(
                 lines.contains("Место: 1/1")
@@ -158,8 +159,10 @@ public final class PartyInteractionCheck {
                 session
                         .sidebarLines(PLAYER, net.kyori.adventure.text.Component.text("Race"))
                         .stream()
-                        .map(c ->
-                                me.petr1furious.potatominigames.i18n.I18n.plain(c, Locale.ENGLISH))
+                        .map(
+                                c ->
+                                        me.petr1furious.potatominigames.i18n.I18n.plain(
+                                                c, Locale.ENGLISH))
                         .toList();
         check(
                 english.contains("Place: 1/1")

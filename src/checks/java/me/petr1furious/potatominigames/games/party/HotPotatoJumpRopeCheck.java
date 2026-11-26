@@ -76,10 +76,14 @@ public final class HotPotatoJumpRopeCheck {
             var course = JumpRopeSweep.course(new Random(seed));
             var practice = course.getFirst();
             var opening = course.get(1);
-            check(practice.travelTicks() > opening.travelTicks(), "Practice is slower than scoring");
-            check(course.get(10).travelTicks() * 2 <= opening.travelTicks(),
+            check(
+                    practice.travelTicks() > opening.travelTicks(),
+                    "Practice is slower than scoring");
+            check(
+                    course.get(10).travelTicks() * 2 <= opening.travelTicks(),
                     "By sweep ten, the rope crosses in at most half the opening time");
-            check(course.get(6).warningTicks() <= opening.warningTicks() / 2,
+            check(
+                    course.get(6).warningTicks() <= opening.warningTicks() / 2,
                     "Warnings shorten during the first six scored passes");
             for (var pass : course) {
                 for (int direction : new int[] {-1, 1}) {
@@ -87,8 +91,11 @@ public final class HotPotatoJumpRopeCheck {
                     double last = direction * pass.position(direction, pass.travelTicks());
                     check(first < -9 && last > 9, "Every pass reaches both ends of the court");
                     for (int age = 1; age <= pass.travelTicks(); age++) {
-                        check(direction * (pass.position(direction, age)
-                                - pass.position(direction, age - 1)) > 0,
+                        check(
+                                direction
+                                                * (pass.position(direction, age)
+                                                        - pass.position(direction, age - 1))
+                                        > 0,
                                 "All paces travel monotonically without an untelegraphed reversal");
                     }
                 }
@@ -98,13 +105,15 @@ public final class HotPotatoJumpRopeCheck {
         var rush = new JumpRopeSweep.Pass(20, 12, 6, JumpRopeSweep.Pace.RUSH);
         var surge = new JumpRopeSweep.Pass(20, 12, 6, JumpRopeSweep.Pace.SURGE);
         var hesitation = new JumpRopeSweep.Pass(20, 12, 6, JumpRopeSweep.Pace.HESITATE);
-        check(rush.position(1, 10) > smooth.position(1, 10)
+        check(
+                rush.position(1, 10) > smooth.position(1, 10)
                         && surge.position(1, 10) < smooth.position(1, 10),
                 "Rush and surge have different arrival times at center court");
         double stepBefore = hesitation.position(1, 5) - hesitation.position(1, 4);
         double stepDuring = hesitation.position(1, 10) - hesitation.position(1, 9);
         double stepAfter = hesitation.position(1, 16) - hesitation.position(1, 15);
-        check(stepDuring < stepBefore * .6 && stepAfter > stepDuring * 2,
+        check(
+                stepDuring < stepBefore * .6 && stepAfter > stepDuring * 2,
                 "Some passes approach, visibly slow down, then lunge");
     }
 
@@ -120,7 +129,8 @@ public final class HotPotatoJumpRopeCheck {
             for (int stage = 0; stage < course.size(); stage++) {
                 var pass = course.get(stage);
                 total += pass.restTicks() + pass.travelTicks();
-                check(pass.restTicks() >= pass.warningTicks() && pass.warningTicks() >= 6,
+                check(
+                        pass.restTicks() >= pass.warningTicks() && pass.warningTicks() >= 6,
                         "The warning fits inside the pause and has a minimum lead time");
                 if (stage >= 12) {
                     lateRestTimes.add(pass.restTicks());
@@ -129,11 +139,16 @@ public final class HotPotatoJumpRopeCheck {
                     latePaces.add(pass.pace());
                 }
             }
-            check(total < JumpRopeSweep.durationSeconds(course) * 20L,
+            check(
+                    total < JumpRopeSweep.durationSeconds(course) * 20L,
                     "A perfect run reaches its fiftieth sweep");
-            check(latePaces.size() == 4 && lateRestTimes.size() >= 10 && lateTravelTimes.size() >= 7,
+            check(
+                    latePaces.size() == 4
+                            && lateRestTimes.size() >= 10
+                            && lateTravelTimes.size() >= 7,
                     "Late sweeps mix four pace profiles, varied travel times and different pauses");
-            check(lateLaunchIntervals.size() >= 12,
+            check(
+                    lateLaunchIntervals.size() >= 12,
                     "Late sweeps cannot be played at a constant launch period");
         }
     }
@@ -152,18 +167,27 @@ public final class HotPotatoJumpRopeCheck {
                     int direction = stage % 2 == 0 ? 1 : -1;
                     int contactTick = 1;
                     while (contactTick <= pass.travelTicks()
-                            && !JumpRopeSweep.hits(grounded, grounded,
+                            && !JumpRopeSweep.hits(
+                                    grounded,
+                                    grounded,
                                     pass.position(direction, contactTick - 1),
-                                    pass.position(direction, contactTick), 81)) contactTick++;
+                                    pass.position(direction, contactTick),
+                                    81)) contactTick++;
                     check(contactTick <= pass.travelTicks(), "The rope reaches every lane");
                     int jumpAt = contactTick - 3;
-                    check(start + jumpAt - previousJump >= 12,
+                    check(
+                            start + jumpAt - previousJump >= 12,
                             "A player can land before jumping again, even next to a gate");
                     for (int age = 1; age <= pass.travelTicks(); age++) {
                         BoundingBox from = box(0, jumpHeight(age - 1 - jumpAt), z);
                         BoundingBox to = box(0, jumpHeight(age - jumpAt), z);
-                        check(!JumpRopeSweep.hits(from, to, pass.position(direction, age - 1),
-                                        pass.position(direction, age), 81),
+                        check(
+                                !JumpRopeSweep.hits(
+                                        from,
+                                        to,
+                                        pass.position(direction, age - 1),
+                                        pass.position(direction, age),
+                                        81),
                                 "A normal jump can clear every pace throughout the court");
                     }
                     previousJump = start + jumpAt;

@@ -1,13 +1,13 @@
 package me.petr1furious.potatominigames.games.bingo.model;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public final class BoardMatch {
     private final BoardMatchType type;
@@ -15,7 +15,11 @@ public final class BoardMatch {
     private final NamespacedKey tagKey;
     private final List<Material> materials;
 
-    private BoardMatch(BoardMatchType type, Material material, NamespacedKey tagKey, List<Material> materials) {
+    private BoardMatch(
+            BoardMatchType type,
+            Material material,
+            NamespacedKey tagKey,
+            List<Material> materials) {
         this.type = type;
         this.material = material;
         this.tagKey = tagKey;

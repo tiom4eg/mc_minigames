@@ -1,10 +1,5 @@
 package me.petr1furious.potatominigames.games.finals;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.LongSupplier;
-import java.util.function.Predicate;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -12,6 +7,12 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 
 /** A hit exposes current health for this life only, after damage cancellation has settled. */
 final class FinalsHitHealth implements Listener {
@@ -33,8 +34,11 @@ final class FinalsHitHealth implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (closed || event.isCancelled() || event.getFinalDamage() <= 0
-                || !(event.getEntity() instanceof Player player) || !active.test(player)) return;
+        if (closed
+                || event.isCancelled()
+                || event.getFinalDamage() <= 0
+                || !(event.getEntity() instanceof Player player)
+                || !active.test(player)) return;
         until.put(player.getUniqueId(), clock.getAsLong() + 100);
     }
 
@@ -46,7 +50,9 @@ final class FinalsHitHealth implements Listener {
         return false;
     }
 
-    void forget(UUID id) { until.remove(id); }
+    void forget(UUID id) {
+        until.remove(id);
+    }
 
     void close() {
         closed = true;

@@ -1,12 +1,5 @@
 package me.petr1furious.potatominigames.core.player;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.logging.Level;
-
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Keyed;
@@ -25,14 +18,22 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.logging.Level;
+
 /**
- * Player snapshots and the round-start reset. Snapshots are written to
- * {@code data/snapshots/<uuid>.yml} immediately so a restart cannot lose them.
+ * Player snapshots and the round-start reset. Snapshots are written to {@code
+ * data/snapshots/<uuid>.yml} immediately so a restart cannot lose them.
  */
 public final class PlayerStateService {
     private final JavaPlugin plugin;
     private final File folder;
     private final Map<UUID, PlayerSnapshot> snapshots = new HashMap<>();
+
     /** Unreadable snapshots; their files must never be overwritten. */
     private final java.util.Set<UUID> unreadable = new java.util.HashSet<>();
 
@@ -108,7 +109,9 @@ public final class PlayerStateService {
             File old = fileFor(id);
             File aside = new File(folder, id + ".yml.unreadable-" + System.currentTimeMillis());
             if (old.renameTo(aside)) {
-                plugin.getLogger().warning("Kept the unreadable snapshot of " + id + " as " + aside.getName());
+                plugin.getLogger()
+                        .warning(
+                                "Kept the unreadable snapshot of " + id + " as " + aside.getName());
             }
         }
         YamlConfiguration yaml = new YamlConfiguration();
@@ -136,13 +139,18 @@ public final class PlayerStateService {
                 continue;
             }
             try {
-                PlayerSnapshot snapshot = PlayerSnapshot.load(YamlConfiguration.loadConfiguration(file));
+                PlayerSnapshot snapshot =
+                        PlayerSnapshot.load(YamlConfiguration.loadConfiguration(file));
                 if (snapshot != null) {
                     snapshots.put(id, snapshot);
                 } else {
                     unreadable.add(id);
                     // Kept: perhaps only its world is missing.
-                    plugin.getLogger().warning("Snapshot " + name + " is unreadable (world gone?), skipping it");
+                    plugin.getLogger()
+                            .warning(
+                                    "Snapshot "
+                                            + name
+                                            + " is unreadable (world gone?), skipping it");
                 }
             } catch (RuntimeException exception) {
                 // e.g. an unknown world; the file is left untouched.
@@ -170,7 +178,8 @@ public final class PlayerStateService {
         player.setVelocity(new Vector(0, 0, 0));
         player.setRemainingAir(player.getMaximumAir());
         player.setArrowsInBody(0);
-        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+        player.getActivePotionEffects()
+                .forEach(effect -> player.removePotionEffect(effect.getType()));
 
         PlayerInventory inventory = player.getInventory();
         inventory.clear();
@@ -184,7 +193,8 @@ public final class PlayerStateService {
         player.removePotionEffect(PotionEffectType.BLINDNESS);
         if (blindnessSeconds > 0) {
             player.addPotionEffect(
-                    new PotionEffect(PotionEffectType.BLINDNESS, blindnessSeconds * 20, 0, false, false));
+                    new PotionEffect(
+                            PotionEffectType.BLINDNESS, blindnessSeconds * 20, 0, false, false));
         }
     }
 

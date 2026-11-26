@@ -1,20 +1,20 @@
 package me.petr1furious.potatominigames.core.preset;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Locale;
-import java.util.UUID;
-import java.util.regex.Pattern;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
+import me.petr1furious.potatominigames.i18n.I18n;
 
 import net.kyori.adventure.nbt.BinaryTagIO;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.kyori.adventure.nbt.TagStringIO;
 
-import me.petr1furious.potatominigames.i18n.I18n;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 /** Shared identity for a saved minigame mode; its settings belong to the game. */
 public record GamePreset<T>(UUID owner, String ownerName, String name, String icon, T settings) {
@@ -49,7 +49,10 @@ public record GamePreset<T>(UUID owner, String ownerName, String name, String ic
         if (spec.length() > ICON_LENGTH) throw I18n.exception("core.preset.invalid_icon");
         if (spec.equals(DEFAULT_ICON)) return new ItemStack(Material.BEDROCK);
         try {
-            ItemStack item = spec.startsWith("{") ? fromSnbt(spec) : Bukkit.getItemFactory().createItemStack(spec);
+            ItemStack item =
+                    spec.startsWith("{")
+                            ? fromSnbt(spec)
+                            : Bukkit.getItemFactory().createItemStack(spec);
             if (!item.isEmpty()) {
                 item.setAmount(1);
                 return item;
@@ -63,7 +66,11 @@ public record GamePreset<T>(UUID owner, String ownerName, String name, String ic
     private static ItemStack fromSnbt(String spec) throws IOException {
         CompoundBinaryTag tag = TagStringIO.tagStringIO().asCompound(spec);
         if (!tag.keySet().contains("DataVersion")) {
-            tag = CompoundBinaryTag.builder().put(tag).putInt("DataVersion", Bukkit.getUnsafe().getDataVersion()).build();
+            tag =
+                    CompoundBinaryTag.builder()
+                            .put(tag)
+                            .putInt("DataVersion", Bukkit.getUnsafe().getDataVersion())
+                            .build();
         }
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         BinaryTagIO.writer().write(tag, bytes, BinaryTagIO.Compression.GZIP);

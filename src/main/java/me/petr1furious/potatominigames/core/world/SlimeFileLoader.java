@@ -1,5 +1,8 @@
 package me.petr1furious.potatominigames.core.world;
 
+import com.infernalsuite.asp.api.exceptions.UnknownWorldException;
+import com.infernalsuite.asp.api.loaders.SlimeLoader;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -7,10 +10,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.infernalsuite.asp.api.exceptions.UnknownWorldException;
-import com.infernalsuite.asp.api.loaders.SlimeLoader;
-
-/** {@code <name>.slime} files in ASP's layout, so templates are read on demand instead of kept loaded. */
+/**
+ * {@code <name>.slime} files in ASP's layout, so templates are read on demand instead of kept
+ * loaded.
+ */
 public final class SlimeFileLoader implements SlimeLoader {
     private static final String EXTENSION = ".slime";
 
@@ -44,7 +47,8 @@ public final class SlimeFileLoader implements SlimeLoader {
         File[] files = folder.listFiles((dir, name) -> name.endsWith(EXTENSION));
         if (files != null) {
             for (File file : files) {
-                names.add(file.getName().substring(0, file.getName().length() - EXTENSION.length()));
+                names.add(
+                        file.getName().substring(0, file.getName().length() - EXTENSION.length()));
             }
         }
         return names;
@@ -56,7 +60,10 @@ public final class SlimeFileLoader implements SlimeLoader {
         // Atomic replace, so a crash never leaves a half-written template.
         File temporary = new File(folder, "." + worldName + EXTENSION + ".tmp");
         Files.write(temporary.toPath(), bytes);
-        Files.move(temporary.toPath(), fileFor(worldName).toPath(), StandardCopyOption.REPLACE_EXISTING,
+        Files.move(
+                temporary.toPath(),
+                fileFor(worldName).toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
                 StandardCopyOption.ATOMIC_MOVE);
     }
 

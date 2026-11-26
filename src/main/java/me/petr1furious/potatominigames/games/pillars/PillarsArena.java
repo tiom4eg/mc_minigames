@@ -9,12 +9,11 @@ import java.util.Locale;
 import java.util.Map;
 
 /** Slime template keeps the original world's coordinates; each game uses a throwaway copy. */
-public record PillarsArena(String name, String template, double x, double z, Map<String, Object> gameRules) {
-
+public record PillarsArena(
+        String name, String template, double x, double z, Map<String, Object> gameRules) {
 
     /** Default template: {@code slime_worlds/pillars_<name>.slime}. */
     public static String templateFor(String arenaName) {
         return "pillars_" + arenaName.toLowerCase(Locale.ROOT);
     }
-
 }

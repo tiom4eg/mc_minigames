@@ -1,20 +1,27 @@
 package me.petr1furious.potatominigames.core.queue;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
+
+import me.petr1furious.potatominigames.core.command.CommandFailure;
+import me.petr1furious.potatominigames.core.config.ConfigRegistry;
+import me.petr1furious.potatominigames.core.config.Property;
+import me.petr1furious.potatominigames.core.config.PropertyBag;
+import me.petr1furious.potatominigames.core.config.PropertyCodec;
+import me.petr1furious.potatominigames.core.game.Ballot;
+import me.petr1furious.potatominigames.core.game.Minigame;
+import me.petr1furious.potatominigames.core.lobby.LobbyService;
+import me.petr1furious.potatominigames.core.session.ActiveSession;
+import me.petr1furious.potatominigames.core.session.SessionManager;
+import me.petr1furious.potatominigames.core.team.TeamColor;
+import me.petr1furious.potatominigames.core.text.Messages;
 import me.petr1furious.potatominigames.i18n.I18n;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.title.Title;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -30,38 +37,31 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import io.papermc.paper.event.player.AsyncChatEvent;
-
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.title.Title;
-
-import me.petr1furious.potatominigames.core.command.CommandFailure;
-import me.petr1furious.potatominigames.core.config.ConfigRegistry;
-import me.petr1furious.potatominigames.core.config.Property;
-import me.petr1furious.potatominigames.core.config.PropertyBag;
-import me.petr1furious.potatominigames.core.config.PropertyCodec;
-import me.petr1furious.potatominigames.core.game.Ballot;
-import me.petr1furious.potatominigames.core.game.Minigame;
-import me.petr1furious.potatominigames.core.lobby.LobbyService;
-import me.petr1furious.potatominigames.core.session.ActiveSession;
-import me.petr1furious.potatominigames.core.session.SessionManager;
-import me.petr1furious.potatominigames.core.team.TeamColor;
-import me.petr1furious.potatominigames.core.text.Messages;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * One auto-starting queue per game and mode; a player is in at most one.
  *
- * <p>At its minimum a queue counts down from {@code countdownSeconds}, shortened (never
- * lengthened) to {@code everyoneQueuedSeconds} when every free player is in it and to
- * {@code voteSeconds} on a start vote (all but one of 3+, both of 2, the only one of 1).
- * Dropping below the minimum cancels it.
+ * <p>At its minimum a queue counts down from {@code countdownSeconds}, shortened (never lengthened)
+ * to {@code everyoneQueuedSeconds} when every free player is in it and to {@code voteSeconds} on a
+ * start vote (all but one of 3+, both of 2, the only one of 1). Dropping below the minimum cancels
+ * it.
  *
- * <p>A game type runs one session at a time: joining a running game spectates, and on
- * start everyone left in any of its queues becomes a spectator.
+ * <p>A game type runs one session at a time: joining a running game spectates, and on start
+ * everyone left in any of its queues becomes a spectator.
  */
 public final class QueueService implements Listener {
     private java.util.function.BiConsumer<Player, Queue> afterOnboarding = (player, queue) -> {};
@@ -69,8 +69,11 @@ public final class QueueService implements Listener {
     public void setAfterOnboarding(java.util.function.BiConsumer<Player, Queue> callback) {
         afterOnboarding = callback;
     }
+
     private static final Messages QUEUE =
-            new Messages(Bukkit::getServer, Messages.tag(I18n.tr("core.queue.tag").color(NamedTextColor.YELLOW)));
+            new Messages(
+                    Bukkit::getServer,
+                    Messages.tag(I18n.tr("core.queue.tag").color(NamedTextColor.YELLOW)));
 
     private static final Title.Times COUNTDOWN_TITLE_TIMES =
             Title.Times.times(Duration.ZERO, Duration.ofMillis(900), Duration.ofMillis(200));
@@ -84,8 +87,10 @@ public final class QueueService implements Listener {
         private final Set<UUID> members = new LinkedHashSet<>();
         private final Set<UUID> votes = new LinkedHashSet<>();
         private final Map<UUID, TeamColor> teamPicks = new LinkedHashMap<>();
+
         /** Ballot key to votes; no entry means any. */
         private final Map<String, Map<UUID, String>> ballotVotes = new LinkedHashMap<>();
+
         /** Seconds left, or null while not counting down. */
         private Integer countdown;
 
@@ -140,7 +145,9 @@ public final class QueueService implements Listener {
 
         /** "3/16" or "3" for a queue without a maximum. */
         public String countText() {
-            return maxPlayers() > 0 ? members.size() + "/" + maxPlayers() : String.valueOf(members.size());
+            return maxPlayers() > 0
+                    ? members.size() + "/" + maxPlayers()
+                    : String.valueOf(members.size());
         }
 
         public int votesNeeded() {
@@ -169,22 +176,28 @@ public final class QueueService implements Listener {
         /** Online members who picked this colour, in pick order. */
         public List<Player> pickedBy(TeamColor color) {
             List<Player> result = new ArrayList<>();
-            teamPicks.forEach((id, pick) -> {
-                Player player = Bukkit.getPlayer(id);
-                if (pick == color && player != null) {
-                    result.add(player);
-                }
-            });
+            teamPicks.forEach(
+                    (id, pick) -> {
+                        Player player = Bukkit.getPlayer(id);
+                        if (pick == color && player != null) {
+                            result.add(player);
+                        }
+                    });
             return result;
         }
 
         /** The game's ballots with at least two choices, in menu order. */
         public List<Ballot> ballots() {
-            return game.ballots(mode).stream().filter(ballot -> ballot.choices().get().size() >= 2).toList();
+            return game.ballots(mode).stream()
+                    .filter(ballot -> ballot.choices().get().size() >= 2)
+                    .toList();
         }
 
         public Ballot ballot(String key) {
-            return ballots().stream().filter(ballot -> ballot.key().equals(key)).findFirst().orElse(null);
+            return ballots().stream()
+                    .filter(ballot -> ballot.key().equals(key))
+                    .findFirst()
+                    .orElse(null);
         }
 
         /** Null for any. */
@@ -196,16 +209,22 @@ public final class QueueService implements Listener {
         /** Online members who voted for this choice, in vote order. */
         public List<Player> votedFor(String key, String choice) {
             List<Player> result = new ArrayList<>();
-            ballotVotes.getOrDefault(key, Map.of()).forEach((id, vote) -> {
-                Player player = Bukkit.getPlayer(id);
-                if (vote.equals(choice) && player != null) {
-                    result.add(player);
-                }
-            });
+            ballotVotes
+                    .getOrDefault(key, Map.of())
+                    .forEach(
+                            (id, vote) -> {
+                                Player player = Bukkit.getPlayer(id);
+                                if (vote.equals(choice) && player != null) {
+                                    result.add(player);
+                                }
+                            });
             return result;
         }
 
-        /** The ballot's fallback if it is one of the choices; for an ordered ballot, else the middle one. */
+        /**
+         * The ballot's fallback if it is one of the choices; for an ordered ballot, else the middle
+         * one.
+         */
         private String fallback(Ballot ballot, List<String> choices) {
             String fallback = ballot.fallback() == null ? null : ballot.fallback().get();
             if (fallback != null && !choices.contains(fallback)) {
@@ -217,16 +236,21 @@ public final class QueueService implements Listener {
         /** The most-voted choices, in menu order; all of them without votes. */
         private List<String> mostVoted(Ballot ballot, List<String> choices) {
             Map<String, Integer> counts = new HashMap<>();
-            ballotVotes.getOrDefault(ballot.key(), Map.of()).forEach((id, vote) -> {
-                if (members.contains(id) && choices.contains(vote)) {
-                    counts.merge(vote, 1, Integer::sum);
-                }
-            });
+            ballotVotes
+                    .getOrDefault(ballot.key(), Map.of())
+                    .forEach(
+                            (id, vote) -> {
+                                if (members.contains(id) && choices.contains(vote)) {
+                                    counts.merge(vote, 1, Integer::sum);
+                                }
+                            });
             if (counts.isEmpty()) {
                 return choices;
             }
             int best = counts.values().stream().max(Integer::compare).orElseThrow();
-            return choices.stream().filter(choice -> counts.getOrDefault(choice, 0) == best).toList();
+            return choices.stream()
+                    .filter(choice -> counts.getOrDefault(choice, 0) == best)
+                    .toList();
         }
 
         /**
@@ -256,7 +280,9 @@ public final class QueueService implements Listener {
                 return leading;
             }
             List<String> tied = mostVoted(ballot, ballot.choices().get());
-            return tied.isEmpty() ? null : tied.get(ThreadLocalRandom.current().nextInt(tied.size()));
+            return tied.isEmpty()
+                    ? null
+                    : tied.get(ThreadLocalRandom.current().nextInt(tied.size()));
         }
 
         /** "hard" / "random"; what the ballot would pick now. */
@@ -267,7 +293,9 @@ public final class QueueService implements Listener {
 
         public Component leadingComponent(Ballot ballot) {
             String leading = leading(ballot);
-            return leading != null ? ballot.choiceComponent(leading) : I18n.tr("common.choice.random");
+            return leading != null
+                    ? ballot.choiceComponent(leading)
+                    : I18n.tr("common.choice.random");
         }
     }
 
@@ -279,14 +307,18 @@ public final class QueueService implements Listener {
     private final LobbyService lobby;
 
     private final PropertyBag config = new PropertyBag("queue");
-    private final Property<Integer> countdownSeconds = config.define("countdownSeconds", PropertyCodec.INT, 60);
+    private final Property<Integer> countdownSeconds =
+            config.define("countdownSeconds", PropertyCodec.INT, 60);
     private final Property<Integer> everyoneQueuedSeconds =
             config.define("everyoneQueuedSeconds", PropertyCodec.INT, 15);
-    private final Property<Integer> voteSeconds = config.define("voteSeconds", PropertyCodec.INT, 5);
-    private final Property<Integer> afkSeconds = config.define("afkSeconds", PropertyCodec.INT, 300);
+    private final Property<Integer> voteSeconds =
+            config.define("voteSeconds", PropertyCodec.INT, 5);
+    private final Property<Integer> afkSeconds =
+            config.define("afkSeconds", PropertyCodec.INT, 300);
 
     private final Map<String, Queue> queues = new LinkedHashMap<>();
     private final Map<UUID, Queue> byPlayer = new LinkedHashMap<>();
+
     /** Last time each player did something; written from the async chat thread too. */
     private final Map<UUID, Long> lastActivity = new ConcurrentHashMap<>();
 
@@ -307,12 +339,13 @@ public final class QueueService implements Listener {
         }
         sessions.addStartListener(this::onGameStarted);
         // Any way into a game (admin join, spectating) removes them from queues.
-        sessions.addJoinListener(player -> {
-            Queue queue = byPlayer.get(player.getUniqueId());
-            if (queue != null) {
-                remove(player, queue);
-            }
-        });
+        sessions.addJoinListener(
+                player -> {
+                    Queue queue = byPlayer.get(player.getUniqueId());
+                    if (queue != null) {
+                        remove(player, queue);
+                    }
+                });
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
     }
 
@@ -320,18 +353,22 @@ public final class QueueService implements Listener {
     public void refreshQueues(Minigame game, ConfigRegistry configs) {
         List<String> modes = game.modes();
         for (Queue queue : queues.values()) {
-            if (queue.game == game && !modes.contains(queue.mode) && isModeInUse(game, queue.mode)) {
+            if (queue.game == game
+                    && !modes.contains(queue.mode)
+                    && isModeInUse(game, queue.mode)) {
                 throw new IllegalStateException("Cannot remove a queue in use: " + queue.mode);
             }
         }
-        queues.entrySet().removeIf(entry -> {
-            Queue queue = entry.getValue();
-            if (queue.game != game || modes.contains(queue.mode)) {
-                return false;
-            }
-            configs.unregister("queues." + game.id() + "." + queue.mode);
-            return true;
-        });
+        queues.entrySet()
+                .removeIf(
+                        entry -> {
+                            Queue queue = entry.getValue();
+                            if (queue.game != game || modes.contains(queue.mode)) {
+                                return false;
+                            }
+                            configs.unregister("queues." + game.id() + "." + queue.mode);
+                            return true;
+                        });
         for (String mode : modes) {
             String key = game.id() + "." + mode;
             if (!queues.containsKey(key)) {
@@ -346,7 +383,9 @@ public final class QueueService implements Listener {
     public boolean isModeInUse(Minigame game, String mode) {
         Queue queue = queues.get(game.id() + "." + mode);
         return (queue != null && queue.size() > 0)
-                || sessions.sessionOf(game).map(session -> session.mode().equals(mode)).orElse(false);
+                || sessions.sessionOf(game)
+                        .map(session -> session.mode().equals(mode))
+                        .orElse(false);
     }
 
     public List<Queue> visibleQueues() {
@@ -373,16 +412,20 @@ public final class QueueService implements Listener {
         }
         Optional<ActiveSession> current = sessions.sessionOf(player);
         if (current.isPresent() && current.get().isParticipant(player)) {
-            throw new CommandFailure(I18n.tr("core.queue.already_playing", current.get().displayName()));
+            throw new CommandFailure(
+                    I18n.tr("core.queue.already_playing", current.get().displayName()));
         }
-        if (queue.game.beforeQueue(player, () -> {
-            try {
-                join(player, queue);
-                if (queue.contains(player.getUniqueId())) afterOnboarding.accept(player, queue);
-            } catch (CommandFailure failure) {
-                player.sendMessage(failure.text());
-            }
-        })) return;
+        if (queue.game.beforeQueue(
+                player,
+                () -> {
+                    try {
+                        join(player, queue);
+                        if (queue.contains(player.getUniqueId()))
+                            afterOnboarding.accept(player, queue);
+                    } catch (CommandFailure failure) {
+                        player.sendMessage(failure.text());
+                    }
+                })) return;
         touch(player);
 
         Optional<ActiveSession> running = sessions.sessionOf(queue.game);
@@ -404,24 +447,33 @@ public final class QueueService implements Listener {
         queue.members.add(player.getUniqueId());
         byPlayer.put(player.getUniqueId(), queue);
 
-        QUEUE.send(player, I18n.tr("core.queue.joined", queue.displayName(), queue.countText(), memberButtons(queue))
-                .color(NamedTextColor.GREEN));
+        QUEUE.send(
+                player,
+                I18n.tr(
+                                "core.queue.joined",
+                                queue.displayName(),
+                                queue.countText(),
+                                memberButtons(queue))
+                        .color(NamedTextColor.GREEN));
         announce(queue, player, true);
     }
 
     /** Explicit spectator entry does not depend on an enabled queue. */
     public void spectate(Player player, Minigame game) throws CommandFailure {
-        ActiveSession running = sessions.sessionOf(game)
-                .orElseThrow(() -> new CommandFailure(I18n.tr("core.session.not_running")));
+        ActiveSession running =
+                sessions.sessionOf(game)
+                        .orElseThrow(() -> new CommandFailure(I18n.tr("core.session.not_running")));
         Optional<ActiveSession> current = sessions.sessionOf(player);
         if (current.isPresent() && current.get().isParticipant(player)) {
-            throw new CommandFailure(I18n.tr("core.queue.already_playing", current.get().displayName()));
+            throw new CommandFailure(
+                    I18n.tr("core.queue.already_playing", current.get().displayName()));
         }
         touch(player);
         transferSpectator(player, running, current);
     }
 
-    private void transferSpectator(Player player, ActiveSession running, Optional<ActiveSession> current)
+    private void transferSpectator(
+            Player player, ActiveSession running, Optional<ActiveSession> current)
             throws CommandFailure {
         if (current.isPresent() && current.get() == running) {
             throw new CommandFailure(I18n.tr("core.queue.already_spectating"));
@@ -458,8 +510,13 @@ public final class QueueService implements Listener {
             throw new CommandFailure(I18n.tr("core.queue.already_start_voted"));
         }
         touch(player);
-        Component line = I18n.tr("core.queue.start_vote", Component.text(player.getName(), NamedTextColor.AQUA),
-                queue.votesCast(), queue.votesNeeded()).color(NamedTextColor.GRAY);
+        Component line =
+                I18n.tr(
+                                "core.queue.start_vote",
+                                Component.text(player.getName(), NamedTextColor.AQUA),
+                                queue.votesCast(),
+                                queue.votesNeeded())
+                        .color(NamedTextColor.GRAY);
         for (Player member : online(queue)) {
             QUEUE.send(member, line);
         }
@@ -481,15 +538,24 @@ public final class QueueService implements Listener {
     public void pickTeam(Player player, TeamColor color) throws CommandFailure {
         Queue queue = requireTeamQueue(player);
         if (!queue.teamColors().contains(color)) {
-            throw new CommandFailure(I18n.tr("core.queue.color_unavailable", color.displayNameComponent(), queue.displayName()));
+            throw new CommandFailure(
+                    I18n.tr(
+                            "core.queue.color_unavailable",
+                            color.displayNameComponent(),
+                            queue.displayName()));
         }
         if (queue.teamPicks.get(player.getUniqueId()) == color) {
             throw new CommandFailure(I18n.tr("core.queue.already_team_picked"));
         }
         touch(player);
         queue.teamPicks.put(player.getUniqueId(), color);
-        announcePick(queue, I18n.tr("core.queue.team_picked", Component.text(player.getName(), NamedTextColor.AQUA),
-                color.displayNameComponent()).color(NamedTextColor.GRAY));
+        announcePick(
+                queue,
+                I18n.tr(
+                                "core.queue.team_picked",
+                                Component.text(player.getName(), NamedTextColor.AQUA),
+                                color.displayNameComponent())
+                        .color(NamedTextColor.GRAY));
     }
 
     /** Back to auto-balancing. */
@@ -499,8 +565,12 @@ public final class QueueService implements Listener {
             throw new CommandFailure(I18n.tr("core.queue.no_team_picked"));
         }
         touch(player);
-        announcePick(queue, I18n.tr("core.queue.auto_balanced", Component.text(player.getName(), NamedTextColor.AQUA))
-                .color(NamedTextColor.GRAY));
+        announcePick(
+                queue,
+                I18n.tr(
+                                "core.queue.auto_balanced",
+                                Component.text(player.getName(), NamedTextColor.AQUA))
+                        .color(NamedTextColor.GRAY));
     }
 
     /** The player's queue, if it votes on this ballot. */
@@ -510,11 +580,14 @@ public final class QueueService implements Listener {
             throw new CommandFailure(I18n.tr("core.queue.join_first"));
         }
         if (queue.ballot(key) == null) {
-            throw new CommandFailure(I18n.tr("core.queue.no_ballot", switch (key) {
-                case "difficulty" -> I18n.tr("core.ballot.difficulty");
-                case "map" -> I18n.tr("core.ballot.map");
-                default -> Component.text(key);
-            }));
+            throw new CommandFailure(
+                    I18n.tr(
+                            "core.queue.no_ballot",
+                            switch (key) {
+                                case "difficulty" -> I18n.tr("core.ballot.difficulty");
+                                case "map" -> I18n.tr("core.ballot.map");
+                                default -> Component.text(key);
+                            }));
         }
         return queue;
     }
@@ -526,13 +599,29 @@ public final class QueueService implements Listener {
         List<String> choices = ballot.choices().get();
         String picked = null;
         if (choice != null) {
-            picked = choices.stream().filter(option -> option.equalsIgnoreCase(choice)).findFirst()
-                    .orElseThrow(() -> new CommandFailure(I18n.tr("core.ballot.unknown_choice", ballot.titleComponent(),
-                            choice, String.join(", ", choices) + ", " + Ballot.ANY)));
+            picked =
+                    choices.stream()
+                            .filter(option -> option.equalsIgnoreCase(choice))
+                            .findFirst()
+                            .orElseThrow(
+                                    () ->
+                                            new CommandFailure(
+                                                    I18n.tr(
+                                                            "core.ballot.unknown_choice",
+                                                            ballot.titleComponent(),
+                                                            choice,
+                                                            String.join(", ", choices)
+                                                                    + ", "
+                                                                    + Ballot.ANY)));
         }
-        Map<UUID, String> votes = queue.ballotVotes.computeIfAbsent(key, ignored -> new LinkedHashMap<>());
+        Map<UUID, String> votes =
+                queue.ballotVotes.computeIfAbsent(key, ignored -> new LinkedHashMap<>());
         if (Objects.equals(votes.get(player.getUniqueId()), picked)) {
-            throw new CommandFailure(I18n.tr(picked == null ? "core.ballot.already_any" : "core.ballot.already_voted"));
+            throw new CommandFailure(
+                    I18n.tr(
+                            picked == null
+                                    ? "core.ballot.already_any"
+                                    : "core.ballot.already_voted"));
         }
         touch(player);
         if (picked == null) {
@@ -540,9 +629,15 @@ public final class QueueService implements Listener {
         } else {
             votes.put(player.getUniqueId(), picked);
         }
-        announcePick(queue, I18n.tr("core.ballot.voted", Component.text(player.getName(), NamedTextColor.AQUA),
-                ballot.titleComponent(), ballot.choiceComponent(picked).color(NamedTextColor.WHITE),
-                queue.leadingComponent(ballot)).color(NamedTextColor.GRAY));
+        announcePick(
+                queue,
+                I18n.tr(
+                                "core.ballot.voted",
+                                Component.text(player.getName(), NamedTextColor.AQUA),
+                                ballot.titleComponent(),
+                                ballot.choiceComponent(picked).color(NamedTextColor.WHITE),
+                                queue.leadingComponent(ballot))
+                        .color(NamedTextColor.GRAY));
     }
 
     private void announcePick(Queue queue, Component line) {
@@ -554,7 +649,8 @@ public final class QueueService implements Listener {
     /** Ignores the minimum and timers. */
     public void forceStart(Queue queue) throws CommandFailure {
         if (sessions.sessionOf(queue.game).isPresent()) {
-            throw new CommandFailure(I18n.tr("core.session.already_running", queue.game.displayName()));
+            throw new CommandFailure(
+                    I18n.tr("core.session.already_running", queue.game.displayName()));
         }
         if (online(queue).isEmpty()) {
             throw new CommandFailure(I18n.tr("core.queue.empty"));
@@ -580,7 +676,9 @@ public final class QueueService implements Listener {
                     if (now - lastActivity.getOrDefault(member.getUniqueId(), now) > afkMillis) {
                         remove(member, queue);
                         lobby.leaveQueue(member);
-                        QUEUE.send(member, I18n.tr("core.queue.afk_removed").color(NamedTextColor.YELLOW));
+                        QUEUE.send(
+                                member,
+                                I18n.tr("core.queue.afk_removed").color(NamedTextColor.YELLOW));
                     }
                 }
             }
@@ -618,10 +716,12 @@ public final class QueueService implements Listener {
             if (queue.members.contains(player.getUniqueId()) || sessions.isBusy(player)) {
                 continue;
             }
-            if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) {
+            if (player.getGameMode() == GameMode.CREATIVE
+                    || player.getGameMode() == GameMode.SPECTATOR) {
                 continue;
             }
-            if (afkMillis > 0 && now - lastActivity.getOrDefault(player.getUniqueId(), now) > afkMillis) {
+            if (afkMillis > 0
+                    && now - lastActivity.getOrDefault(player.getUniqueId(), now) > afkMillis) {
                 continue;
             }
             return false;
@@ -656,8 +756,12 @@ public final class QueueService implements Listener {
         try {
             sessions.start(queue.game, queue.mode, roster, picks, true, options);
         } catch (CommandFailure failure) {
-            plugin.getLogger().warning("Queued " + queue.game.id() + " could not start: "
-                    + I18n.plain(failure.text(), Locale.ENGLISH));
+            plugin.getLogger()
+                    .warning(
+                            "Queued "
+                                    + queue.game.id()
+                                    + " could not start: "
+                                    + I18n.plain(failure.text(), Locale.ENGLISH));
             // Requeue at the front with a full countdown.
             List<UUID> rest = new ArrayList<>(queue.members);
             queue.members.clear();
@@ -667,14 +771,20 @@ public final class QueueService implements Listener {
                 player.sendMessage(failure.text());
             }
             queue.teamPicks.putAll(picks);
-            ballotVotes.forEach((key, votes) -> votes.forEach(
-                    queue.ballotVotes.computeIfAbsent(key, ignored -> new LinkedHashMap<>())::putIfAbsent));
+            ballotVotes.forEach(
+                    (key, votes) ->
+                            votes.forEach(
+                                    queue.ballotVotes.computeIfAbsent(
+                                                    key, ignored -> new LinkedHashMap<>())
+                                            ::putIfAbsent));
             queue.members.addAll(rest);
             queue.countdown = countdownSeconds.get();
         }
     }
 
-    /** Leftover queuers spectate; the game's players leave any queue (admins can start with anyone). */
+    /**
+     * Leftover queuers spectate; the game's players leave any queue (admins can start with anyone).
+     */
     private void onGameStarted(ActiveSession session) {
         for (Player player : session.participants().onlinePlayers()) {
             Queue queue = byPlayer.get(player.getUniqueId());
@@ -746,17 +856,28 @@ public final class QueueService implements Listener {
     }
 
     private void announce(Queue queue, Player who, boolean joined) {
-        Component line = I18n.tr(joined ? "core.queue.player_joined" : "core.queue.player_left",
-                Component.text(who.getName(), NamedTextColor.AQUA), queue.displayName(), queue.countText(),
-                button(I18n.tr("core.button.join"), queue.command(), I18n.tr("core.button.join_queue")))
-                .color(NamedTextColor.GRAY);
+        Component line =
+                I18n.tr(
+                                joined ? "core.queue.player_joined" : "core.queue.player_left",
+                                Component.text(who.getName(), NamedTextColor.AQUA),
+                                queue.displayName(),
+                                queue.countText(),
+                                button(
+                                        I18n.tr("core.button.join"),
+                                        queue.command(),
+                                        I18n.tr("core.button.join_queue")))
+                        .color(NamedTextColor.GRAY);
         for (Player player : freePlayers()) {
             if (player != who) {
                 QUEUE.send(player, line);
             }
         }
-        Component memberLine = I18n.tr(joined ? "core.queue.member_joined" : "core.queue.member_left",
-                Component.text(who.getName(), NamedTextColor.AQUA), queue.countText()).color(NamedTextColor.GRAY);
+        Component memberLine =
+                I18n.tr(
+                                joined ? "core.queue.member_joined" : "core.queue.member_left",
+                                Component.text(who.getName(), NamedTextColor.AQUA),
+                                queue.countText())
+                        .color(NamedTextColor.GRAY);
         for (Player member : online(queue)) {
             if (member != who) {
                 QUEUE.send(member, memberLine);
@@ -765,23 +886,43 @@ public final class QueueService implements Listener {
     }
 
     private void announceCountdown(Queue queue) {
-        Component members = I18n.tr("core.queue.countdown_members", queue.displayName(), queue.countdown,
-                ballotSuffix(queue, ", "), memberButtons(queue)).color(NamedTextColor.GREEN);
+        Component members =
+                I18n.tr(
+                                "core.queue.countdown_members",
+                                queue.displayName(),
+                                queue.countdown,
+                                ballotSuffix(queue, ", "),
+                                memberButtons(queue))
+                        .color(NamedTextColor.GREEN);
         for (Player member : online(queue)) {
             QUEUE.send(member, members);
         }
-        Component others = I18n.tr("core.queue.countdown_others", queue.displayName(), queue.countdown,
-                queue.countText(), ballotSuffix(queue, ", "),
-                button(I18n.tr("core.button.join"), queue.command(), I18n.tr("core.button.join_queue")))
-                .color(NamedTextColor.GRAY);
+        Component others =
+                I18n.tr(
+                                "core.queue.countdown_others",
+                                queue.displayName(),
+                                queue.countdown,
+                                queue.countText(),
+                                ballotSuffix(queue, ", "),
+                                button(
+                                        I18n.tr("core.button.join"),
+                                        queue.command(),
+                                        I18n.tr("core.button.join_queue")))
+                        .color(NamedTextColor.GRAY);
         for (Player player : freePlayers()) {
             QUEUE.send(player, others);
         }
     }
 
     private void showWaiting(Queue queue) {
-        Component bar = I18n.tr("core.queue.waiting_bar", queue.displayName(), queue.members.size(),
-                queue.minPlayers(), ballotSuffix(queue, " • ")).color(NamedTextColor.GRAY);
+        Component bar =
+                I18n.tr(
+                                "core.queue.waiting_bar",
+                                queue.displayName(),
+                                queue.members.size(),
+                                queue.minPlayers(),
+                                ballotSuffix(queue, " • "))
+                        .color(NamedTextColor.GRAY);
         for (Player member : online(queue)) {
             member.sendActionBar(bar);
         }
@@ -789,15 +930,29 @@ public final class QueueService implements Listener {
 
     private void showCountdown(Queue queue) {
         int seconds = queue.countdown;
-        Component bar = I18n.tr("core.queue.countdown_bar", queue.displayName(), queue.countText(), seconds,
-                queue.votesCast(), queue.votesNeeded(), ballotSuffix(queue, " • ")).color(NamedTextColor.GRAY);
+        Component bar =
+                I18n.tr(
+                                "core.queue.countdown_bar",
+                                queue.displayName(),
+                                queue.countText(),
+                                seconds,
+                                queue.votesCast(),
+                                queue.votesNeeded(),
+                                ballotSuffix(queue, " • "))
+                        .color(NamedTextColor.GRAY);
         for (Player member : online(queue)) {
             member.sendActionBar(bar);
             if (seconds <= 5) {
-                member.showTitle(Title.title(
-                        Component.text(String.valueOf(seconds), seconds <= 3 ? NamedTextColor.RED
-                                : NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                        queue.displayName(), COUNTDOWN_TITLE_TIMES));
+                member.showTitle(
+                        Title.title(
+                                Component.text(
+                                                String.valueOf(seconds),
+                                                seconds <= 3
+                                                        ? NamedTextColor.RED
+                                                        : NamedTextColor.YELLOW)
+                                        .decorate(TextDecoration.BOLD),
+                                queue.displayName(),
+                                COUNTDOWN_TITLE_TIMES));
                 member.playSound(member.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.5f, 1.0f);
             }
         }
@@ -807,31 +962,56 @@ public final class QueueService implements Listener {
     private static Component ballotSuffix(Queue queue, String separator) {
         var suffix = Component.text();
         for (Ballot ballot : queue.ballots()) {
-            suffix.append(Component.text(separator)).append(I18n.tr("core.ballot.summary",
-                    ballot.titleComponent(), queue.leadingComponent(ballot)));
+            suffix.append(Component.text(separator))
+                    .append(
+                            I18n.tr(
+                                    "core.ballot.summary",
+                                    ballot.titleComponent(),
+                                    queue.leadingComponent(ballot)));
         }
         return suffix.build();
     }
 
-    /** [Vote start] [Difficulty] [Map] [Pick team] [Leave]; the pick buttons only where there is something to pick. */
+    /**
+     * [Vote start] [Difficulty] [Map] [Pick team] [Leave]; the pick buttons only where there is
+     * something to pick.
+     */
     private static Component memberButtons(Queue queue) {
-        var buttons = Component.text()
-                .append(button(I18n.tr("core.button.vote_start"), "/play vote", I18n.tr("core.button.vote_start_hover")))
-                .append(Component.space());
+        var buttons =
+                Component.text()
+                        .append(
+                                button(
+                                        I18n.tr("core.button.vote_start"),
+                                        "/play vote",
+                                        I18n.tr("core.button.vote_start_hover")))
+                        .append(Component.space());
         for (Ballot ballot : queue.ballots()) {
-            buttons.append(button(ballot.titleComponent(), "/play " + ballot.key(),
-                            I18n.tr("core.button.vote_ballot", ballot.titleComponent())))
+            buttons.append(
+                            button(
+                                    ballot.titleComponent(),
+                                    "/play " + ballot.key(),
+                                    I18n.tr("core.button.vote_ballot", ballot.titleComponent())))
                     .append(Component.space());
         }
         if (!queue.teamColors().isEmpty()) {
-            buttons.append(button(I18n.tr("core.button.pick_team"), "/play team", I18n.tr("core.button.pick_team_hover")))
+            buttons.append(
+                            button(
+                                    I18n.tr("core.button.pick_team"),
+                                    "/play team",
+                                    I18n.tr("core.button.pick_team_hover")))
                     .append(Component.space());
         }
-        return buttons.append(button(I18n.tr("core.button.leave"), "/play leave", I18n.tr("core.button.leave_queue"))).build();
+        return buttons.append(
+                        button(
+                                I18n.tr("core.button.leave"),
+                                "/play leave",
+                                I18n.tr("core.button.leave_queue")))
+                .build();
     }
 
     private static Component button(Component label, String command, Component hover) {
-        return I18n.tr("core.button.bracket", label).color(NamedTextColor.AQUA)
+        return I18n.tr("core.button.bracket", label)
+                .color(NamedTextColor.AQUA)
                 .clickEvent(ClickEvent.runCommand(command))
                 .hoverEvent(HoverEvent.showText(hover.color(NamedTextColor.GRAY)));
     }
@@ -843,7 +1023,8 @@ public final class QueueService implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
         // Looking around counts as activity; falling does not.
-        if (event.hasChangedOrientation() || event.getFrom().getX() != event.getTo().getX()
+        if (event.hasChangedOrientation()
+                || event.getFrom().getX() != event.getTo().getX()
                 || event.getFrom().getZ() != event.getTo().getZ()) {
             touch(event.getPlayer());
         }

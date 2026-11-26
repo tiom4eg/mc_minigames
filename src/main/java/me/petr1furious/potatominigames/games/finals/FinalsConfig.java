@@ -37,8 +37,7 @@ public final class FinalsConfig {
         if (persisted.getInt(timingVersion, 0) < 1) {
             // The old shipped file stored 40 explicitly. Migrate it once so a later deliberate
             // 40-second setting stays intact; other existing durations remain unchanged.
-            if (persisted.getInt("cashoutSeconds", 90) == 40)
-                persisted.set("cashoutSeconds", 90);
+            if (persisted.getInt("cashoutSeconds", 90) == 40) persisted.set("cashoutSeconds", 90);
             persisted.set(timingVersion, 1);
             changed = true;
         }

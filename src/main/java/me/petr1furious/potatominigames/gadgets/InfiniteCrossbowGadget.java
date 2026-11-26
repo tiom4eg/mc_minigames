@@ -1,13 +1,14 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyCodec;
 import me.petr1furious.potatominigames.core.world.Locations;
+import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Arrow;
@@ -38,10 +39,8 @@ public class InfiniteCrossbowGadget extends AbstractGadget {
     @Override
     public void onPlayerInteract(PlayerInteractEvent event) {
         var item = event.getItem();
-        if (!GadgetItems.checkForItem(item, TAG))
-            return;
-        if (!(item.getItemMeta() instanceof CrossbowMeta meta))
-            return;
+        if (!GadgetItems.checkForItem(item, TAG)) return;
+        if (!(item.getItemMeta() instanceof CrossbowMeta meta)) return;
         int count = meta.getChargedProjectiles().size();
         int max = maxLoadedProjectiles.get();
         if (count < max) {
@@ -50,32 +49,38 @@ public class InfiniteCrossbowGadget extends AbstractGadget {
             item.setItemMeta(meta);
             I18n.item(item, event.getPlayer());
             if (GadgetItems.isLeftClick(event)) {
-                event.getPlayer().playSound(event.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.1f, 2f);
+                event.getPlayer()
+                        .playSound(
+                                event.getPlayer().getLocation(),
+                                Sound.BLOCK_NOTE_BLOCK_BIT,
+                                0.1f,
+                                2f);
             }
         } else if (GadgetItems.isLeftClick(event)) {
-            event.getPlayer().playSound(event.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.1f, 0.5f);
+            event.getPlayer()
+                    .playSound(
+                            event.getPlayer().getLocation(),
+                            Sound.BLOCK_NOTE_BLOCK_BIT,
+                            0.1f,
+                            0.5f);
         }
     }
 
     @Override
     public void onBowShoot(EntityShootBowEvent event) {
-        if (!(event.getProjectile() instanceof Arrow arrow))
-            return;
+        if (!(event.getProjectile() instanceof Arrow arrow)) return;
         var bow = event.getBow();
-        if (bow == null)
-            return;
+        if (bow == null) return;
         if (GadgetItems.checkForItem(bow, TAG)) {
             GadgetItems.setProjectileTag(arrow, TAG);
         }
     }
 
     @Override
-    public boolean handleProjectileImpact(Projectile projectile, org.bukkit.Location location, Entity shooter,
-            Entity target) {
-        if (!GadgetItems.checkForProjectile(projectile, TAG))
-            return false;
-        if (!enableExplosions.get())
-            return false;
+    public boolean handleProjectileImpact(
+            Projectile projectile, org.bukkit.Location location, Entity shooter, Entity target) {
+        if (!GadgetItems.checkForProjectile(projectile, TAG)) return false;
+        if (!enableExplosions.get()) return false;
         Locations.spawnExplosion(location, explosionPower.get(), shooter);
         projectile.remove();
         return true;
@@ -87,8 +92,9 @@ public class InfiniteCrossbowGadget extends AbstractGadget {
         GadgetItems.addTag(crossbow, TAG);
         var meta = crossbow.getItemMeta();
         meta.displayName(
-                I18n.tr("gadgets.crossbow.name").color(NamedTextColor.GOLD).decoration(TextDecoration.ITALIC,
-                        false));
+                I18n.tr("gadgets.crossbow.name")
+                        .color(NamedTextColor.GOLD)
+                        .decoration(TextDecoration.ITALIC, false));
         meta.setUnbreakable(true);
         meta.setEnchantmentGlintOverride(true);
         crossbow.setItemMeta(meta);
@@ -102,11 +108,15 @@ public class InfiniteCrossbowGadget extends AbstractGadget {
 
     private void setLore(CrossbowMeta meta, int projectiles, int max) {
         List<Component> lore = new ArrayList<>();
-        lore.add(I18n.tr("gadgets.crossbow.lore").color(NamedTextColor.GRAY)
-                .decoration(TextDecoration.ITALIC, false));
+        lore.add(
+                I18n.tr("gadgets.crossbow.lore")
+                        .color(NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
         if (max > 1) {
-            lore.add(I18n.tr("gadgets.crossbow.loaded", projectiles, max).color(NamedTextColor.GRAY)
-                    .decoration(TextDecoration.ITALIC, false));
+            lore.add(
+                    I18n.tr("gadgets.crossbow.loaded", projectiles, max)
+                            .color(NamedTextColor.GRAY)
+                            .decoration(TextDecoration.ITALIC, false));
         }
         meta.lore(lore);
     }

@@ -1,7 +1,7 @@
 package me.petr1furious.potatominigames.games.tanks;
 
-import java.util.UUID;
 import java.util.Locale;
+import java.util.UUID;
 
 /** Server-free checks for armor geometry, controls and one-life battle state. */
 public final class TanksRulesCheck {
@@ -33,52 +33,86 @@ public final class TanksRulesCheck {
         var side = TanksRules.ArmorSide.SIDE;
         var rear = TanksRules.ArmorSide.REAR;
         double lightFlank = timeToKill(light, TanksRules.Shell.AP, heavy, side);
-        check(lightFlank >= 15 && lightFlank <= 20,
+        check(
+                lightFlank >= 15 && lightFlank <= 20,
                 "a clean light flank has a usable 15–20 second damage window");
-        check(timeToKill(light, TanksRules.Shell.HE, heavy, rear) < lightFlank,
+        check(
+                timeToKill(light, TanksRules.Shell.HE, heavy, rear) < lightFlank,
                 "light rewards a square rear ambush with a useful HE ammunition choice");
-        check(plateHit(light, TanksRules.Shell.HE, heavy, rear, 0).penetrated(),
+        check(
+                plateHit(light, TanksRules.Shell.HE, heavy, rear, 0).penetrated(),
                 "light HE can punish the heavy rear rather than always chipping armor");
         double heavyCounter = bestTimeToKill(heavy, light, front);
-        check(lightFlank < heavyCounter,
+        check(
+                lightFlank < heavyCounter,
                 "a light that earns uninterrupted side shots can beat a heavy damage trade");
-        check(plateHit(light, TanksRules.Shell.AP, heavy, front, 0).damage() == 0
+        check(
+                plateHit(light, TanksRules.Shell.AP, heavy, front, 0).damage() == 0
                         && bestTimeToKill(light, heavy, front) > heavyCounter * 3,
                 "heavy frontal armor still wins decisively against a careless light head-on");
-        check(plateHit(light, TanksRules.Shell.AP, heavy, side, 45).penetrated(),
+        check(
+                plateHit(light, TanksRules.Shell.AP, heavy, side, 45).penetrated(),
                 "a modestly angled heavy flank remains a usable light AP target");
         var mediumHe = plateHit(medium, TanksRules.Shell.HE, light, front, 0);
-        check(mediumHe.penetrated()
-                        && mediumHe.damage() > plateHit(medium, TanksRules.Shell.AP, light, front, 0).damage()
+        check(
+                mediumHe.penetrated()
+                        && mediumHe.damage()
+                                > plateHit(medium, TanksRules.Shell.AP, light, front, 0).damage()
                         && timeToKill(medium, TanksRules.Shell.HE, light, front)
                                 < bestTimeToKill(light, medium, side),
                 "medium HE remains a useful answer to the fast lightly armored class");
-        check(plateHit(medium, TanksRules.Shell.HE, light, front, 30).penetrated()
+        check(
+                plateHit(medium, TanksRules.Shell.HE, light, front, 30).penetrated()
                         && !plateHit(medium, TanksRules.Shell.HE, light, front, 40).penetrated()
                         && plateHit(medium, TanksRules.Shell.AP, light, front, 40).damage()
                                 > plateHit(medium, TanksRules.Shell.HE, light, front, 40).damage(),
                 "medium chooses HE against square light armor and AP against a glancing front");
-        check(bestTimeToKill(heavy, medium, front) < bestTimeToKill(medium, heavy, front),
+        check(
+                bestTimeToKill(heavy, medium, front) < bestTimeToKill(medium, heavy, front),
                 "heavy retains its ideal flat-front trade advantage over medium");
-        check(plateHit(medium, TanksRules.Shell.AP, heavy, front, 25).penetrated(),
+        check(
+                plateHit(medium, TanksRules.Shell.AP, heavy, front, 25).penetrated(),
                 "medium AP has counterplay against heavy fronts angled by 25 degrees");
-        check(!plateHit(medium, TanksRules.Shell.AP, heavy, front, 35).penetrated(),
+        check(
+                !plateHit(medium, TanksRules.Shell.AP, heavy, front, 35).penetrated(),
                 "a deliberately angled heavy can still deny medium frontal AP");
-        check(timeToKill(light, TanksRules.Shell.AP, heavy, side, heavy.maxHp() * 1.15) <= 20,
-                "one fully used heavy repair kit cannot erase the light's twenty-second flank window");
-        check(timeToKill(light, TanksRules.Shell.HE, heavy, rear, heavy.maxHp() * 1.15)
-                        < Math.min(timeToKill(heavy, TanksRules.Shell.AP, light, front, light.maxHp() * 1.15),
-                                timeToKill(heavy, TanksRules.Shell.HE, light, front, light.maxHp() * 1.15)),
+        check(
+                timeToKill(light, TanksRules.Shell.AP, heavy, side, heavy.maxHp() * 1.15) <= 20,
+                "one fully used heavy repair kit cannot erase the light's twenty-second flank"
+                        + " window");
+        check(
+                timeToKill(light, TanksRules.Shell.HE, heavy, rear, heavy.maxHp() * 1.15)
+                        < Math.min(
+                                timeToKill(
+                                        heavy,
+                                        TanksRules.Shell.AP,
+                                        light,
+                                        front,
+                                        light.maxHp() * 1.15),
+                                timeToKill(
+                                        heavy,
+                                        TanksRules.Shell.HE,
+                                        light,
+                                        front,
+                                        light.maxHp() * 1.15)),
                 "light rear-HE agency survives both opponents optimally spending one repair kit");
         var match = battle(1000, 30, false);
         var victim = match.actor(RED);
         var heavyHe = plateHit(heavy, TanksRules.Shell.HE, light, front, 0);
         for (int i = 0; i < 3; i++) match.recordHit(BLUE, RED, heavyHe, 0);
-        check(victim.alive(), "three heavy HE hits cannot erase a fresh light before it can disengage");
-        for (var shooter : TanksRules.Chassis.values()) for (var target : TanksRules.Chassis.values()) {
-            check(bestTimeToKill(shooter, target, rear) <= bestTimeToKill(shooter, target, front),
-                    "earning the rear never makes a matchup worse: " + shooter + " to " + target);
-        }
+        check(
+                victim.alive(),
+                "three heavy HE hits cannot erase a fresh light before it can disengage");
+        for (var shooter : TanksRules.Chassis.values())
+            for (var target : TanksRules.Chassis.values()) {
+                check(
+                        bestTimeToKill(shooter, target, rear)
+                                <= bestTimeToKill(shooter, target, front),
+                        "earning the rear never makes a matchup worse: "
+                                + shooter
+                                + " to "
+                                + target);
+            }
     }
 
     private static void spottingAssists() {
@@ -99,18 +133,22 @@ public final class TanksRulesCheck {
         enemy.spottedBy(shooter, 15);
         enemy.spottedBy(first, 25);
         match.spottersFor(shooter, 75, t -> false).credit(BLUE, 20);
-        check(first.spottingDamage() == 0, "direct detection and final tick of own memory exclude scouts");
+        check(
+                first.spottingDamage() == 0,
+                "direct detection and final tick of own memory exclude scouts");
 
         enemy.spottedBy(second, 25);
         var shot = match.spottersFor(shooter, 85, t -> false);
         match.spottersFor(shooter, 86, t -> false).credit(BLUE, 20);
         shot.credit(unseen.id(), 20);
         shot.credit(BLUE, 0);
-        check(first.spottingDamage() == 0 && second.spottingDamage() == 0,
+        check(
+                first.spottingDamage() == 0 && second.spottingDamage() == 0,
                 "expired, different-target and zero-damage hits earn no assist");
         enemy.spottedBy(second, 85);
         match.spottersFor(shooter, 85, t -> false).credit(BLUE, 10);
-        check(first.spottingDamage() == 0 && second.spottingDamage() == 10,
+        check(
+                first.spottingDamage() == 0 && second.spottingDamage() == 10,
                 "only observers providing the freshest contact share credit");
         first.disconnect();
         enemy.spottedBy(first, 100);
@@ -118,9 +156,11 @@ public final class TanksRulesCheck {
         enemy.damage(enemy.hp() - 9);
         var lethal = new TanksRules.Hit(100, true, false, 10, TanksRules.ArmorSide.SIDE);
         shot.credit(BLUE, match.recordHit(RED, BLUE, lethal, 0));
-        check(first.spottingDamage() == 4.5 && second.spottingDamage() == 14.5,
+        check(
+                first.spottingDamage() == 4.5 && second.spottingDamage() == 14.5,
                 "launch contacts split remaining HP even when a scout disconnects during flight");
-        check(shooter.spottingDamage() == 0 && shooter.kills() == 1,
+        check(
+                shooter.spottingDamage() == 0 && shooter.kills() == 1,
                 "spotter credit leaves kill attribution with the gunner");
     }
 
@@ -130,38 +170,76 @@ public final class TanksRulesCheck {
         var heavy = TanksRules.Chassis.HEAVY;
         double movingLight = TanksRules.dispersion(light, light.speed(), 0, 0);
         double sigmaAtForty = Math.tan(Math.toRadians(movingLight * .45)) * 40;
-        check(sigmaAtForty < TanksRules.geometry(heavy).hullHalfWidth() / 2,
+        check(
+                sigmaAtForty < TanksRules.geometry(heavy).hullHalfWidth() / 2,
                 "moving light gun retains useful accuracy against a heavy profile at 40 blocks");
-        check(movingLight < TanksRules.dispersion(medium, medium.speed(), 0, 0)
+        check(
+                movingLight < TanksRules.dispersion(medium, medium.speed(), 0, 0)
                         && TanksRules.dispersion(medium, medium.speed(), 0, 0)
                                 < TanksRules.dispersion(heavy, heavy.speed(), 0, 0),
                 "gun stabilization rewards light movement while heavy needs to settle");
-        close(TanksRules.dispersion(light, 0, 0, 20), TanksRules.dispersion(light, 0, 0, 80),
+        close(
+                TanksRules.dispersion(light, 0, 0, 20),
+                TanksRules.dispersion(light, 0, 0, 80),
                 "light fully settles within one second after stopping");
-        check(TanksRules.dispersion(medium, 0, 0, 20) > TanksRules.dispersion(medium, 0, 0, 80),
+        check(
+                TanksRules.dispersion(medium, 0, 0, 20) > TanksRules.dispersion(medium, 0, 0, 80),
                 "medium has a distinct settling delay after a short peek");
-        close(TanksRules.dispersion(medium, 0, 0, 30), TanksRules.dispersion(medium, 0, 0, 80),
+        close(
+                TanksRules.dispersion(medium, 0, 0, 30),
+                TanksRules.dispersion(medium, 0, 0, 80),
                 "medium settles sooner than the armored heavy");
-        check(TanksRules.dispersion(heavy, 0, 0, 30) > TanksRules.dispersion(heavy, 0, 0, 40),
+        check(
+                TanksRules.dispersion(heavy, 0, 0, 30) > TanksRules.dispersion(heavy, 0, 0, 40),
                 "heavy rewards holding a firing position rather than snap shooting");
         double circleTurn = Math.toDegrees(light.speed() / 8);
-        check(circleTurn > heavy.turretDegreesPerTick()
+        check(
+                circleTurn > heavy.turretDegreesPerTick()
                         && circleTurn < medium.turretDegreesPerTick()
                         && circleTurn < light.hullDegreesPerTick(),
-                "an eight-block light orbit outturns heavy traverse but medium can countertrack it");
+                "an eight-block light orbit outturns heavy traverse but medium can countertrack"
+                        + " it");
     }
 
-    private static TanksRules.Hit plateHit(TanksRules.Chassis shooter, TanksRules.Shell shell,
-            TanksRules.Chassis target, TanksRules.ArmorSide side, double angle) {
+    private static TanksRules.Hit plateHit(
+            TanksRules.Chassis shooter,
+            TanksRules.Shell shell,
+            TanksRules.Chassis target,
+            TanksRules.ArmorSide side,
+            double angle) {
         double radians = Math.toRadians(angle);
         var g = TanksRules.geometry(target);
         return switch (side) {
-            case FRONT -> TanksRules.hit(shooter, shell, target, 0, 0, g.hullHalfLength(),
-                    Math.sin(radians), -Math.cos(radians));
-            case SIDE -> TanksRules.hit(shooter, shell, target, 0, g.hullHalfWidth(), 0,
-                    -Math.cos(radians), Math.sin(radians));
-            case REAR -> TanksRules.hit(shooter, shell, target, 0, 0, -g.hullHalfLength(),
-                    Math.sin(radians), Math.cos(radians));
+            case FRONT ->
+                    TanksRules.hit(
+                            shooter,
+                            shell,
+                            target,
+                            0,
+                            0,
+                            g.hullHalfLength(),
+                            Math.sin(radians),
+                            -Math.cos(radians));
+            case SIDE ->
+                    TanksRules.hit(
+                            shooter,
+                            shell,
+                            target,
+                            0,
+                            g.hullHalfWidth(),
+                            0,
+                            -Math.cos(radians),
+                            Math.sin(radians));
+            case REAR ->
+                    TanksRules.hit(
+                            shooter,
+                            shell,
+                            target,
+                            0,
+                            0,
+                            -g.hullHalfLength(),
+                            Math.sin(radians),
+                            Math.cos(radians));
         };
     }
 
@@ -169,18 +247,25 @@ public final class TanksRulesCheck {
         int lightExit = travelTicks(TanksRules.Chassis.LIGHT, 3);
         int mediumExit = travelTicks(TanksRules.Chassis.MEDIUM, 3);
         int heavyExit = travelTicks(TanksRules.Chassis.HEAVY, 3);
-        check(lightExit < mediumExit && mediumExit < heavyExit && lightExit <= 18,
+        check(
+                lightExit < mediumExit && mediumExit < heavyExit && lightExit <= 18,
                 "light escapes a three-block firing lane sooner than heavier hulls from rest");
         int lightTraverse = travelTicks(TanksRules.Chassis.LIGHT, 50);
         int mediumTraverse = travelTicks(TanksRules.Chassis.MEDIUM, 50);
         int heavyTraverse = travelTicks(TanksRules.Chassis.HEAVY, 50);
-        check(lightTraverse <= 180 && mediumTraverse > lightTraverse
-                        && mediumTraverse < heavyTraverse && heavyTraverse >= 340,
-                "light can relocate fifty blocks within nine seconds while heavy commits much longer");
+        check(
+                lightTraverse <= 180
+                        && mediumTraverse > lightTraverse
+                        && mediumTraverse < heavyTraverse
+                        && heavyTraverse >= 340,
+                "light can relocate fifty blocks within nine seconds while heavy commits much"
+                        + " longer");
         for (var chassis : TanksRules.Chassis.values()) {
             double speed = 0;
             for (int i = 0; i < 400; i++) speed = TanksRules.accelerate(speed, -1, chassis);
-            check(speed < 0 && Math.abs(speed) < chassis.speed(), "class reverse remains slower than forward: " + chassis);
+            check(
+                    speed < 0 && Math.abs(speed) < chassis.speed(),
+                    "class reverse remains slower than forward: " + chassis);
             for (int i = 0; i < 400; i++) speed = TanksRules.accelerate(speed, 0, chassis);
             close(speed, 0, "class braking reaches a stable stop: " + chassis);
         }
@@ -196,56 +281,135 @@ public final class TanksRulesCheck {
         throw new AssertionError("class cannot reach its reposition target: " + chassis);
     }
 
-    private static double timeToKill(TanksRules.Chassis shooter, TanksRules.Shell shell,
-            TanksRules.Chassis target, TanksRules.ArmorSide side) {
+    private static double timeToKill(
+            TanksRules.Chassis shooter,
+            TanksRules.Shell shell,
+            TanksRules.Chassis target,
+            TanksRules.ArmorSide side) {
         return timeToKill(shooter, shell, target, side, target.maxHp());
     }
 
-    private static double timeToKill(TanksRules.Chassis shooter, TanksRules.Shell shell,
-            TanksRules.Chassis target, TanksRules.ArmorSide side, double healthBudget) {
+    private static double timeToKill(
+            TanksRules.Chassis shooter,
+            TanksRules.Shell shell,
+            TanksRules.Chassis target,
+            TanksRules.ArmorSide side,
+            double healthBudget) {
         double damage = plateHit(shooter, shell, target, side, 0).damage();
-        return damage == 0 ? Double.POSITIVE_INFINITY
+        return damage == 0
+                ? Double.POSITIVE_INFINITY
                 : (Math.ceil(healthBudget / damage) - 1) * shooter.reloadTicks() / 20;
     }
 
-    private static double bestTimeToKill(TanksRules.Chassis shooter,
-            TanksRules.Chassis target, TanksRules.ArmorSide side) {
-        return Math.min(timeToKill(shooter, TanksRules.Shell.AP, target, side),
+    private static double bestTimeToKill(
+            TanksRules.Chassis shooter, TanksRules.Chassis target, TanksRules.ArmorSide side) {
+        return Math.min(
+                timeToKill(shooter, TanksRules.Shell.AP, target, side),
                 timeToKill(shooter, TanksRules.Shell.HE, target, side));
     }
 
     private static void balanceReport() {
-        System.out.println("BALANCE: ideal plate-center hits, first loaded shot at t=0, 20 ticks/s; no misses, cover, flight delay or human win-rate inference.");
-        System.out.println("Repair budget is maxHP*1.15, assuming the full one-use heal is spent before death. F/S/R = front/side/rear.");
+        System.out.println(
+                "BALANCE: ideal plate-center hits, first loaded shot at t=0, 20 ticks/s; no misses,"
+                        + " cover, flight delay or human win-rate inference.");
+        System.out.println(
+                "Repair budget is maxHP*1.15, assuming the full one-use heal is spent before death."
+                        + " F/S/R = front/side/rear.");
         for (var c : TanksRules.Chassis.values()) {
-            System.out.printf(Locale.ROOT,
-                    "PROFILE %s hp=%.0f alpha=%.0f penetration=%.0f reload=%.2fs DPS=%.2f speed=%.2fb/s hull180=%.2fs turret180=%.2fs movingCone=%.2fdeg escape3=%.2fs travel50=%.2fs%n",
-                    c, c.maxHp(), c.damage(), c.penetration(), c.reloadTicks()/20.0,
-                    c.damage()*20/c.reloadTicks(), c.speed()*20,
-                    180/c.hullDegreesPerTick()/20, 180/c.turretDegreesPerTick()/20,
-                    TanksRules.dispersion(c,c.speed(),0,0), travelTicks(c,3)/20.0, travelTicks(c,50)/20.0);
+            System.out.printf(
+                    Locale.ROOT,
+                    "PROFILE %s hp=%.0f alpha=%.0f penetration=%.0f reload=%.2fs DPS=%.2f"
+                            + " speed=%.2fb/s hull180=%.2fs turret180=%.2fs movingCone=%.2fdeg"
+                            + " escape3=%.2fs travel50=%.2fs%n",
+                    c,
+                    c.maxHp(),
+                    c.damage(),
+                    c.penetration(),
+                    c.reloadTicks() / 20.0,
+                    c.damage() * 20 / c.reloadTicks(),
+                    c.speed() * 20,
+                    180 / c.hullDegreesPerTick() / 20,
+                    180 / c.turretDegreesPerTick() / 20,
+                    TanksRules.dispersion(c, c.speed(), 0, 0),
+                    travelTicks(c, 3) / 20.0,
+                    travelTicks(c, 50) / 20.0);
         }
-        for (var shooter : TanksRules.Chassis.values()) for (var target : TanksRules.Chassis.values()) {
-            StringBuilder damage = new StringBuilder(), ttk = new StringBuilder(), repair = new StringBuilder();
-            for (var side : TanksRules.ArmorSide.values()) {
-                var ap = plateHit(shooter,TanksRules.Shell.AP,target,side,0);
-                var he = plateHit(shooter,TanksRules.Shell.HE,target,side,0);
-                damage.append(String.format(Locale.ROOT," %s=%.1f/%.1f",side,ap.damage(),he.damage()));
-                ttk.append(String.format(Locale.ROOT," %s=%.1f/%.1f",side,
-                        timeToKill(shooter,TanksRules.Shell.AP,target,side),timeToKill(shooter,TanksRules.Shell.HE,target,side)));
-                repair.append(String.format(Locale.ROOT," %s=%.1f/%.1f",side,
-                        timeToKill(shooter,TanksRules.Shell.AP,target,side,target.maxHp()*1.15),
-                        timeToKill(shooter,TanksRules.Shell.HE,target,side,target.maxHp()*1.15)));
+        for (var shooter : TanksRules.Chassis.values())
+            for (var target : TanksRules.Chassis.values()) {
+                StringBuilder damage = new StringBuilder(),
+                        ttk = new StringBuilder(),
+                        repair = new StringBuilder();
+                for (var side : TanksRules.ArmorSide.values()) {
+                    var ap = plateHit(shooter, TanksRules.Shell.AP, target, side, 0);
+                    var he = plateHit(shooter, TanksRules.Shell.HE, target, side, 0);
+                    damage.append(
+                            String.format(
+                                    Locale.ROOT, " %s=%.1f/%.1f", side, ap.damage(), he.damage()));
+                    ttk.append(
+                            String.format(
+                                    Locale.ROOT,
+                                    " %s=%.1f/%.1f",
+                                    side,
+                                    timeToKill(shooter, TanksRules.Shell.AP, target, side),
+                                    timeToKill(shooter, TanksRules.Shell.HE, target, side)));
+                    repair.append(
+                            String.format(
+                                    Locale.ROOT,
+                                    " %s=%.1f/%.1f",
+                                    side,
+                                    timeToKill(
+                                            shooter,
+                                            TanksRules.Shell.AP,
+                                            target,
+                                            side,
+                                            target.maxHp() * 1.15),
+                                    timeToKill(
+                                            shooter,
+                                            TanksRules.Shell.HE,
+                                            target,
+                                            side,
+                                            target.maxHp() * 1.15)));
+                }
+                System.out.println(
+                        "MATCH "
+                                + shooter
+                                + ">"
+                                + target
+                                + " damage(AP/HE)"
+                                + damage
+                                + " TTKseconds(AP/HE)"
+                                + ttk);
+                System.out.printf(
+                        Locale.ROOT,
+                        "REPAIRED %s>%s targetBudget=%.1f TTKseconds(AP/HE)%s%n",
+                        shooter,
+                        target,
+                        target.maxHp() * 1.15,
+                        repair);
+                StringBuilder angles = new StringBuilder();
+                for (int angle : new int[] {0, 20, 25, 30, 35, 40})
+                    angles.append(
+                            String.format(
+                                    Locale.ROOT,
+                                    " %ddeg=%.1f/%.1f",
+                                    angle,
+                                    plateHit(
+                                                    shooter,
+                                                    TanksRules.Shell.AP,
+                                                    target,
+                                                    TanksRules.ArmorSide.FRONT,
+                                                    angle)
+                                            .damage(),
+                                    plateHit(
+                                                    shooter,
+                                                    TanksRules.Shell.HE,
+                                                    target,
+                                                    TanksRules.ArmorSide.FRONT,
+                                                    angle)
+                                            .damage()));
+                System.out.println(
+                        "FRONTANGLE " + shooter + ">" + target + " damage(AP/HE)" + angles);
             }
-            System.out.println("MATCH "+shooter+">"+target+" damage(AP/HE)"+damage+" TTKseconds(AP/HE)"+ttk);
-            System.out.printf(Locale.ROOT,"REPAIRED %s>%s targetBudget=%.1f TTKseconds(AP/HE)%s%n",
-                    shooter,target,target.maxHp()*1.15,repair);
-            StringBuilder angles = new StringBuilder();
-            for(int angle:new int[]{0,20,25,30,35,40}) angles.append(String.format(Locale.ROOT," %ddeg=%.1f/%.1f",angle,
-                    plateHit(shooter,TanksRules.Shell.AP,target,TanksRules.ArmorSide.FRONT,angle).damage(),
-                    plateHit(shooter,TanksRules.Shell.HE,target,TanksRules.ArmorSide.FRONT,angle).damage()));
-            System.out.println("FRONTANGLE "+shooter+">"+target+" damage(AP/HE)"+angles);
-        }
     }
 
     private static void armorAndShells() {
@@ -344,13 +508,16 @@ public final class TanksRulesCheck {
     private static void trackRecovery() {
         var heavy = TanksRules.Chassis.HEAVY;
         var light = TanksRules.Chassis.LIGHT;
-        check(!TanksBallistics.treadHit(heavy, 0, 0, .4, 2.2)
+        check(
+                !TanksBallistics.treadHit(heavy, 0, 0, .4, 2.2)
                         && !TanksBallistics.treadHit(heavy, 90, -2.2, .4, 0),
                 "a hit to the low central plate never breaks a track, even after a hull turn");
-        check(TanksBallistics.treadHit(heavy, 0, -1.65, .4, 0)
+        check(
+                TanksBallistics.treadHit(heavy, 0, -1.65, .4, 0)
                         && TanksBallistics.treadHit(heavy, 90, 2.2, .4, 1.25),
                 "both broadside wheels and an exposed rear belt end can be targeted");
-        check(!TanksBallistics.treadHit(light, 90, 0, .74, 1.35)
+        check(
+                !TanksBallistics.treadHit(light, 90, 0, .74, 1.35)
                         && TanksBallistics.treadHit(light, 90, 0, .4, 1.35),
                 "light track hit height scales with its visible model");
         var match = battle(1000, 900, false);
@@ -360,13 +527,15 @@ public final class TanksRulesCheck {
         match.tick();
         double hp = target.hp();
         match.recordHit(RED, BLUE, ricochet, 70);
-        check(target.trackTicks() == 70 && target.captureTicks() == 0 && target.hp() == hp,
+        check(
+                target.trackTicks() == 70 && target.captureTicks() == 0 && target.hp() == hp,
                 "a fresh tread break immobilizes and resets capture without claiming HP");
         for (int i = 0; i < 69; i++) {
             match.tick();
             match.recordHit(RED, BLUE, ricochet, 70);
         }
-        check(target.trackTicks() == 1 && target.captureTicks() == 69,
+        check(
+                target.trackTicks() == 1 && target.captureTicks() == 69,
                 "repeated tread impacts do not extend repair or erase capture again");
         match.tick();
         for (int i = 0; i < 40; i++) {
@@ -378,7 +547,8 @@ public final class TanksRulesCheck {
         check(target.trackTicks() == 70 && target.repair(), "a later break can be repaired by kit");
         var pierced = new TanksRules.Hit(15, true, false, 30, TanksRules.ArmorSide.REAR);
         match.recordHit(RED, BLUE, pierced, 70);
-        check(target.trackTicks() == 0 && target.hp() == hp - 15,
+        check(
+                target.trackTicks() == 0 && target.hp() == hp - 15,
                 "kit recovery protects the track while penetrating rounds still damage the hull");
     }
 
@@ -389,15 +559,18 @@ public final class TanksRulesCheck {
         red.base(1);
         blue.base(1);
         match.tick();
-        check(match.captureState(0) == TanksMatch.CaptureState.CONTESTED
+        check(
+                match.captureState(0) == TanksMatch.CaptureState.CONTESTED
                         && match.captureProgress(0) == 0,
                 "defender already in the circle contests at zero percent");
         red.disconnect();
-        check(match.captureState(0) == TanksMatch.CaptureState.IDLE,
+        check(
+                match.captureState(0) == TanksMatch.CaptureState.IDLE,
                 "an offline attacker cannot create a contested warning");
         red.reconnect();
         blue.base(-1);
-        check(match.captureState(0) == TanksMatch.CaptureState.CAPTURING,
+        check(
+                match.captureState(0) == TanksMatch.CaptureState.CAPTURING,
                 "removing the defender resumes capture");
         match.tick();
         close(match.captureProgress(0), .125, "attacker advances capture in enemy base");

@@ -500,7 +500,10 @@ final class TanksSession implements GameSession, Listener {
     }
 
     private ShellFlight launch(TanksMatch.Actor shooter, Location at, Vector velocity) {
-        return new ShellFlight(shooter, at, velocity,
+        return new ShellFlight(
+                shooter,
+                at,
+                velocity,
                 match.spottersFor(shooter, tick, target -> canSpot(shooter, target)));
     }
 
@@ -660,7 +663,9 @@ final class TanksSession implements GameSession, Listener {
             feedback(shooter, tr("friendly"), Sound.BLOCK_DISPENSER_FAIL);
             return;
         }
-        double x = at.getX() - v.at.getX(), y = at.getY() - v.at.getY(), z = at.getZ() - v.at.getZ();
+        double x = at.getX() - v.at.getX(),
+                y = at.getY() - v.at.getY(),
+                z = at.getZ() - v.at.getZ();
         var hit =
                 TanksBallistics.armorHit(
                         s.chassis,
@@ -820,8 +825,7 @@ final class TanksSession implements GameSession, Listener {
                     if (observer.alive()
                             && observer.online()
                             && observer.team() != target.team()
-                            && canSpot(observer, target))
-                        target.spottedBy(observer, tick);
+                            && canSpot(observer, target)) target.spottedBy(observer, tick);
         for (Player viewer : services.session().audiencePlayers()) {
             var a = actor(viewer);
             for (var target : match.actors()) {
@@ -874,14 +878,20 @@ final class TanksSession implements GameSession, Listener {
             var state = match.captureState(side);
             boolean contested = state == TanksMatch.CaptureState.CONTESTED;
             captures[side].progress(progress);
-            captures[side].name(contested
-                    ? tr("capture-contested", team(1 - side), (int) (progress * 100))
-                    : tr("capture", team(side), (int) (progress * 100)));
+            captures[side].name(
+                    contested
+                            ? tr("capture-contested", team(1 - side), (int) (progress * 100))
+                            : tr("capture", team(side), (int) (progress * 100)));
             if (state != TanksMatch.CaptureState.IDLE) services.bossBars().showAll(captures[side]);
             else services.bossBars().hide(captures[side]);
             if (match.started() && !match.finished()) {
                 for (TanksAudio.Tone tone :
-                        audio.capture(side, progress, state != TanksMatch.CaptureState.IDLE, contested, tick))
+                        audio.capture(
+                                side,
+                                progress,
+                                state != TanksMatch.CaptureState.IDLE,
+                                contested,
+                                tick))
                     for (Player viewer : services.session().audiencePlayers())
                         playTone(viewer, viewer.getLocation(), tone);
             }
@@ -904,10 +914,17 @@ final class TanksSession implements GameSession, Listener {
                                                     ? tr("track-timer", seconds(a.trackTicks()))
                                                     : zoom ? Component.empty() : aimStatus(a, v, p);
             if (zoom) {
-                Component sight = tr("hud.zoom", tr(a.shell() == TanksRules.Shell.AP
-                        ? "shell.short-ap" : "shell.short-he"));
-                status = status.equals(Component.empty()) ? sight
-                        : sight.append(Component.text(" • ")).append(status);
+                Component sight =
+                        tr(
+                                "hud.zoom",
+                                tr(
+                                        a.shell() == TanksRules.Shell.AP
+                                                ? "shell.short-ap"
+                                                : "shell.short-he"));
+                status =
+                        status.equals(Component.empty())
+                                ? sight
+                                : sight.append(Component.text(" • ")).append(status);
             }
             var smokePhase = TanksSmokeVisual.phase(tick, v.smokeUntil);
             if (smokePhase == TanksSmokeVisual.Phase.ACTIVE)
@@ -938,7 +955,8 @@ final class TanksSession implements GameSession, Listener {
         if (zoom) return List.of();
         Component teams = tr("hud.teams", red, blue);
         if (preparing) return List.of(teams, classLine(actor), tr("hud.objective"), tr("hud.help"));
-        return List.of(teams,
+        return List.of(
+                teams,
                 tr("hud.shell", tr(actor.shell() == TanksRules.Shell.AP ? "shell.ap" : "shell.he")),
                 tr("hud.supplies", actor.repairKits(), actor.smokeCharges()));
     }
@@ -1062,12 +1080,7 @@ final class TanksSession implements GameSession, Listener {
                 boolean ally = a.team() == target.team();
                 boolean visible =
                         TanksBallistics.visibleToTeam(
-                                a.team(),
-                                false,
-                                target.team(),
-                                true,
-                                target.spottedUntil(),
-                                tick);
+                                a.team(), false, target.team(), true, target.spottedUntil(), tick);
                 if (visible) {
                     Vehicle v = vehicles.get(target.id());
                     blips.add(
@@ -1147,7 +1160,8 @@ final class TanksSession implements GameSession, Listener {
         UUID targetId = prediction.target;
         Color color =
                 prediction.ownHull ? Color.RED : prediction.blocked ? Color.ORANGE : Color.WHITE;
-        if (prediction.ownHull && (v.feedbackUntil <= tick || v.feedback.equals(tr("gun-blocked")))) {
+        if (prediction.ownHull
+                && (v.feedbackUntil <= tick || v.feedback.equals(tr("gun-blocked")))) {
             v.feedback = tr("gun-blocked");
             v.feedbackUntil = tick + 6;
         }
@@ -1222,16 +1236,17 @@ final class TanksSession implements GameSession, Listener {
 
     private List<Player> effectViewers(TanksMatch.Actor target) {
         return services.session().audiencePlayers().stream()
-                .filter(p -> {
-                    var a = actor(p);
-                    return TanksBallistics.visibleToTeam(
-                            a == null ? -1 : a.team(),
-                            a == null,
-                            target.team(),
-                            target.alive(),
-                                target.spottedUntil(),
-                            tick);
-                })
+                .filter(
+                        p -> {
+                            var a = actor(p);
+                            return TanksBallistics.visibleToTeam(
+                                    a == null ? -1 : a.team(),
+                                    a == null,
+                                    target.team(),
+                                    target.alive(),
+                                    target.spottedUntil(),
+                                    tick);
+                        })
                 .toList();
     }
 
@@ -1242,7 +1257,10 @@ final class TanksSession implements GameSession, Listener {
             p.sendMessage(tr("rules"));
             var driver = actor(p);
             if (driver != null)
-                p.sendMessage(classLine(driver).append(Component.text(" • ")).append(tr("hud.kills", driver.kills())));
+                p.sendMessage(
+                        classLine(driver)
+                                .append(Component.text(" • "))
+                                .append(tr("hud.kills", driver.kills())));
             return;
         }
         choose(p, TanksRules.Chassis.valueOf(action.toUpperCase(Locale.ROOT)));
@@ -1317,8 +1335,13 @@ final class TanksSession implements GameSession, Listener {
         for (var a : match.actors()) {
             int points = match.reward(a.id(), 3, 0, 0);
             if (points > 0) services.award("tanks", a.id(), points);
-            summary.add(tr("standing", names.get(a.id()), a.kills(), (int) Math.ceil(a.hp()),
-                    String.format(Locale.ROOT, "%.1f", a.spottingDamage())));
+            summary.add(
+                    tr(
+                            "standing",
+                            names.get(a.id()),
+                            a.kills(),
+                            (int) Math.ceil(a.hp()),
+                            String.format(Locale.ROOT, "%.1f", a.spottingDamage())));
             Player p = player(a.id());
             if (p != null)
                 p.playSound(

@@ -1,5 +1,7 @@
 package me.petr1furious.potatominigames.core.player;
 
+import org.bukkit.entity.Player;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -7,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
-import org.bukkit.entity.Player;
 
 public final class ParticipantRegistry {
     private final Map<UUID, Participant> participants = new LinkedHashMap<>();

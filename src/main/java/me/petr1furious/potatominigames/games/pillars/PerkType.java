@@ -1,10 +1,13 @@
 package me.petr1furious.potatominigames.games.pillars;
 
+import me.petr1furious.potatominigames.i18n.I18n;
+
+import net.kyori.adventure.text.Component;
+
+import org.bukkit.Material;
+
 import java.util.Locale;
 import java.util.random.RandomGenerator;
-import org.bukkit.Material;
-import me.petr1furious.potatominigames.i18n.I18n;
-import net.kyori.adventure.text.Component;
 
 /** The weight is conditional on rolling a perk, not on the entire ordinary item registry. */
 enum PerkType {
@@ -69,6 +72,7 @@ enum PerkType {
     final int charges;
     final boolean legendary;
     final Component[] instructions;
+
     PerkType(Material material, String key, int charges, boolean legendary, int instructionCount) {
         this.material = material;
         this.title = I18n.tr("pillars.effects.perk." + key + ".title");
@@ -76,14 +80,29 @@ enum PerkType {
         this.legendary = legendary;
         this.instructions = new Component[instructionCount];
         for (int i = 0; i < instructionCount; i++)
-            this.instructions[i] = I18n.tr("pillars.effects.perk." + key + ".instruction." + (i + 1));
+            this.instructions[i] =
+                    I18n.tr("pillars.effects.perk." + key + ".instruction." + (i + 1));
     }
-    String id() { return name().toLowerCase(Locale.ROOT); }
-    static int totalWeight() { return java.util.Arrays.stream(values()).mapToInt(t -> t.legendary ? 1 : 4).sum(); }
+
+    String id() {
+        return name().toLowerCase(Locale.ROOT);
+    }
+
+    static int totalWeight() {
+        return java.util.Arrays.stream(values()).mapToInt(t -> t.legendary ? 1 : 4).sum();
+    }
+
     static PerkType atWeight(int roll) {
-        if (roll < 0 || roll >= totalWeight()) throw new IllegalArgumentException("Invalid perk roll");
-        for (PerkType type : values()) { roll -= type.legendary ? 1 : 4; if (roll < 0) return type; }
+        if (roll < 0 || roll >= totalWeight())
+            throw new IllegalArgumentException("Invalid perk roll");
+        for (PerkType type : values()) {
+            roll -= type.legendary ? 1 : 4;
+            if (roll < 0) return type;
+        }
         throw new AssertionError();
     }
-    static PerkType roll(RandomGenerator random) { return atWeight(random.nextInt(totalWeight())); }
+
+    static PerkType roll(RandomGenerator random) {
+        return atWeight(random.nextInt(totalWeight()));
+    }
 }

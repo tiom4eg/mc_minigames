@@ -1,18 +1,20 @@
 package me.petr1furious.potatominigames.games.party;
 
+import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 
 /** Private nametag masks and persistent native outlines for the finale. */
 final class MinersVisibility {
     private record Mask(Team team, Map<String, String> previous) {}
+
     private record Outline(Player player, boolean previous) {}
 
     private final String teamName = "miners_" + UUID.randomUUID().toString().substring(0, 8);
@@ -21,7 +23,8 @@ final class MinersVisibility {
 
     void reveal(Collection<Player> players) {
         for (Player player : players) {
-            outlines.computeIfAbsent(player.getUniqueId(), ignored -> new Outline(player, player.isGlowing()));
+            outlines.computeIfAbsent(
+                    player.getUniqueId(), ignored -> new Outline(player, player.isGlowing()));
             // Entity metadata is independent of sneaking and cannot be cleared by milk.
             player.setGlowing(true);
         }
@@ -35,18 +38,23 @@ final class MinersVisibility {
     void hideNames(Collection<Player> viewers, Collection<String> names) {
         for (Player viewer : viewers) {
             Scoreboard board = viewer.getScoreboard();
-            Mask mask = masks.computeIfAbsent(board, ignored -> {
-                Team team = board.registerNewTeam(teamName);
-                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
-                team.setAllowFriendlyFire(true);
-                team.setCanSeeFriendlyInvisibles(false);
-                return new Mask(team, new LinkedHashMap<>());
-            });
+            Mask mask =
+                    masks.computeIfAbsent(
+                            board,
+                            ignored -> {
+                                Team team = board.registerNewTeam(teamName);
+                                team.setOption(
+                                        Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+                                team.setAllowFriendlyFire(true);
+                                team.setCanSeeFriendlyInvisibles(false);
+                                return new Mask(team, new LinkedHashMap<>());
+                            });
             for (String name : names) {
                 Team current = board.getEntryTeam(name);
                 if (!mask.previous().containsKey(name))
                     mask.previous().put(name, current == null ? null : current.getName());
-                if (current == null || !current.getName().equals(teamName)) mask.team().addEntry(name);
+                if (current == null || !current.getName().equals(teamName))
+                    mask.team().addEntry(name);
             }
         }
     }

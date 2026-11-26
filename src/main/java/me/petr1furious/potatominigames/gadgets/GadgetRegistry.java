@@ -1,10 +1,6 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import me.petr1furious.potatominigames.core.world.Locations;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -20,7 +16,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
-import me.petr1furious.potatominigames.core.world.Locations;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /** Dispatches gadget events; skips gadgets whose {@code usableBy(player)} is false. */
 public final class GadgetRegistry implements Listener {
@@ -81,7 +81,8 @@ public final class GadgetRegistry implements Listener {
         Location location = computeImpactLocation(event, projectile);
 
         for (Gadget gadget : gadgets.values()) {
-            if (gadget.handleProjectileImpact(projectile, location, shooter, event.getHitEntity())) {
+            if (gadget.handleProjectileImpact(
+                    projectile, location, shooter, event.getHitEntity())) {
                 event.setCancelled(true);
                 return;
             }
@@ -97,8 +98,11 @@ public final class GadgetRegistry implements Listener {
             Block hitBlock = event.getHitBlock();
             BlockFace hitFace = event.getHitBlockFace();
             Vector planeNormal = hitFace.getDirection();
-            Vector planePoint = hitBlock.getLocation().toVector().add(new Vector(0.5, 0.5, 0.5))
-                    .add(planeNormal.multiply(0.501));
+            Vector planePoint =
+                    hitBlock.getLocation()
+                            .toVector()
+                            .add(new Vector(0.5, 0.5, 0.5))
+                            .add(planeNormal.multiply(0.501));
 
             double denominator = planeNormal.dot(projectileDirection);
             if (Math.abs(denominator) > 1e-6) {

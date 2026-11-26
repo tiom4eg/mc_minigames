@@ -1,19 +1,19 @@
 package me.petr1furious.potatominigames.games.bingo;
 
 import me.petr1furious.potatominigames.i18n.I18n;
-import org.bukkit.entity.Player;
+
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 
 /** Kit items are PDC-marked so they never count for board claims. */
 final class BingoKit {
@@ -31,7 +31,8 @@ final class BingoKit {
         if (meta == null) {
             return false;
         }
-        Byte marker = meta.getPersistentDataContainer().get(starterItemKey, PersistentDataType.BYTE);
+        Byte marker =
+                meta.getPersistentDataContainer().get(starterItemKey, PersistentDataType.BYTE);
         return marker != null && marker == 1;
     }
 
@@ -54,8 +55,10 @@ final class BingoKit {
 
         ItemStack bakedPotato = new ItemStack(Material.COOKED_PORKCHOP, 64);
         ItemMeta bakedMeta = bakedPotato.getItemMeta();
-        bakedMeta.displayName(I18n.tr("bingo.kit.food").color(NamedTextColor.WHITE)
-                .decoration(TextDecoration.ITALIC, false));
+        bakedMeta.displayName(
+                I18n.tr("bingo.kit.food")
+                        .color(NamedTextColor.WHITE)
+                        .decoration(TextDecoration.ITALIC, false));
         markStarterItem(bakedMeta);
         bakedPotato.setItemMeta(bakedMeta);
 
@@ -71,9 +74,9 @@ final class BingoKit {
         inventory.setItem(1, pickaxe);
         inventory.setItem(2, shovel);
         inventory.setItem(3, bakedPotato);
-        inventory.setArmorContents(new ItemStack[] { boots, null, null, helmet });
+        inventory.setArmorContents(new ItemStack[] {boots, null, null, helmet});
         if (inventory.getHolder() instanceof Player player) {
-            for (int slot : new int[] { 0, 1, 2, 3, 36, 39 }) {
+            for (int slot : new int[] {0, 1, 2, 3, 36, 39}) {
                 ItemStack item = inventory.getItem(slot);
                 if (item != null) {
                     inventory.setItem(slot, I18n.item(item, player));
@@ -84,7 +87,8 @@ final class BingoKit {
 
     private void setLegacyNameUnbreakable(ItemStack item, String name) {
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(I18n.tr(name).color(NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+        meta.displayName(
+                I18n.tr(name).color(NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
         meta.setUnbreakable(true);
         meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
         markStarterItem(meta);

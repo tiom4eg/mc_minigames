@@ -1,26 +1,34 @@
 package me.petr1furious.potatominigames.games.pillars;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import me.petr1furious.potatominigames.i18n.I18n;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
+
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.util.Vector;
-import me.petr1furious.potatominigames.i18n.I18n;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.title.Title;
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /** Pauses a disposable arena without changing the server's tick rate. */
 final class PerkPause {
-    private record Motion(Vector velocity, boolean gravity, boolean ai, float fallDistance, int fuse) {
+    private record Motion(
+            Vector velocity, boolean gravity, boolean ai, float fallDistance, int fuse) {
         Motion(Entity entity) {
-            this(entity.getVelocity(), entity.hasGravity(), entity instanceof Mob mob && mob.hasAI(),
-                    entity.getFallDistance(), entity instanceof TNTPrimed tnt ? tnt.getFuseTicks() : 0);
+            this(
+                    entity.getVelocity(),
+                    entity.hasGravity(),
+                    entity instanceof Mob mob && mob.hasAI(),
+                    entity.getFallDistance(),
+                    entity instanceof TNTPrimed tnt ? tnt.getFuseTicks() : 0);
         }
 
         void hold(Entity entity) {
@@ -46,14 +54,22 @@ final class PerkPause {
     private final Map<Entity, Motion> frozen = new HashMap<>();
     private int remaining;
 
-    PerkPause(World world) { this.world = world; }
+    PerkPause(World world) {
+        this.world = world;
+    }
 
-    boolean active() { return remaining > 0; }
+    boolean active() {
+        return remaining > 0;
+    }
 
     void start(List<Player> audience) {
         remaining = PerkRules.PAUSE_TICKS;
-        var title = Title.title(I18n.tr("pillars.effects.pause.title").color(NamedTextColor.GOLD), Component.empty(),
-                Title.Times.times(Duration.ZERO, Duration.ofMillis(50L * remaining), Duration.ZERO));
+        var title =
+                Title.title(
+                        I18n.tr("pillars.effects.pause.title").color(NamedTextColor.GOLD),
+                        Component.empty(),
+                        Title.Times.times(
+                                Duration.ZERO, Duration.ofMillis(50L * remaining), Duration.ZERO));
         for (Player player : audience) {
             player.closeInventory();
             player.clearActiveItem();

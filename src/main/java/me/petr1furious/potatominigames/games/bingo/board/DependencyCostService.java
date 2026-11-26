@@ -1,5 +1,9 @@
 package me.petr1furious.potatominigames.games.bingo.board;
 
+import me.petr1furious.potatominigames.games.bingo.model.CostNode;
+import me.petr1furious.potatominigames.games.bingo.model.CostNodeType;
+import me.petr1furious.potatominigames.games.bingo.model.NodeRecipe;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -7,18 +11,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-
-
-import me.petr1furious.potatominigames.games.bingo.model.CostNode;
-import me.petr1furious.potatominigames.games.bingo.model.CostNodeType;
-import me.petr1furious.potatominigames.games.bingo.model.NodeRecipe;
-
 public final class DependencyCostService {
     private final Map<String, CostNode> nodes = new LinkedHashMap<>();
     private final Map<String, Integer> completionDepthMemo = new HashMap<>();
 
-    public DependencyCostService() {
-    }
+    public DependencyCostService() {}
 
     public void setNodes(Map<String, CostNode> loadedNodes) {
         nodes.clear();
@@ -58,7 +55,8 @@ public final class DependencyCostService {
                 continue;
             }
             if (node.isAtomic()) {
-                mergedResources.merge(node.id(), node.once() ? Math.min(1, quantity) : quantity, Integer::sum);
+                mergedResources.merge(
+                        node.id(), node.once() ? Math.min(1, quantity) : quantity, Integer::sum);
             }
         }
 
@@ -75,8 +73,10 @@ public final class DependencyCostService {
                 if (ingredientNode.type() != CostNodeType.OPERATION) {
                     continue;
                 }
-                mergedOperations.merge(new OperationDepthKey(ingredientNode.id(), opDepth),
-                        ingredient.getValue() * batches, Integer::sum);
+                mergedOperations.merge(
+                        new OperationDepthKey(ingredientNode.id(), opDepth),
+                        ingredient.getValue() * batches,
+                        Integer::sum);
             }
         }
 
@@ -87,8 +87,13 @@ public final class DependencyCostService {
         for (Map.Entry<OperationDepthKey, Integer> entry : mergedOperations.entrySet()) {
             total += atomicCost(requireNode(entry.getKey().nodeId()), entry.getValue());
         }
-        int maxDepth = mergedOperations.keySet().stream().mapToInt(OperationDepthKey::depth).max().orElse(0);
-        return new Evaluation(total, Map.copyOf(mergedResources), Map.copyOf(mergedOperations), maxDepth);
+        int maxDepth =
+                mergedOperations.keySet().stream()
+                        .mapToInt(OperationDepthKey::depth)
+                        .max()
+                        .orElse(0);
+        return new Evaluation(
+                total, Map.copyOf(mergedResources), Map.copyOf(mergedOperations), maxDepth);
     }
 
     private Map<String, Integer> computeTotalDemand(Map<String, Integer> requestedNodes) {
@@ -147,7 +152,8 @@ public final class DependencyCostService {
 
     private int recipeOperationDepth(String nodeId, Set<String> visiting) {
         if (!visiting.add(nodeId)) {
-            throw new IllegalStateException("Cycle detected while computing depth for node '" + nodeId + "'.");
+            throw new IllegalStateException(
+                    "Cycle detected while computing depth for node '" + nodeId + "'.");
         }
         CostNode node = requireNode(nodeId);
         if (node.isAtomic()) {
@@ -163,7 +169,8 @@ public final class DependencyCostService {
                 hasOperation = true;
                 continue;
             }
-            childMaxDepth = Math.max(childMaxDepth, recipeOperationDepth(ingredientNode.id(), visiting));
+            childMaxDepth =
+                    Math.max(childMaxDepth, recipeOperationDepth(ingredientNode.id(), visiting));
         }
         visiting.remove(nodeId);
         return hasOperation ? childMaxDepth + 1 : childMaxDepth;
@@ -179,7 +186,8 @@ public final class DependencyCostService {
 
     private static double atomicCost(CostNode node, int quantity) {
         if (!node.isAtomic()) {
-            throw new IllegalStateException("Composite node '" + node.id() + "' cannot be scored directly.");
+            throw new IllegalStateException(
+                    "Composite node '" + node.id() + "' cannot be scored directly.");
         }
         int normalized = Math.max(1, quantity);
         return node.base() + node.perBatch() * Math.pow(normalized, node.beta());
@@ -197,11 +205,14 @@ public final class DependencyCostService {
         return batches;
     }
 
-    public record Evaluation(double totalScore, Map<String, Integer> resourceCounts,
-            Map<OperationDepthKey, Integer> operationCounts, int maxDepth) {
-    }
+    public record Evaluation(
+            double totalScore,
+            Map<String, Integer> resourceCounts,
+            Map<OperationDepthKey, Integer> operationCounts,
+            int maxDepth) {}
 
-    public record OperationDepthKey(String nodeId, int depth) implements Comparable<OperationDepthKey> {
+    public record OperationDepthKey(String nodeId, int depth)
+            implements Comparable<OperationDepthKey> {
         @Override
         public int compareTo(OperationDepthKey other) {
             int byDepth = Integer.compare(depth, other.depth);

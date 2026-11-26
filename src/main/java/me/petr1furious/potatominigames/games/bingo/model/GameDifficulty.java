@@ -1,13 +1,15 @@
 package me.petr1furious.potatominigames.games.bingo.model;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
 
-public record GameDifficulty(String key, int order, int targetScore, int maxDeviation, Map<GameMode, Integer> durations)
+public record GameDifficulty(
+        String key, int order, int targetScore, int maxDeviation, Map<GameMode, Integer> durations)
         implements Comparable<GameDifficulty> {
     public GameDifficulty {
         if (key == null || key.isBlank()) {
@@ -18,16 +20,22 @@ public record GameDifficulty(String key, int order, int targetScore, int maxDevi
         if (durations != null) {
             normalizedDurations.putAll(durations);
         }
-        // Configs written before lockout existed have no duration for it: it plays as long as default.
+        // Configs written before lockout existed have no duration for it: it plays as long as
+        // default.
         Integer lockout = normalizedDurations.get(GameMode.LOCKOUT);
-        if ((lockout == null || lockout <= 0) && normalizedDurations.containsKey(GameMode.DEFAULT)) {
+        if ((lockout == null || lockout <= 0)
+                && normalizedDurations.containsKey(GameMode.DEFAULT)) {
             normalizedDurations.put(GameMode.LOCKOUT, normalizedDurations.get(GameMode.DEFAULT));
         }
         for (GameMode mode : GameMode.values()) {
             Integer seconds = normalizedDurations.get(mode);
             if (seconds == null || seconds <= 0) {
                 throw new IllegalArgumentException(
-                        "Difficulty '" + key + "' is missing duration for mode " + mode.key() + ".");
+                        "Difficulty '"
+                                + key
+                                + "' is missing duration for mode "
+                                + mode.key()
+                                + ".");
             }
         }
         durations = Map.copyOf(normalizedDurations);

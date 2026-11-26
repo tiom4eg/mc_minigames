@@ -99,15 +99,31 @@ public final class TankVisualCheck {
             }
             if (chassis == TanksRules.Chassis.HEAVY) {
                 check(widestFrontPlate > 2.2, "heavy has a broad visible turret face");
-                check(TanksBallistics.intersection(1.12, 1.75, 3, 1.12, 1.75, 0,
-                                0, 0, 0, 0, chassis, 0) < 1,
+                check(
+                        TanksBallistics.intersection(
+                                        1.12, 1.75, 3, 1.12, 1.75, 0, 0, 0, 0, 0, chassis, 0)
+                                < 1,
                         "heavy turret cheeks accept frontal hits outside the old width");
             }
             if (chassis == TanksRules.Chassis.LIGHT) {
-                check((roof - bounds.turretPivotY()) / bounds.scale() < .5,
+                check(
+                        (roof - bounds.turretPivotY()) / bounds.scale() < .5,
                         "light turret roof is flatter even after accounting for chassis scale");
-                check(Double.isInfinite(TanksBallistics.intersection(0, roof + .03, 3, 0, roof + .03, 0,
-                                0, 0, 0, 0, chassis, 0)),
+                check(
+                        Double.isInfinite(
+                                TanksBallistics.intersection(
+                                        0,
+                                        roof + .03,
+                                        3,
+                                        0,
+                                        roof + .03,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        chassis,
+                                        0)),
                         "a shot just above the visible light roof clears the turret");
             }
             visual.update(new Location(render.world, 5, 65, 8, 90, 0), 135, -15, 30, 100);
@@ -118,9 +134,19 @@ public final class TankVisualCheck {
             check(mount.position.getYaw() == 0, "seat following does not overwrite mouse yaw");
             check(mount.retainedPassengers, "moving seat explicitly retains its passenger");
             Location muzzle = visual.muzzle();
-            Vector3f barrelTip = render.states.get(blocks.getLast()).matrix
-                    .transformPosition(new Vector3f(.5f, .5f, 1));
-            check(muzzle.distance(new Location(render.world, 5 + barrelTip.x, 65 + barrelTip.y, 8 + barrelTip.z)) < .02,
+            Vector3f barrelTip =
+                    render.states
+                            .get(blocks.getLast())
+                            .matrix
+                            .transformPosition(new Vector3f(.5f, .5f, 1));
+            check(
+                    muzzle.distance(
+                                    new Location(
+                                            render.world,
+                                            5 + barrelTip.x,
+                                            65 + barrelTip.y,
+                                            8 + barrelTip.z))
+                            < .02,
                     "shot originates at the rendered barrel tip after traverse and elevation");
             check(
                     muzzle.getX() < 5 && muzzle.getZ() < 8 && muzzle.getY() > 66,
@@ -132,9 +158,12 @@ public final class TankVisualCheck {
             visual.update(new Location(render.world, 4.9, 65, 8, 90, 0), 135, -15, 20, 100);
             long movingParts =
                     parked.entrySet().stream()
-                            .filter(entry ->
-                                    !entry.getValue()
-                                            .equals(render.states.get(entry.getKey()).matrix))
+                            .filter(
+                                    entry ->
+                                            !entry.getValue()
+                                                    .equals(
+                                                            render.states.get(entry.getKey())
+                                                                    .matrix))
                             .count();
             check(
                     movingParts >= 20 && movingParts <= 30,
@@ -153,16 +182,23 @@ public final class TankVisualCheck {
                 Entity discardedSeat = visual.seat();
                 discardedSeat.remove();
                 Entity replacement = visual.seat();
-                check(replacement != discardedSeat && replacement.isValid(),
+                check(
+                        replacement != discardedSeat && replacement.isValid(),
                         "a removed logout seat is replaced before remount");
-                check(visual.entities().size() == ownedCount
+                check(
+                        visual.entities().size() == ownedCount
                                 && !visual.entities().contains(discardedSeat)
                                 && visual.entities().contains(replacement),
                         "seat recovery owns one current anchor without duplicating the model");
                 RenderEntity state = render.states.get(replacement);
-                check(state.invulnerable && !state.gravity && !state.persistent && !state.visibleByDefault,
+                check(
+                        state.invulnerable
+                                && !state.gravity
+                                && !state.persistent
+                                && !state.visibleByDefault,
                         "recovered seats retain privacy and nonpersistent vehicle configuration");
-                check(Math.abs(state.position.getY() - mount.position.getY()) < .001,
+                check(
+                        Math.abs(state.position.getY() - mount.position.getY()) < .001,
                         "recovered seats retain the class-specific camera anchor");
             }
             mount = render.states.get(visual.seat());
@@ -279,11 +315,33 @@ public final class TankVisualCheck {
                                                                                     "remove"))
                                                                                 state.removed =
                                                                                         true;
-                                                                            else if (name.equals("isValid")) return !state.removed;
-                                                                            else if (name.equals("setInvulnerable")) state.invulnerable = (boolean) values[0];
-                                                                            else if (name.equals("setGravity")) state.gravity = (boolean) values[0];
-                                                                            else if (name.equals("setPersistent")) state.persistent = (boolean) values[0];
-                                                                            else if (name.equals("setVisibleByDefault")) state.visibleByDefault = (boolean) values[0];
+                                                                            else if (name.equals(
+                                                                                    "isValid"))
+                                                                                return !state.removed;
+                                                                            else if (name.equals(
+                                                                                    "setInvulnerable"))
+                                                                                state.invulnerable =
+                                                                                        (boolean)
+                                                                                                values[
+                                                                                                        0];
+                                                                            else if (name.equals(
+                                                                                    "setGravity"))
+                                                                                state.gravity =
+                                                                                        (boolean)
+                                                                                                values[
+                                                                                                        0];
+                                                                            else if (name.equals(
+                                                                                    "setPersistent"))
+                                                                                state.persistent =
+                                                                                        (boolean)
+                                                                                                values[
+                                                                                                        0];
+                                                                            else if (name.equals(
+                                                                                    "setVisibleByDefault"))
+                                                                                state.visibleByDefault =
+                                                                                        (boolean)
+                                                                                                values[
+                                                                                                        0];
                                                                             else if (name.equals(
                                                                                     "equals"))
                                                                                 return object

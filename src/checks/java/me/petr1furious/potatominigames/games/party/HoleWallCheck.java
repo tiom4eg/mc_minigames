@@ -119,14 +119,15 @@ public final class HoleWallCheck {
                     var body = new BoundingBox(u - .3, 81, .2, u + .3, 82.8, .8);
                     check(
                             deck.stream()
-                                    .anyMatch(p ->
-                                            HoleWallPhysics.collides(
-                                                    p.cells(),
-                                                    HoleWallPhysics.Direction.NORTH,
-                                                    -2,
-                                                    2,
-                                                    body,
-                                                    body)),
+                                    .anyMatch(
+                                            p ->
+                                                    HoleWallPhysics.collides(
+                                                            p.cells(),
+                                                            HoleWallPhysics.Direction.NORTH,
+                                                            -2,
+                                                            2,
+                                                            body,
+                                                            body)),
                             "No fixed standing position survives every wall");
                 }
             }

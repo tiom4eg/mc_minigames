@@ -1,10 +1,10 @@
 package me.petr1furious.potatominigames.games.warfare;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import me.petr1furious.potatominigames.core.config.ConfigRegistry;
+import me.petr1furious.potatominigames.core.config.Property;
+import me.petr1furious.potatominigames.core.config.PropertyBag;
+import me.petr1furious.potatominigames.core.config.PropertyCodec;
+import me.petr1furious.potatominigames.core.team.TeamColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -14,11 +14,11 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import me.petr1furious.potatominigames.core.config.ConfigRegistry;
-import me.petr1furious.potatominigames.core.config.Property;
-import me.petr1furious.potatominigames.core.config.PropertyBag;
-import me.petr1furious.potatominigames.core.config.PropertyCodec;
-import me.petr1furious.potatominigames.core.team.TeamColor;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 
 /** The "war" and "war.teambeacon" bags, plus the kit, beacons and maps stored in the same file. */
 public final class WarfareConfig {
@@ -27,50 +27,65 @@ public final class WarfareConfig {
     private final ConfigRegistry configs;
 
     private final PropertyBag bag = new PropertyBag("war");
-    public final Property<Vector> gameCenter = bag.define("gameCenter", PropertyCodec.VECTOR, new Vector(0, 0, 0));
-    public final Property<String> gameWorld = bag.define("gameWorld", PropertyCodec.STRING, "world")
-            .suggest(() -> Bukkit.getWorlds().stream().map(World::getName).toList());
+    public final Property<Vector> gameCenter =
+            bag.define("gameCenter", PropertyCodec.VECTOR, new Vector(0, 0, 0));
+    public final Property<String> gameWorld =
+            bag.define("gameWorld", PropertyCodec.STRING, "world")
+                    .suggest(() -> Bukkit.getWorlds().stream().map(World::getName).toList());
     public final Property<Integer> gameRadius = bag.define("gameRadius", PropertyCodec.INT, 200);
-    public final Property<String> mode = bag.define("mode", PropertyCodec.STRING, "classic")
-            .oneOf(() -> List.of("classic", "team_beacon"));
-    public final Property<Boolean> arenaBorderEnabled = bag.define("arenaBorderEnabled", PropertyCodec.BOOL, false);
-    public final Property<Double> arenaBorderInitialSize = bag.define("arenaBorderInitialSize", PropertyCodec.DOUBLE,
-            400.0);
-    public final Property<Double> arenaBorderFinalSize = bag.define("arenaBorderFinalSize", PropertyCodec.DOUBLE,
-            100.0);
-    public final Property<Integer> arenaBorderTimeToFinalSeconds = bag.define("arenaBorderTimeToFinalSeconds",
-            PropertyCodec.INT, 600);
-    public final Property<Double> arenaBorderCenterRadius = bag.define("arenaBorderCenterRadius",
-            PropertyCodec.DOUBLE, 0.0);
-    public final Property<Integer> distanceUpdateIntervalSeconds = bag.define("distanceUpdateIntervalSeconds",
-            PropertyCodec.INT, 4);
-    public final Property<Integer> distanceGranularity = bag.define("distanceGranularity", PropertyCodec.INT, 50);
-    public final Property<Boolean> enableLifts = bag.define("enableLifts", PropertyCodec.BOOL, true);
-    public final Property<Material> liftMaterial = bag.define("liftMaterial", PropertyCodec.MATERIAL,
-            Material.LIGHT_GRAY_CONCRETE);
-    public final Property<Boolean> enableGameInventory = bag.define("enableGameInventory", PropertyCodec.BOOL, false);
-    public final Property<Boolean> enforceGameRules = bag.define("enforceGameRules", PropertyCodec.BOOL, true);
-    /** Food never goes down for players in the game; saturation still runs out, so no fast regeneration. */
+    public final Property<String> mode =
+            bag.define("mode", PropertyCodec.STRING, "classic")
+                    .oneOf(() -> List.of("classic", "team_beacon"));
+    public final Property<Boolean> arenaBorderEnabled =
+            bag.define("arenaBorderEnabled", PropertyCodec.BOOL, false);
+    public final Property<Double> arenaBorderInitialSize =
+            bag.define("arenaBorderInitialSize", PropertyCodec.DOUBLE, 400.0);
+    public final Property<Double> arenaBorderFinalSize =
+            bag.define("arenaBorderFinalSize", PropertyCodec.DOUBLE, 100.0);
+    public final Property<Integer> arenaBorderTimeToFinalSeconds =
+            bag.define("arenaBorderTimeToFinalSeconds", PropertyCodec.INT, 600);
+    public final Property<Double> arenaBorderCenterRadius =
+            bag.define("arenaBorderCenterRadius", PropertyCodec.DOUBLE, 0.0);
+    public final Property<Integer> distanceUpdateIntervalSeconds =
+            bag.define("distanceUpdateIntervalSeconds", PropertyCodec.INT, 4);
+    public final Property<Integer> distanceGranularity =
+            bag.define("distanceGranularity", PropertyCodec.INT, 50);
+    public final Property<Boolean> enableLifts =
+            bag.define("enableLifts", PropertyCodec.BOOL, true);
+    public final Property<Material> liftMaterial =
+            bag.define("liftMaterial", PropertyCodec.MATERIAL, Material.LIGHT_GRAY_CONCRETE);
+    public final Property<Boolean> enableGameInventory =
+            bag.define("enableGameInventory", PropertyCodec.BOOL, false);
+    public final Property<Boolean> enforceGameRules =
+            bag.define("enforceGameRules", PropertyCodec.BOOL, true);
+
+    /**
+     * Food never goes down for players in the game; saturation still runs out, so no fast
+     * regeneration.
+     */
     public final Property<Boolean> noHunger = bag.define("noHunger", PropertyCodec.BOOL, true);
 
     private final PropertyBag teamBeaconBag = new PropertyBag("war.teambeacon");
-    public final Property<Boolean> hidePerPlayerDistances = teamBeaconBag.define("hidePerPlayerDistances",
-            PropertyCodec.BOOL, true);
-    public final Property<Boolean> keepInvisibility = teamBeaconBag.define("keepInvisibility", PropertyCodec.BOOL,
-            true);
-    public final Property<Integer> protectionRadius = teamBeaconBag.define("protectionRadius", PropertyCodec.INT, 16);
-    public final Property<Integer> beaconMaxHealth = teamBeaconBag.define("beaconMaxHealth", PropertyCodec.INT, 20);
-    public final Property<Integer> respawnDelaySeconds = teamBeaconBag.define("respawnDelaySeconds",
-            PropertyCodec.INT, 8);
-    public final Property<Integer> respawnBlindnessSeconds = teamBeaconBag.define("respawnBlindnessSeconds",
-            PropertyCodec.INT, 8);
-    public final Property<Boolean> disableSpawnProtectionOnAttack = teamBeaconBag
-            .define("disableSpawnProtectionOnAttack", PropertyCodec.BOOL, true);
-    public final Property<Integer> spawnProtectionSeconds = teamBeaconBag.define("spawnProtectionSeconds",
-            PropertyCodec.INT, 2);
-    public final Property<Boolean> friendlyFire = teamBeaconBag.define("friendlyFire", PropertyCodec.BOOL, false);
-    public final Property<Boolean> beaconBlockBreaksOnlyByEnemies = teamBeaconBag
-            .define("beaconBlockBreaksOnlyByEnemies", PropertyCodec.BOOL, true);
+    public final Property<Boolean> hidePerPlayerDistances =
+            teamBeaconBag.define("hidePerPlayerDistances", PropertyCodec.BOOL, true);
+    public final Property<Boolean> keepInvisibility =
+            teamBeaconBag.define("keepInvisibility", PropertyCodec.BOOL, true);
+    public final Property<Integer> protectionRadius =
+            teamBeaconBag.define("protectionRadius", PropertyCodec.INT, 16);
+    public final Property<Integer> beaconMaxHealth =
+            teamBeaconBag.define("beaconMaxHealth", PropertyCodec.INT, 20);
+    public final Property<Integer> respawnDelaySeconds =
+            teamBeaconBag.define("respawnDelaySeconds", PropertyCodec.INT, 8);
+    public final Property<Integer> respawnBlindnessSeconds =
+            teamBeaconBag.define("respawnBlindnessSeconds", PropertyCodec.INT, 8);
+    public final Property<Boolean> disableSpawnProtectionOnAttack =
+            teamBeaconBag.define("disableSpawnProtectionOnAttack", PropertyCodec.BOOL, true);
+    public final Property<Integer> spawnProtectionSeconds =
+            teamBeaconBag.define("spawnProtectionSeconds", PropertyCodec.INT, 2);
+    public final Property<Boolean> friendlyFire =
+            teamBeaconBag.define("friendlyFire", PropertyCodec.BOOL, false);
+    public final Property<Boolean> beaconBlockBreaksOnlyByEnemies =
+            teamBeaconBag.define("beaconBlockBreaksOnlyByEnemies", PropertyCodec.BOOL, true);
 
     public WarfareConfig(ConfigRegistry configs) {
         this.configs = configs;
@@ -105,8 +120,13 @@ public final class WarfareConfig {
                     }
                 }
             }
-            maps.add(new WarfareMap(name, map.getString("template", name),
-                    center != null ? center : new Vector(0, 0, 0), map.getInt("radius", gameRadius.get()), beacons));
+            maps.add(
+                    new WarfareMap(
+                            name,
+                            map.getString("template", name),
+                            center != null ? center : new Vector(0, 0, 0),
+                            map.getInt("radius", gameRadius.get()),
+                            beacons));
         }
         return maps;
     }
@@ -114,12 +134,18 @@ public final class WarfareConfig {
     /** Maps a mode can play: team beacon needs the beacons of two teams. */
     public List<WarfareMap> mapsFor(String mode) {
         return maps().stream()
-                .filter(map -> !mode.equalsIgnoreCase("team_beacon") || map.beaconTeams().size() >= 2)
+                .filter(
+                        map ->
+                                !mode.equalsIgnoreCase("team_beacon")
+                                        || map.beaconTeams().size() >= 2)
                 .toList();
     }
 
     public WarfareMap map(String name) {
-        return maps().stream().filter(map -> map.name().equalsIgnoreCase(name)).findFirst().orElse(null);
+        return maps().stream()
+                .filter(map -> map.name().equalsIgnoreCase(name))
+                .findFirst()
+                .orElse(null);
     }
 
     /** Adds or replaces a map; its beacons are kept. */
@@ -140,8 +166,16 @@ public final class WarfareConfig {
     /** Null location clears it. */
     public void setMapBeacon(WarfareMap map, TeamColor team, Location location) {
         String path = "maps." + map.name() + ".beacons." + team.id();
-        configs.file(FILE).set(path, location == null ? null
-                : renderVector(new Vector(location.getBlockX(), location.getBlockY(), location.getBlockZ())));
+        configs.file(FILE)
+                .set(
+                        path,
+                        location == null
+                                ? null
+                                : renderVector(
+                                        new Vector(
+                                                location.getBlockX(),
+                                                location.getBlockY(),
+                                                location.getBlockZ())));
         configs.saveFile(FILE);
     }
 
@@ -169,7 +203,8 @@ public final class WarfareConfig {
         if (stored == null) {
             return null;
         }
-        return stored.stream().map(item -> item instanceof ItemStack stack ? stack : null)
+        return stored.stream()
+                .map(item -> item instanceof ItemStack stack ? stack : null)
                 .toArray(ItemStack[]::new);
     }
 
@@ -179,7 +214,8 @@ public final class WarfareConfig {
     }
 
     public Location getBeacon(TeamColor team) {
-        ConfigurationSection section = configs.file(FILE).getConfigurationSection("beacons." + team.id());
+        ConfigurationSection section =
+                configs.file(FILE).getConfigurationSection("beacons." + team.id());
         if (section == null) {
             return null;
         }

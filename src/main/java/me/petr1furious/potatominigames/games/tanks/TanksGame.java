@@ -85,20 +85,21 @@ public final class TanksGame implements Minigame {
         for (String action : List.of("help", "light", "medium", "heavy"))
             root.then(
                     Commands.literal(action)
-                            .executes(ctx -> {
-                                if (!(ctx.getSource().getSender() instanceof Player p)) {
-                                    ctx.getSource()
-                                            .getSender()
-                                            .sendMessage(I18n.tr("tanks.error.player"));
-                                    return 0;
-                                }
-                                TanksSession session = playing.get(p.getUniqueId());
-                                if (session == null) {
-                                    p.sendMessage(I18n.tr("tanks.error.not-playing"));
-                                    return 0;
-                                }
-                                session.command(p, action);
-                                return 1;
-                            }));
+                            .executes(
+                                    ctx -> {
+                                        if (!(ctx.getSource().getSender() instanceof Player p)) {
+                                            ctx.getSource()
+                                                    .getSender()
+                                                    .sendMessage(I18n.tr("tanks.error.player"));
+                                            return 0;
+                                        }
+                                        TanksSession session = playing.get(p.getUniqueId());
+                                        if (session == null) {
+                                            p.sendMessage(I18n.tr("tanks.error.not-playing"));
+                                            return 0;
+                                        }
+                                        session.command(p, action);
+                                        return 1;
+                                    }));
     }
 }

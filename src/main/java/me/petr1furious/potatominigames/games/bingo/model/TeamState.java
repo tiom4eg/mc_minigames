@@ -1,7 +1,8 @@
 package me.petr1furious.potatominigames.games.bingo.model;
 
-import java.util.Collections;
 import me.petr1furious.potatominigames.core.team.TeamColor;
+
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 

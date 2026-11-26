@@ -1,11 +1,11 @@
 package me.petr1furious.potatominigames.core.text;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 
 public final class TimeFormat {
-    private TimeFormat() {
-    }
+    private TimeFormat() {}
 
     /** "MM:SS", or "HH:MM:SS" when an hour or longer. */
     public static String clock(long totalSeconds) {
@@ -25,7 +25,8 @@ public final class TimeFormat {
         long minutes = seconds / 60;
         long secs = seconds % 60;
         if (minutes > 0 && secs > 0) {
-            return I18n.tr("common.time.minutes", minutes).append(Component.space())
+            return I18n.tr("common.time.minutes", minutes)
+                    .append(Component.space())
                     .append(I18n.tr("common.time.seconds", secs));
         }
         if (minutes > 0) {

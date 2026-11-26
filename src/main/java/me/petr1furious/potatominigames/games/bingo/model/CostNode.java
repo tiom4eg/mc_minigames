@@ -15,8 +15,17 @@ public final class CostNode {
     private final boolean inferRecipeFromVanilla;
     private final boolean boardTargetEnabled;
 
-    public CostNode(String id, CostNodeType type, boolean once, Double base, Double perBatch, Double beta,
-            NodeRecipe recipe, BoardMatch boardMatch, Material displayMaterial, boolean inferRecipeFromVanilla,
+    public CostNode(
+            String id,
+            CostNodeType type,
+            boolean once,
+            Double base,
+            Double perBatch,
+            Double beta,
+            NodeRecipe recipe,
+            BoardMatch boardMatch,
+            Material displayMaterial,
+            boolean inferRecipeFromVanilla,
             boolean boardTargetEnabled) {
         this.id = id;
         this.type = type;

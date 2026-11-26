@@ -1,17 +1,16 @@
 package me.petr1furious.potatominigames.games.chase;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
-import org.bukkit.Material;
-
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
 import me.petr1furious.potatominigames.core.config.ConfigRegistry;
 import me.petr1furious.potatominigames.core.game.GameSession;
 import me.petr1furious.potatominigames.core.game.Minigame;
 import me.petr1furious.potatominigames.core.game.SessionServices;
 import me.petr1furious.potatominigames.gadgets.GadgetRegistry;
+import me.petr1furious.potatominigames.i18n.I18n;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+import org.bukkit.Material;
 
 public final class ChaseGame implements Minigame {
     private final ChaseConfig config;

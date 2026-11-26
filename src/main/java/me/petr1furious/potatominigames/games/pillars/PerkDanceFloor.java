@@ -1,7 +1,5 @@
 package me.petr1furious.potatominigames.games.pillars;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -10,11 +8,14 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.List;
+
 final class PerkDanceFloor {
     private static final int TICKS = 20 * 20;
     private static final Material[] COLORS = {
-            Material.MAGENTA_CONCRETE, Material.CYAN_CONCRETE, Material.YELLOW_CONCRETE,
-            Material.LIME_CONCRETE, Material.PURPLE_CONCRETE, Material.PINK_CONCRETE
+        Material.MAGENTA_CONCRETE, Material.CYAN_CONCRETE, Material.YELLOW_CONCRETE,
+        Material.LIME_CONCRETE, Material.PURPLE_CONCRETE, Material.PINK_CONCRETE
     };
     private final PerkTerrain terrain;
     private List<Block> tiles = List.of();
@@ -45,18 +46,23 @@ final class PerkDanceFloor {
                     terrain.put(tiles.get(tile), color(tile, 0), endsAt, true);
                 }
                 Location at = plan.get(5).getLocation().add(.5, 1, .5);
-                listeners = at.getWorld().getPlayers().stream().filter(p -> p.getLocation().distanceSquared(at) <= 48 * 48).toList();
+                listeners =
+                        at.getWorld().getPlayers().stream()
+                                .filter(p -> p.getLocation().distanceSquared(at) <= 48 * 48)
+                                .toList();
                 for (Player listener : listeners) {
-                    listener.playSound(at, Sound.MUSIC_DISC_LAVA_CHICKEN, SoundCategory.RECORDS, 3, 1);
+                    listener.playSound(
+                            at, Sound.MUSIC_DISC_LAVA_CHICKEN, SoundCategory.RECORDS, 3, 1);
                 }
                 return true;
             }
-            facing = switch (facing) {
-                case NORTH -> BlockFace.EAST;
-                case EAST -> BlockFace.SOUTH;
-                case SOUTH -> BlockFace.WEST;
-                default -> BlockFace.NORTH;
-            };
+            facing =
+                    switch (facing) {
+                        case NORTH -> BlockFace.EAST;
+                        case EAST -> BlockFace.SOUTH;
+                        case SOUTH -> BlockFace.WEST;
+                        default -> BlockFace.NORTH;
+                    };
         }
         return false;
     }
@@ -78,7 +84,8 @@ final class PerkDanceFloor {
 
     void close() {
         for (Player listener : listeners) {
-            if (listener.isOnline()) listener.stopSound(Sound.MUSIC_DISC_LAVA_CHICKEN, SoundCategory.RECORDS);
+            if (listener.isOnline())
+                listener.stopSound(Sound.MUSIC_DISC_LAVA_CHICKEN, SoundCategory.RECORDS);
         }
         listeners = List.of();
         tiles = List.of();

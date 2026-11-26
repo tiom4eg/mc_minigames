@@ -1,12 +1,12 @@
 package me.petr1furious.potatominigames.core.preset;
 
-import java.util.List;
+import me.petr1furious.potatominigames.core.command.CommandFailure;
+import me.petr1furious.potatominigames.core.game.Minigame;
+import me.petr1furious.potatominigames.core.session.SessionManager;
 
 import org.bukkit.entity.Player;
 
-import me.petr1furious.potatominigames.core.game.Minigame;
-import me.petr1furious.potatominigames.core.session.SessionManager;
-import me.petr1furious.potatominigames.core.command.CommandFailure;
+import java.util.List;
 
 public interface PresetGame extends Minigame {
     List<? extends GamePreset<?>> presets();

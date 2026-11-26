@@ -1,37 +1,38 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyCodec;
 import me.petr1furious.potatominigames.core.world.Locations;
+import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.*;
-import org.bukkit.entity.ArmorStand;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
@@ -73,9 +74,20 @@ public class FPVDroneGadget extends AbstractGadget {
         boolean ended = false;
         boolean appliedInvisPotion = false;
 
-        DroneSession(UUID playerId, ArmorStand anchor, BlockDisplay display, Location origin, int startTick,
-                GameMode originalMode, boolean originalAllowFlight, ItemStack[] originalContents, int originalHeldSlot,
-                double health, int foodLevel, float saturation, Double originalScale) {
+        DroneSession(
+                UUID playerId,
+                ArmorStand anchor,
+                BlockDisplay display,
+                Location origin,
+                int startTick,
+                GameMode originalMode,
+                boolean originalAllowFlight,
+                ItemStack[] originalContents,
+                int originalHeldSlot,
+                double health,
+                int foodLevel,
+                float saturation,
+                Double originalScale) {
             this.playerId = playerId;
             this.anchor = anchor;
             this.droneDisplay = display;
@@ -109,249 +121,282 @@ public class FPVDroneGadget extends AbstractGadget {
     }
 
     private void registerDamageListener() {
-        plugin.getServer().getPluginManager().registerEvents(new Listener() {
-            @EventHandler
-            public void onAnchorDeath(EntityDeathEvent event) {
-                Entity victim = event.getEntity();
-                if (!(victim instanceof ArmorStand))
-                    return;
-                String ownerId = getAnchorOwnerId(victim.getPersistentDataContainer());
-                if (ownerId == null)
-                    return;
+        plugin.getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new Listener() {
+                            @EventHandler
+                            public void onAnchorDeath(EntityDeathEvent event) {
+                                Entity victim = event.getEntity();
+                                if (!(victim instanceof ArmorStand)) return;
+                                String ownerId =
+                                        getAnchorOwnerId(victim.getPersistentDataContainer());
+                                if (ownerId == null) return;
 
-                event.getDrops().clear();
-                event.setDroppedExp(0);
+                                event.getDrops().clear();
+                                event.setDroppedExp(0);
 
-                UUID owner = UUID.fromString(ownerId);
-                DroneSession session = sessions.get(owner);
-                if (session == null || session.ended)
-                    return;
-                endSession(owner);
+                                UUID owner = UUID.fromString(ownerId);
+                                DroneSession session = sessions.get(owner);
+                                if (session == null || session.ended) return;
+                                endSession(owner);
 
-                Player ownerPlayer = plugin.getServer().getPlayer(owner);
-                // The body died, so the pilot does; unless they are already out of the game, who
-                // must not be put back in survival only to die again.
-                if (ownerPlayer != null && ownerPlayer.isOnline()
-                        && ownerPlayer.getGameMode() != GameMode.SPECTATOR) {
-                    ownerPlayer.damage(1000.0, event.getDamageSource());
-                }
-            }
+                                Player ownerPlayer = plugin.getServer().getPlayer(owner);
+                                // The body died, so the pilot does; unless they are already out of
+                                // the game, who
+                                // must not be put back in survival only to die again.
+                                if (ownerPlayer != null
+                                        && ownerPlayer.isOnline()
+                                        && ownerPlayer.getGameMode() != GameMode.SPECTATOR) {
+                                    ownerPlayer.damage(1000.0, event.getDamageSource());
+                                }
+                            }
 
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            public void onBlockBreak(BlockBreakEvent event) {
-                Player p = event.getPlayer();
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s != null && !s.ended) {
-                    event.setCancelled(true);
-                }
-            }
+                            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+                            public void onBlockBreak(BlockBreakEvent event) {
+                                Player p = event.getPlayer();
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s != null && !s.ended) {
+                                    event.setCancelled(true);
+                                }
+                            }
 
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            public void onBlockPlace(BlockPlaceEvent event) {
-                Player p = event.getPlayer();
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s != null && !s.ended) {
-                    event.setCancelled(true);
-                }
-            }
+                            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+                            public void onBlockPlace(BlockPlaceEvent event) {
+                                Player p = event.getPlayer();
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s != null && !s.ended) {
+                                    event.setCancelled(true);
+                                }
+                            }
 
-            @EventHandler(priority = EventPriority.LOWEST)
-            public void onPlayerDeath(PlayerDeathEvent event) {
-                Player p = event.getEntity();
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s != null && !s.ended) {
-                    event.setCancelled(true);
-                    endSession(p.getUniqueId());
-                }
-            }
+                            @EventHandler(priority = EventPriority.LOWEST)
+                            public void onPlayerDeath(PlayerDeathEvent event) {
+                                Player p = event.getEntity();
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s != null && !s.ended) {
+                                    event.setCancelled(true);
+                                    endSession(p.getUniqueId());
+                                }
+                            }
 
-            @EventHandler(priority = EventPriority.HIGHEST)
-            public void onPlayerQuit(PlayerQuitEvent event) {
-                Player p = event.getPlayer();
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s != null && !s.ended) {
-                    endSession(p.getUniqueId());
-                }
-            }
+                            @EventHandler(priority = EventPriority.HIGHEST)
+                            public void onPlayerQuit(PlayerQuitEvent event) {
+                                Player p = event.getPlayer();
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s != null && !s.ended) {
+                                    endSession(p.getUniqueId());
+                                }
+                            }
 
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            public void onItemHeld(PlayerItemHeldEvent event) {
-                Player p = event.getPlayer();
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s == null || s.ended) {
-                    return;
-                }
-                ItemStack nextItem = p.getInventory().getItem(event.getNewSlot());
-                if (!isAbortItem(nextItem)) {
-                    return;
-                }
-                endSession(p.getUniqueId());
-                p.sendActionBar(I18n.tr("gadgets.drone.aborted").color(NamedTextColor.YELLOW));
-            }
+                            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+                            public void onItemHeld(PlayerItemHeldEvent event) {
+                                Player p = event.getPlayer();
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s == null || s.ended) {
+                                    return;
+                                }
+                                ItemStack nextItem = p.getInventory().getItem(event.getNewSlot());
+                                if (!isAbortItem(nextItem)) {
+                                    return;
+                                }
+                                endSession(p.getUniqueId());
+                                p.sendActionBar(
+                                        I18n.tr("gadgets.drone.aborted")
+                                                .color(NamedTextColor.YELLOW));
+                            }
 
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            public void onInventoryClick(InventoryClickEvent event) {
-                if (!(event.getWhoClicked() instanceof Player p)) {
-                    return;
-                }
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s == null || s.ended) {
-                    return;
-                }
-                event.setCancelled(true);
-            }
+                            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+                            public void onInventoryClick(InventoryClickEvent event) {
+                                if (!(event.getWhoClicked() instanceof Player p)) {
+                                    return;
+                                }
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s == null || s.ended) {
+                                    return;
+                                }
+                                event.setCancelled(true);
+                            }
 
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            public void onInventoryDrag(InventoryDragEvent event) {
-                if (!(event.getWhoClicked() instanceof Player p)) {
-                    return;
-                }
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s == null || s.ended) {
-                    return;
-                }
-                event.setCancelled(true);
-            }
+                            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+                            public void onInventoryDrag(InventoryDragEvent event) {
+                                if (!(event.getWhoClicked() instanceof Player p)) {
+                                    return;
+                                }
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s == null || s.ended) {
+                                    return;
+                                }
+                                event.setCancelled(true);
+                            }
 
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            public void onDropItem(PlayerDropItemEvent event) {
-                Player p = event.getPlayer();
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s == null || s.ended) {
-                    return;
-                }
-                if (isAbortItem(event.getItemDrop().getItemStack())) {
-                    event.setCancelled(true);
-                }
-            }
+                            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+                            public void onDropItem(PlayerDropItemEvent event) {
+                                Player p = event.getPlayer();
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s == null || s.ended) {
+                                    return;
+                                }
+                                if (isAbortItem(event.getItemDrop().getItemStack())) {
+                                    event.setCancelled(true);
+                                }
+                            }
 
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            public void onInteractAtEntity(PlayerInteractAtEntityEvent event) {
-                Entity entity = event.getRightClicked();
-                if (entity instanceof ArmorStand && isAnchor(entity.getPersistentDataContainer())) {
-                    event.setCancelled(true);
-                }
-                Player p = event.getPlayer();
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s != null && !s.ended) {
-                    event.setCancelled(true);
-                }
-            }
+                            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+                            public void onInteractAtEntity(PlayerInteractAtEntityEvent event) {
+                                Entity entity = event.getRightClicked();
+                                if (entity instanceof ArmorStand
+                                        && isAnchor(entity.getPersistentDataContainer())) {
+                                    event.setCancelled(true);
+                                }
+                                Player p = event.getPlayer();
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s != null && !s.ended) {
+                                    event.setCancelled(true);
+                                }
+                            }
 
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            public void onInteractEntity(PlayerInteractEntityEvent event) {
-                Entity entity = event.getRightClicked();
-                if (entity instanceof ArmorStand && isAnchor(entity.getPersistentDataContainer())) {
-                    event.setCancelled(true);
-                }
-                Player p = event.getPlayer();
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s != null && !s.ended) {
-                    event.setCancelled(true);
-                }
-            }
+                            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+                            public void onInteractEntity(PlayerInteractEntityEvent event) {
+                                Entity entity = event.getRightClicked();
+                                if (entity instanceof ArmorStand
+                                        && isAnchor(entity.getPersistentDataContainer())) {
+                                    event.setCancelled(true);
+                                }
+                                Player p = event.getPlayer();
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s != null && !s.ended) {
+                                    event.setCancelled(true);
+                                }
+                            }
 
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            public void onArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
-                ArmorStand as = event.getRightClicked();
-                if (as != null && isAnchor(as.getPersistentDataContainer())) {
-                    event.setCancelled(true);
-                }
-                Player p = event.getPlayer();
-                DroneSession s = sessions.get(p.getUniqueId());
-                if (s != null && !s.ended) {
-                    event.setCancelled(true);
-                }
-            }
-        }, plugin);
+                            @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+                            public void onArmorStandManipulate(
+                                    PlayerArmorStandManipulateEvent event) {
+                                ArmorStand as = event.getRightClicked();
+                                if (as != null && isAnchor(as.getPersistentDataContainer())) {
+                                    event.setCancelled(true);
+                                }
+                                Player p = event.getPlayer();
+                                DroneSession s = sessions.get(p.getUniqueId());
+                                if (s != null && !s.ended) {
+                                    event.setCancelled(true);
+                                }
+                            }
+                        },
+                        plugin);
     }
 
     private void startTickTask() {
-        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
-            if (sessions.isEmpty())
-                return;
-            int tick = Bukkit.getCurrentTick();
-            Set<UUID> toEnd = new LinkedHashSet<>();
-            for (Map.Entry<UUID, DroneSession> e : new ArrayList<>(sessions.entrySet())) {
-                DroneSession s = e.getValue();
-                if (s.ended || toEnd.contains(s.playerId))
-                    continue;
-                Player p = plugin.getServer().getPlayer(s.playerId);
-                if (p == null || !p.isOnline() || p.isDead()) {
-                    toEnd.add(s.playerId);
-                    continue;
-                }
-
-                if (!p.getAllowFlight())
-                    p.setAllowFlight(true);
-                p.setFlying(true);
-
-                if (tick - s.startTick > getMaxFlightTicks()) {
-                    explodeDrone(p, s.lastLocation);
-                    toEnd.add(s.playerId);
-                    continue;
-                }
-
-                if (s.lastLocation != null) {
-                    Location prev = s.lastLocation;
-                    Location curr = p.getLocation();
-                    double dx = curr.getX() - prev.getX();
-                    double dy = curr.getY() - prev.getY();
-                    double dz = curr.getZ() - prev.getZ();
-                    double distSq = dx * dx + dy * dy + dz * dz;
-                    if (distSq > 1.0E-6) {
-                        if (detectShiftedCollision(p, dx, dy, dz, 0.15)) {
-                            explodeDrone(p, s.lastLocation);
-                            toEnd.add(s.playerId);
-                            continue;
-                        }
-                        Entity collidedEntity = detectEntityCollision(p, s);
-                        if (collidedEntity != null) {
-                            explodeDrone(p, s.lastLocation);
-                            toEnd.add(s.playerId);
-                            if (collidedEntity instanceof Player other) {
-                                DroneSession otherSession = sessions.get(other.getUniqueId());
-                                if (otherSession != null && !otherSession.ended) {
-                                    toEnd.add(other.getUniqueId());
+        plugin.getServer()
+                .getScheduler()
+                .runTaskTimer(
+                        plugin,
+                        () -> {
+                            if (sessions.isEmpty()) return;
+                            int tick = Bukkit.getCurrentTick();
+                            Set<UUID> toEnd = new LinkedHashSet<>();
+                            for (Map.Entry<UUID, DroneSession> e :
+                                    new ArrayList<>(sessions.entrySet())) {
+                                DroneSession s = e.getValue();
+                                if (s.ended || toEnd.contains(s.playerId)) continue;
+                                Player p = plugin.getServer().getPlayer(s.playerId);
+                                if (p == null || !p.isOnline() || p.isDead()) {
+                                    toEnd.add(s.playerId);
+                                    continue;
                                 }
+
+                                if (!p.getAllowFlight()) p.setAllowFlight(true);
+                                p.setFlying(true);
+
+                                if (tick - s.startTick > getMaxFlightTicks()) {
+                                    explodeDrone(p, s.lastLocation);
+                                    toEnd.add(s.playerId);
+                                    continue;
+                                }
+
+                                if (s.lastLocation != null) {
+                                    Location prev = s.lastLocation;
+                                    Location curr = p.getLocation();
+                                    double dx = curr.getX() - prev.getX();
+                                    double dy = curr.getY() - prev.getY();
+                                    double dz = curr.getZ() - prev.getZ();
+                                    double distSq = dx * dx + dy * dy + dz * dz;
+                                    if (distSq > 1.0E-6) {
+                                        if (detectShiftedCollision(p, dx, dy, dz, 0.15)) {
+                                            explodeDrone(p, s.lastLocation);
+                                            toEnd.add(s.playerId);
+                                            continue;
+                                        }
+                                        Entity collidedEntity = detectEntityCollision(p, s);
+                                        if (collidedEntity != null) {
+                                            explodeDrone(p, s.lastLocation);
+                                            toEnd.add(s.playerId);
+                                            if (collidedEntity instanceof Player other) {
+                                                DroneSession otherSession =
+                                                        sessions.get(other.getUniqueId());
+                                                if (otherSession != null && !otherSession.ended) {
+                                                    toEnd.add(other.getUniqueId());
+                                                }
+                                            }
+                                            continue;
+                                        }
+                                    }
+                                }
+
+                                if (s.droneDisplay != null && !s.droneDisplay.isDead()) {
+                                    Location l = p.getLocation().clone();
+                                    l.setPitch(0f);
+                                    double angle = l.getYaw() / 180 * Math.PI;
+                                    double sin = Math.sin(angle);
+                                    double cos = Math.cos(angle);
+                                    s.droneDisplay.teleport(
+                                            l.add(-0.5 * (cos - sin), 1, -0.5 * (sin + cos)));
+                                }
+
+                                int left =
+                                        (int)
+                                                Math.max(
+                                                        0,
+                                                        (getMaxFlightTicks() - (tick - s.startTick))
+                                                                / 20.0);
+                                p.sendActionBar(
+                                        I18n.tr("gadgets.drone.remaining", left)
+                                                .color(NamedTextColor.AQUA));
+
+                                if (tick % 10 == 0) {
+                                    p.getWorld()
+                                            .playSound(
+                                                    p,
+                                                    Sound.ENTITY_BEE_LOOP,
+                                                    SoundCategory.PLAYERS,
+                                                    (float) (double) soundVolume.get(),
+                                                    2);
+                                }
+
+                                s.lastLocation = p.getLocation().clone();
                             }
-                            continue;
-                        }
-                    }
-                }
 
-                if (s.droneDisplay != null && !s.droneDisplay.isDead()) {
-                    Location l = p.getLocation().clone();
-                    l.setPitch(0f);
-                    double angle = l.getYaw() / 180 * Math.PI;
-                    double sin = Math.sin(angle);
-                    double cos = Math.cos(angle);
-                    s.droneDisplay.teleport(l.add(-0.5 * (cos - sin), 1, -0.5 * (sin + cos)));
-                }
-
-                int left = (int) Math.max(0, (getMaxFlightTicks() - (tick - s.startTick)) / 20.0);
-                p.sendActionBar(I18n.tr("gadgets.drone.remaining", left).color(NamedTextColor.AQUA));
-
-                if (tick % 10 == 0) {
-                    p.getWorld().playSound(p, Sound.ENTITY_BEE_LOOP, SoundCategory.PLAYERS,
-                            (float) (double) soundVolume.get(), 2);
-                }
-
-                s.lastLocation = p.getLocation().clone();
-            }
-
-            for (UUID id : toEnd)
-                endSession(id);
-        }, 1L, 1L);
+                            for (UUID id : toEnd) endSession(id);
+                        },
+                        1L,
+                        1L);
     }
 
-    private boolean detectShiftedCollision(Player p, double dx, double dy, double dz, double epsScale) {
+    private boolean detectShiftedCollision(
+            Player p, double dx, double dy, double dz, double epsScale) {
         double sx = dx * epsScale;
         double sy = dy * epsScale;
         double sz = dz * epsScale;
         var bb = p.getBoundingBox();
-        return detectBlockCollisionBounds(p.getWorld(), bb.getMinX() + sx, bb.getMinY() + sy, bb.getMinZ() + sz,
-                bb.getMaxX() + sx, bb.getMaxY() + sy, bb.getMaxZ() + sz);
+        return detectBlockCollisionBounds(
+                p.getWorld(),
+                bb.getMinX() + sx,
+                bb.getMinY() + sy,
+                bb.getMinZ() + sz,
+                bb.getMaxX() + sx,
+                bb.getMaxY() + sy,
+                bb.getMaxZ() + sz);
     }
 
     private Entity detectEntityCollision(Player p, DroneSession session) {
@@ -360,15 +405,13 @@ public class FPVDroneGadget extends AbstractGadget {
 
         Collection<Entity> nearby = w.getNearbyEntities(p.getLocation(), 2, 2, 2, ent -> true);
         for (Entity ent : nearby) {
-            if (ent == p)
-                continue;
+            if (ent == p) continue;
             if (session.anchor != null && ent.getUniqueId().equals(session.anchor.getUniqueId()))
                 continue;
-            if (session.droneDisplay != null && ent.getUniqueId().equals(session.droneDisplay.getUniqueId()))
-                continue;
+            if (session.droneDisplay != null
+                    && ent.getUniqueId().equals(session.droneDisplay.getUniqueId())) continue;
             if (ent instanceof Player other) {
-                if (other.getGameMode() == GameMode.SPECTATOR)
-                    continue;
+                if (other.getGameMode() == GameMode.SPECTATOR) continue;
             }
 
             var ebb = ent.getBoundingBox();
@@ -379,8 +422,14 @@ public class FPVDroneGadget extends AbstractGadget {
         return null;
     }
 
-    private boolean detectBlockCollisionBounds(World world, double minX, double minY, double minZ, double maxX,
-            double maxY, double maxZ) {
+    private boolean detectBlockCollisionBounds(
+            World world,
+            double minX,
+            double minY,
+            double minZ,
+            double maxX,
+            double maxY,
+            double maxZ) {
         int bMinX = (int) Math.floor(minX);
         int bMaxX = (int) Math.floor(maxX);
         int bMinY = (int) Math.floor(minY);
@@ -391,10 +440,8 @@ public class FPVDroneGadget extends AbstractGadget {
             for (int by = bMinY; by <= bMaxY; by++) {
                 for (int bz = bMinZ; bz <= bMaxZ; bz++) {
                     Block block = world.getBlockAt(bx, by, bz);
-                    if (!block.getType().isSolid())
-                        continue;
-                    if (block.isPassable())
-                        continue;
+                    if (!block.getType().isSolid()) continue;
+                    if (block.isPassable()) continue;
                     var collisionShape = block.getCollisionShape();
                     for (var shapeBox : collisionShape.getBoundingBoxes()) {
                         double blMinX = bx + shapeBox.getMinX();
@@ -403,7 +450,11 @@ public class FPVDroneGadget extends AbstractGadget {
                         double blMaxY = by + shapeBox.getMaxY();
                         double blMinZ = bz + shapeBox.getMinZ();
                         double blMaxZ = bz + shapeBox.getMaxZ();
-                        if (blMaxX > minX && blMinX < maxX && blMaxY > minY && blMinY < maxY && blMaxZ > minZ
+                        if (blMaxX > minX
+                                && blMinX < maxX
+                                && blMaxY > minY
+                                && blMinY < maxY
+                                && blMaxZ > minZ
                                 && blMinZ < maxZ) {
                             return true;
                         }
@@ -416,8 +467,7 @@ public class FPVDroneGadget extends AbstractGadget {
 
     @Override
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (!GadgetItems.isRightClick(event))
-            return;
+        if (!GadgetItems.isRightClick(event)) return;
         Player player = event.getPlayer();
         DroneSession existing = sessions.get(player.getUniqueId());
         if (existing != null && !existing.ended) {
@@ -425,12 +475,12 @@ public class FPVDroneGadget extends AbstractGadget {
             return;
         }
         ItemStack item = event.getItem();
-        if (!GadgetItems.checkForItem(item, TAG))
-            return;
+        if (!GadgetItems.checkForItem(item, TAG)) return;
         event.setCancelled(true);
 
         if (!player.getLocation().clone().subtract(0, 0.05, 0).getBlock().getType().isSolid()) {
-            player.sendActionBar(I18n.tr("gadgets.drone.ground_required").color(NamedTextColor.RED));
+            player.sendActionBar(
+                    I18n.tr("gadgets.drone.ground_required").color(NamedTextColor.RED));
             return;
         }
 
@@ -444,8 +494,7 @@ public class FPVDroneGadget extends AbstractGadget {
     }
 
     private ItemStack cloneItem(ItemStack original) {
-        if (original == null)
-            return null;
+        if (original == null) return null;
         return original.clone();
     }
 
@@ -460,32 +509,54 @@ public class FPVDroneGadget extends AbstractGadget {
     private void startSession(Player player) {
         Location origin = player.getLocation();
 
-        ArmorStand anchor = origin.getWorld().spawn(origin, ArmorStand.class, as -> {
-            as.setInvisible(false);
-            as.setMarker(false);
-            as.setSmall(false);
-            as.setCustomNameVisible(false);
-            as.setGravity(true);
-            as.setArms(true);
-            as.setBasePlate(false);
-            as.getPersistentDataContainer().set(anchorOwnerKey, PersistentDataType.STRING,
-                    player.getUniqueId().toString());
-            var inv = player.getInventory();
-            if (as.getEquipment() != null) {
-                as.getEquipment().setHelmet(cloneItem(inv.getHelmet()));
-                as.getEquipment().setChestplate(cloneItem(inv.getChestplate()));
-                as.getEquipment().setLeggings(cloneItem(inv.getLeggings()));
-                as.getEquipment().setBoots(cloneItem(inv.getBoots()));
-                as.getEquipment().setItemInMainHand(cloneItem(inv.getItemInMainHand()));
-                as.getEquipment().setItemInOffHand(cloneItem(inv.getItemInOffHand()));
-            }
-        });
+        ArmorStand anchor =
+                origin.getWorld()
+                        .spawn(
+                                origin,
+                                ArmorStand.class,
+                                as -> {
+                                    as.setInvisible(false);
+                                    as.setMarker(false);
+                                    as.setSmall(false);
+                                    as.setCustomNameVisible(false);
+                                    as.setGravity(true);
+                                    as.setArms(true);
+                                    as.setBasePlate(false);
+                                    as.getPersistentDataContainer()
+                                            .set(
+                                                    anchorOwnerKey,
+                                                    PersistentDataType.STRING,
+                                                    player.getUniqueId().toString());
+                                    var inv = player.getInventory();
+                                    if (as.getEquipment() != null) {
+                                        as.getEquipment().setHelmet(cloneItem(inv.getHelmet()));
+                                        as.getEquipment()
+                                                .setChestplate(cloneItem(inv.getChestplate()));
+                                        as.getEquipment().setLeggings(cloneItem(inv.getLeggings()));
+                                        as.getEquipment().setBoots(cloneItem(inv.getBoots()));
+                                        as.getEquipment()
+                                                .setItemInMainHand(
+                                                        cloneItem(inv.getItemInMainHand()));
+                                        as.getEquipment()
+                                                .setItemInOffHand(
+                                                        cloneItem(inv.getItemInOffHand()));
+                                    }
+                                });
 
-        BlockDisplay display = origin.getWorld().spawn(origin, BlockDisplay.class, bd -> {
-            bd.setBlock(Bukkit.createBlockData(Material.IRON_TRAPDOOR));
-            bd.getPersistentDataContainer().set(droneDisplayKey, PersistentDataType.BYTE, (byte) 1);
-            bd.setTeleportDuration(1);
-        });
+        BlockDisplay display =
+                origin.getWorld()
+                        .spawn(
+                                origin,
+                                BlockDisplay.class,
+                                bd -> {
+                                    bd.setBlock(Bukkit.createBlockData(Material.IRON_TRAPDOOR));
+                                    bd.getPersistentDataContainer()
+                                            .set(
+                                                    droneDisplayKey,
+                                                    PersistentDataType.BYTE,
+                                                    (byte) 1);
+                                    bd.setTeleportDuration(1);
+                                });
         GameMode originalMode = player.getGameMode();
         boolean originalAllowFlight = player.getAllowFlight();
         ItemStack[] originalContents = player.getInventory().getContents();
@@ -500,27 +571,40 @@ public class FPVDroneGadget extends AbstractGadget {
         }
 
         player.setGameMode(GameMode.SURVIVAL);
-        if (!player.getAllowFlight())
-            player.setAllowFlight(true);
+        if (!player.getAllowFlight()) player.setAllowFlight(true);
         player.setFlying(true);
         if (scaleAttribute != null) {
             scaleAttribute.setBaseValue(DRONE_PLAYER_SCALE);
         }
         player.teleport(player.getLocation().add(0, 0.05, 0));
         player.getInventory().clear();
-        player.getInventory().setArmorContents(new ItemStack[] { null, null, null, null });
+        player.getInventory().setArmorContents(new ItemStack[] {null, null, null, null});
         player.getInventory().setItem(DRONE_ABORT_SLOT, I18n.item(createAbortItem(), player));
         player.getInventory().setHeldItemSlot(DRONE_ACTIVE_SLOT);
         boolean addedPotion = false;
         if (!player.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
-            PotionEffect invis = new PotionEffect(PotionEffectType.INVISIBILITY, 20 * 60 * 30, 1, false, false, false);
+            PotionEffect invis =
+                    new PotionEffect(
+                            PotionEffectType.INVISIBILITY, 20 * 60 * 30, 1, false, false, false);
             player.addPotionEffect(invis);
             addedPotion = true;
         }
 
-        DroneSession session = new DroneSession(player.getUniqueId(), anchor, display, origin, Bukkit.getCurrentTick(),
-                originalMode, originalAllowFlight, originalContents, originalHeldSlot, health, food, saturation,
-                originalScale);
+        DroneSession session =
+                new DroneSession(
+                        player.getUniqueId(),
+                        anchor,
+                        display,
+                        origin,
+                        Bukkit.getCurrentTick(),
+                        originalMode,
+                        originalAllowFlight,
+                        originalContents,
+                        originalHeldSlot,
+                        health,
+                        food,
+                        saturation,
+                        originalScale);
         session.appliedInvisPotion = addedPotion;
         sessions.put(player.getUniqueId(), session);
         player.sendActionBar(I18n.tr("gadgets.drone.deployed").color(NamedTextColor.GREEN));
@@ -528,8 +612,7 @@ public class FPVDroneGadget extends AbstractGadget {
 
     public void endSession(UUID playerId) {
         DroneSession session = sessions.get(playerId);
-        if (session == null || session.ended)
-            return;
+        if (session == null || session.ended) return;
         session.ended = true;
         Player player = plugin.getServer().getPlayer(playerId);
         if (player != null && player.isOnline()) {
@@ -555,19 +638,24 @@ public class FPVDroneGadget extends AbstractGadget {
             }
             if (session.anchor != null && !session.anchor.isDead()) {
                 Location anchorLocation = session.anchor.getLocation();
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (player.isOnline() && !player.isDead()) {
-                        player.teleport(anchorLocation);
-                        double max = player.getAttribute(Attribute.MAX_HEALTH).getValue();
-                        player.setHealth(Math.min(max, session.health));
-                        player.setFoodLevel(session.foodLevel);
-                        player.setSaturation(session.saturation);
-                    }
-                }, 1L);
+                Bukkit.getScheduler()
+                        .runTaskLater(
+                                plugin,
+                                () -> {
+                                    if (player.isOnline() && !player.isDead()) {
+                                        player.teleport(anchorLocation);
+                                        double max =
+                                                player.getAttribute(Attribute.MAX_HEALTH)
+                                                        .getValue();
+                                        player.setHealth(Math.min(max, session.health));
+                                        player.setFoodLevel(session.foodLevel);
+                                        player.setSaturation(session.saturation);
+                                    }
+                                },
+                                1L);
             }
         }
-        if (session.anchor != null && !session.anchor.isDead())
-            session.anchor.remove();
+        if (session.anchor != null && !session.anchor.isDead()) session.anchor.remove();
         if (session.droneDisplay != null && !session.droneDisplay.isDead())
             session.droneDisplay.remove();
         sessions.remove(playerId);
@@ -589,7 +677,8 @@ public class FPVDroneGadget extends AbstractGadget {
     }
 
     private void explodeDrone(Player player, Location previousTickLocation) {
-        Location location = previousTickLocation != null ? previousTickLocation : player.getLocation();
+        Location location =
+                previousTickLocation != null ? previousTickLocation : player.getLocation();
         Locations.spawnExplosion(location, explosionPower.get(), player, true);
     }
 
@@ -598,7 +687,9 @@ public class FPVDroneGadget extends AbstractGadget {
         GadgetItems.addTag(item, ABORT_TAG);
         var meta = item.getItemMeta();
         meta.displayName(
-                I18n.tr("gadgets.drone.abort").color(NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                I18n.tr("gadgets.drone.abort")
+                        .color(NamedTextColor.RED)
+                        .decoration(TextDecoration.ITALIC, false));
         meta.setEnchantmentGlintOverride(true);
         item.setItemMeta(meta);
         return item;
@@ -614,7 +705,9 @@ public class FPVDroneGadget extends AbstractGadget {
         GadgetItems.addTag(item, TAG);
         var meta = item.getItemMeta();
         meta.displayName(
-                I18n.tr("gadgets.drone.name").color(NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC, false));
+                I18n.tr("gadgets.drone.name")
+                        .color(NamedTextColor.DARK_AQUA)
+                        .decoration(TextDecoration.ITALIC, false));
         meta.setEnchantmentGlintOverride(true);
         item.setItemMeta(meta);
         item.setAmount(count);

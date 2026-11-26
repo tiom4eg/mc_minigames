@@ -134,9 +134,10 @@ final class CsGrenades {
             }
         }
         smoke.removeIf(z -> session.now() >= z.end);
-        fire.removeIf(z ->
-                session.now() >= z.end
-                        || smoke.stream().anyMatch(s -> s.at.distanceSquared(z.at) < 49));
+        fire.removeIf(
+                z ->
+                        session.now() >= z.end
+                                || smoke.stream().anyMatch(s -> s.at.distanceSquared(z.at) < 49));
         fireFloor.update(fire.stream().map(Zone::at).toList(), session.viewers(), session.now());
         if (session.now() % 5 == 0) {
             if (session.now() % 10 == 0) smokeClouds();
@@ -161,9 +162,10 @@ final class CsGrenades {
             Location eye = viewer.getEyeLocation();
             for (Zone z :
                     smoke.stream()
-                            .filter(zone ->
-                                    eye.getWorld().equals(zone.at.getWorld())
-                                            && eye.distanceSquared(zone.at) < 256 * 256)
+                            .filter(
+                                    zone ->
+                                            eye.getWorld().equals(zone.at.getWorld())
+                                                    && eye.distanceSquared(zone.at) < 256 * 256)
                             .sorted(
                                     Comparator.comparingDouble(
                                             zone -> eye.distanceSquared(zone.at)))
@@ -184,11 +186,13 @@ final class CsGrenades {
             boolean inside =
                     session.active(p)
                             && smoke.stream()
-                                    .anyMatch(z ->
-                                            p.getEyeLocation()
-                                                            .distanceSquared(
-                                                                    z.at.clone().add(0, 1, 0))
-                                                    < 3.7 * 3.7);
+                                    .anyMatch(
+                                            z ->
+                                                    p.getEyeLocation()
+                                                                    .distanceSquared(
+                                                                            z.at.clone()
+                                                                                    .add(0, 1, 0))
+                                                            < 3.7 * 3.7);
             if (inside) {
                 smokeDarkness.add(id);
                 p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 30, 0, false, false));
@@ -280,12 +284,13 @@ final class CsGrenades {
     boolean obscured(Player viewer, Player target) {
         return flashed.getOrDefault(viewer.getUniqueId(), 0L) > session.now()
                 || smoke.stream()
-                        .anyMatch(z ->
-                                intersects(
-                                        viewer.getEyeLocation(),
-                                        target.getEyeLocation(),
-                                        z.at.clone().add(0, 1, 0),
-                                        3.7));
+                        .anyMatch(
+                                z ->
+                                        intersects(
+                                                viewer.getEyeLocation(),
+                                                target.getEyeLocation(),
+                                                z.at.clone().add(0, 1, 0),
+                                                3.7));
     }
 
     private void visibility() {
@@ -301,12 +306,13 @@ final class CsGrenades {
                 boolean flash = flashed.getOrDefault(viewer.getUniqueId(), 0L) > session.now();
                 boolean obscured =
                         smoke.stream()
-                                .anyMatch(z ->
-                                        intersects(
-                                                viewer.getEyeLocation(),
-                                                target.getEyeLocation(),
-                                                z.at.clone().add(0, 1, 0),
-                                                3.7));
+                                .anyMatch(
+                                        z ->
+                                                intersects(
+                                                        viewer.getEyeLocation(),
+                                                        target.getEyeLocation(),
+                                                        z.at.clone().add(0, 1, 0),
+                                                        3.7));
                 Hidden pair = new Hidden(viewer.getUniqueId(), target.getUniqueId());
                 if (dead || flash || obscured) {
                     required.add(pair);

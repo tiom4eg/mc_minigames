@@ -1,7 +1,5 @@
 package me.petr1furious.potatominigames;
 
-import org.bukkit.plugin.java.JavaPlugin;
-
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 
 import me.petr1furious.potatominigames.core.command.GameCommands;
@@ -37,15 +35,17 @@ import me.petr1furious.potatominigames.gadgets.SessionGadgetContext;
 import me.petr1furious.potatominigames.gadgets.TrackerCompassGadget;
 import me.petr1furious.potatominigames.games.bingo.BingoGame;
 import me.petr1furious.potatominigames.games.chase.ChaseGame;
-import me.petr1furious.potatominigames.games.finals.FinalsGame;
 import me.petr1furious.potatominigames.games.cs.CsGame;
-import me.petr1furious.potatominigames.games.tanks.TanksGame;
-import me.petr1furious.potatominigames.games.party.PartyGame;
 import me.petr1furious.potatominigames.games.dummy.DummyGame;
+import me.petr1furious.potatominigames.games.finals.FinalsGame;
+import me.petr1furious.potatominigames.games.party.PartyGame;
 import me.petr1furious.potatominigames.games.pillars.PillarsGame;
 import me.petr1furious.potatominigames.games.pillars.PillarsReplays;
+import me.petr1furious.potatominigames.games.tanks.TanksGame;
 import me.petr1furious.potatominigames.games.warfare.WarfareGame;
 import me.petr1furious.potatominigames.i18n.I18n;
+
+import org.bukkit.plugin.java.JavaPlugin;
 
 public final class PotatoMinigamesPlugin extends JavaPlugin {
     private SessionManager sessions;
@@ -66,8 +66,15 @@ public final class PotatoMinigamesPlugin extends JavaPlugin {
         // Clear worlds left by a crash.
         throwawayWorlds.cleanupStale();
 
-        sessions = new SessionManager(this, playerState, teamRegistry, slimeWorlds, throwawayWorlds, spawnFinder,
-                points);
+        sessions =
+                new SessionManager(
+                        this,
+                        playerState,
+                        teamRegistry,
+                        slimeWorlds,
+                        throwawayWorlds,
+                        spawnFinder,
+                        points);
         configs.register(sessions.coreConfig(), "config.yml", "");
         configs.register(slimeWorlds.config(), "config.yml", "asp");
 
@@ -121,18 +128,28 @@ public final class PotatoMinigamesPlugin extends JavaPlugin {
         SpectatorCamera camera = new SpectatorCamera(this, sessions);
         configs.register(camera.config(), "config.yml", "spectate");
 
-        GameCommands gameCommands = new GameCommands(sessions, teams, points, configs, messages, gadgets);
-        PmCommand pmCommand = new PmCommand(this, sessions, configs, messages, gameCommands, queues);
+        GameCommands gameCommands =
+                new GameCommands(sessions, teams, points, configs, messages, gadgets);
+        PmCommand pmCommand =
+                new PmCommand(this, sessions, configs, messages, gameCommands, queues);
         PlayCommand playCommand = new PlayCommand(sessions, queues, lobby, menu);
-        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
-            event.registrar().register(pmCommand.build(), "Potato Minigames admin command.");
-            event.registrar().register(playCommand.buildPlay(), "Join a game's queue.");
-            event.registrar().register(playCommand.buildLobby(), "Go to the lobby.");
-            for (Minigame game : sessions.games()) {
-                event.registrar().register(gameCommands.buildGameRoot(game),
-                        "Potato Minigames: " + game.id());
-            }
-        });
+        getLifecycleManager()
+                .registerEventHandler(
+                        LifecycleEvents.COMMANDS,
+                        event -> {
+                            event.registrar()
+                                    .register(pmCommand.build(), "Potato Minigames admin command.");
+                            event.registrar()
+                                    .register(playCommand.buildPlay(), "Join a game's queue.");
+                            event.registrar()
+                                    .register(playCommand.buildLobby(), "Go to the lobby.");
+                            for (Minigame game : sessions.games()) {
+                                event.registrar()
+                                        .register(
+                                                gameCommands.buildGameRoot(game),
+                                                "Potato Minigames: " + game.id());
+                            }
+                        });
 
         var pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(new GameplayListener(sessions), this);

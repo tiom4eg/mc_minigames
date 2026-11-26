@@ -49,9 +49,12 @@ public final class BuildMemoryCheck {
                 "Empty roster does not start review");
         check(
                 BuildMemoryPattern.smallModels().stream()
-                        .anyMatch(model ->
-                                BuildMemoryPattern.generate(1, model, new Random(0)).blocks().size()
-                                        > 9),
+                        .anyMatch(
+                                model ->
+                                        BuildMemoryPattern.generate(1, model, new Random(0))
+                                                        .blocks()
+                                                        .size()
+                                                > 9),
                 "Opening rounds include recognizable simple models larger than nine blocks");
         Set<Component> openingModels = new HashSet<>();
         for (int seed = 0; seed < 1000; seed++)
@@ -98,11 +101,12 @@ public final class BuildMemoryCheck {
                     for (var c : p.blocks().keySet())
                         if (!reachable.contains(c)
                                 && reachable.stream()
-                                        .anyMatch(v ->
-                                                Math.abs(c.x() - v.x())
-                                                                + Math.abs(c.y() - v.y())
-                                                                + Math.abs(c.z() - v.z())
-                                                        == 1)) {
+                                        .anyMatch(
+                                                v ->
+                                                        Math.abs(c.x() - v.x())
+                                                                        + Math.abs(c.y() - v.y())
+                                                                        + Math.abs(c.z() - v.z())
+                                                                == 1)) {
                             reachable.add(c);
                             changed = true;
                         }
@@ -226,11 +230,12 @@ public final class BuildMemoryCheck {
                     for (var cell : pattern.blocks().keySet())
                         if (!reachable.contains(cell)
                                 && reachable.stream()
-                                        .anyMatch(c ->
-                                                Math.abs(c.x() - cell.x())
-                                                                + Math.abs(c.y() - cell.y())
-                                                                + Math.abs(c.z() - cell.z())
-                                                        == 1)) {
+                                        .anyMatch(
+                                                c ->
+                                                        Math.abs(c.x() - cell.x())
+                                                                        + Math.abs(c.y() - cell.y())
+                                                                        + Math.abs(c.z() - cell.z())
+                                                                == 1)) {
                             reachable.add(cell);
                             changed = true;
                         }
@@ -328,38 +333,39 @@ public final class BuildMemoryCheck {
                             .orElseThrow();
             List<String> cells = new ArrayList<>();
             rotated.blocks()
-                    .forEach((c, b) -> {
-                        String material = b.material().name();
-                        for (String suffix :
-                                List.of(
-                                        "WALL_SIGN",
-                                        "FENCE_GATE",
-                                        "PLANKS",
-                                        "STAIRS",
-                                        "SLAB",
-                                        "FENCE",
-                                        "SIGN",
-                                        "LOG",
-                                        "LEAVES"))
-                            if (material.endsWith("_" + suffix)) {
-                                material = suffix;
-                                break;
-                            }
-                        var properties = new TreeMap<>(b.properties());
-                        if (material.endsWith("SIGN")) {
-                            properties.remove("rotation");
-                            properties.remove("facing");
-                        }
-                        cells.add(
-                                (c.x() - minX)
-                                        + ":"
-                                        + c.y()
-                                        + ":"
-                                        + (c.z() - minZ)
-                                        + "="
-                                        + material
-                                        + properties);
-                    });
+                    .forEach(
+                            (c, b) -> {
+                                String material = b.material().name();
+                                for (String suffix :
+                                        List.of(
+                                                "WALL_SIGN",
+                                                "FENCE_GATE",
+                                                "PLANKS",
+                                                "STAIRS",
+                                                "SLAB",
+                                                "FENCE",
+                                                "SIGN",
+                                                "LOG",
+                                                "LEAVES"))
+                                    if (material.endsWith("_" + suffix)) {
+                                        material = suffix;
+                                        break;
+                                    }
+                                var properties = new TreeMap<>(b.properties());
+                                if (material.endsWith("SIGN")) {
+                                    properties.remove("rotation");
+                                    properties.remove("facing");
+                                }
+                                cells.add(
+                                        (c.x() - minX)
+                                                + ":"
+                                                + c.y()
+                                                + ":"
+                                                + (c.z() - minZ)
+                                                + "="
+                                                + material
+                                                + properties);
+                            });
             Collections.sort(cells);
             String signature = cells.toString();
             if (canonical == null || signature.compareTo(canonical) < 0) canonical = signature;

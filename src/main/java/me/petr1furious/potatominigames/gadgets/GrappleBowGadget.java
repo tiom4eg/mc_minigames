@@ -1,11 +1,12 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyCodec;
+import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
@@ -40,10 +41,8 @@ public class GrappleBowGadget extends AbstractGadget {
     @SuppressWarnings("deprecation")
     public void onBowShoot(EntityShootBowEvent event) {
         var bow = event.getBow();
-        if (bow == null || !GadgetItems.checkForItem(bow, TAG))
-            return;
-        if (!(event.getEntity() instanceof Player shooter))
-            return;
+        if (bow == null || !GadgetItems.checkForItem(bow, TAG)) return;
+        if (!(event.getEntity() instanceof Player shooter)) return;
 
         if (disableWhileGliding.get() && shooter.isGliding()) {
             shooter.sendActionBar(I18n.tr("gadgets.grapple.gliding").color(NamedTextColor.RED));
@@ -53,7 +52,8 @@ public class GrappleBowGadget extends AbstractGadget {
         }
         int remaining = getRemainingCooldownSeconds(shooter);
         if (remaining > 0) {
-            shooter.sendActionBar(I18n.tr("gadgets.grapple.cooldown", remaining).color(NamedTextColor.RED));
+            shooter.sendActionBar(
+                    I18n.tr("gadgets.grapple.cooldown", remaining).color(NamedTextColor.RED));
             shooter.playSound(shooter.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.2f, 0.5f);
             event.setCancelled(true);
             return;
@@ -72,12 +72,13 @@ public class GrappleBowGadget extends AbstractGadget {
     }
 
     @Override
-    public boolean handleProjectileImpact(Projectile projectile, org.bukkit.Location location, Entity shooterEntity,
+    public boolean handleProjectileImpact(
+            Projectile projectile,
+            org.bukkit.Location location,
+            Entity shooterEntity,
             Entity target) {
-        if (!GadgetItems.checkForProjectile(projectile, TAG))
-            return false;
-        if (!(shooterEntity instanceof Player shooter))
-            return false;
+        if (!GadgetItems.checkForProjectile(projectile, TAG)) return false;
+        if (!(shooterEntity instanceof Player shooter)) return false;
 
         Vector pull = location.toVector().subtract(shooter.getLocation().toVector());
         if (target != null) {
@@ -93,7 +94,8 @@ public class GrappleBowGadget extends AbstractGadget {
             }
             shooter.setVelocity(velocity);
             shooter.setFallDistance(0);
-            shooter.playSound(shooter.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 0.8f, 1.1f);
+            shooter.playSound(
+                    shooter.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 0.8f, 1.1f);
         }
 
         projectile.remove();
@@ -114,7 +116,9 @@ public class GrappleBowGadget extends AbstractGadget {
         GadgetItems.addTag(bow, TAG);
         ItemMeta meta = bow.getItemMeta();
         meta.displayName(
-                I18n.tr("gadgets.grapple.name").color(NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
+                I18n.tr("gadgets.grapple.name")
+                        .color(NamedTextColor.AQUA)
+                        .decoration(TextDecoration.ITALIC, false));
         meta.setUnbreakable(true);
         meta.addEnchant(Enchantment.INFINITY, 1, true);
         meta.setEnchantmentGlintOverride(true);

@@ -32,11 +32,18 @@ public final class FinalsArenaCheck {
             for (int z = -24; z <= 24; z++) {
                 require(map.type(x, 64, z) != Material.AIR, "The arena floor has no holes");
                 int floorX = x, floorZ = z;
-                boolean cashoutSupport = arena.cashoutLocations().stream().anyMatch(point ->
-                        point.getBlockX() == floorX && point.getBlockZ() == floorZ);
-                require(arena.isCover(map.block(x, 64, z)) == cashoutSupport,
+                boolean cashoutSupport =
+                        arena.cashoutLocations().stream()
+                                .anyMatch(
+                                        point ->
+                                                point.getBlockX() == floorX
+                                                        && point.getBlockZ() == floorZ);
+                require(
+                        arena.isCover(map.block(x, 64, z)) == cashoutSupport,
                         "Only cashout pad support can break through the street floor");
-                require(!arena.isCover(map.block(x, 63, z)), "The protected bedrock floor survives explosions");
+                require(
+                        !arena.isCover(map.block(x, 63, z)),
+                        "The protected bedrock floor survives explosions");
             }
         }
         for (int team = 0; team < 2; team++) {
@@ -136,10 +143,14 @@ public final class FinalsArenaCheck {
         randomVaults(map, arena);
         completedCashoutMoves(map, arena);
         Location station = arena.station(0);
-        Block support = map.block(station.getBlockX(), station.getBlockY() - 1, station.getBlockZ());
+        Block support =
+                map.block(station.getBlockX(), station.getBlockY() - 1, station.getBlockZ());
         require(arena.isCover(support), "Generated cashout support can be demolished");
         support.setType(Material.AIR, false);
-        require(!arena.isCover(support) && map.type(station.getBlockX(), 63, station.getBlockZ()) == Material.BEDROCK,
+        require(
+                !arena.isCover(support)
+                        && map.type(station.getBlockX(), 63, station.getBlockZ())
+                                == Material.BEDROCK,
                 "Demolishing cashout support leaves a protected lower landing floor");
         System.out.println("Finals arena checks passed");
     }

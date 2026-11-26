@@ -1,12 +1,14 @@
 package me.petr1furious.potatominigames.core.config;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
+
+import org.bukkit.configuration.ConfigurationSection;
+
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import org.bukkit.configuration.ConfigurationSection;
 
 public final class Property<T> {
     private final String name;
@@ -113,7 +115,9 @@ public final class Property<T> {
         return defaultValue;
     }
 
-    /** @throws IllegalArgumentException with a user-facing reason */
+    /**
+     * @throws IllegalArgumentException with a user-facing reason
+     */
     T parse(String raw) {
         if (strict) {
             List<String> allowed = choices.get();

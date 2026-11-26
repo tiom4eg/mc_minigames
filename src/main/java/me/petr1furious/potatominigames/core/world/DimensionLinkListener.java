@@ -1,8 +1,5 @@
 package me.petr1furious.potatominigames.core.world;
 
-import java.util.Collection;
-import java.util.List;
-
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -17,10 +14,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 
+import java.util.Collection;
+import java.util.List;
+
 /**
- * Links throwaway worlds' dimensions; Bukkit would send portals to the primary world's.
- * HIGHEST to beat Multiverse-NetherPortals; carried state is re-applied a tick later so
- * inventory-splitting plugins cannot swallow items.
+ * Links throwaway worlds' dimensions; Bukkit would send portals to the primary world's. HIGHEST to
+ * beat Multiverse-NetherPortals; carried state is re-applied a tick later so inventory-splitting
+ * plugins cannot swallow items.
  */
 public final class DimensionLinkListener implements Listener {
     private final JavaPlugin plugin;
@@ -31,8 +31,15 @@ public final class DimensionLinkListener implements Listener {
         this.worlds = worlds;
     }
 
-    private record CarriedState(ItemStack[] contents, ItemStack[] armor, ItemStack offHand,
-            int level, float exp, double health, int food, float saturation,
+    private record CarriedState(
+            ItemStack[] contents,
+            ItemStack[] armor,
+            ItemStack offHand,
+            int level,
+            float exp,
+            double health,
+            int food,
+            float saturation,
             Collection<PotionEffect> effects) {
 
         static CarriedState of(Player player) {
@@ -54,11 +61,15 @@ public final class DimensionLinkListener implements Listener {
             player.getInventory().setItemInOffHand(offHand);
             player.setLevel(level);
             player.setExp(exp);
-            player.setHealth(Math.min(health, player.getAttribute(
-                    org.bukkit.attribute.Attribute.MAX_HEALTH).getValue()));
+            player.setHealth(
+                    Math.min(
+                            health,
+                            player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH)
+                                    .getValue()));
             player.setFoodLevel(food);
             player.setSaturation(saturation);
-            player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+            player.getActivePotionEffects()
+                    .forEach(effect -> player.removePotionEffect(effect.getType()));
             player.addPotionEffects(effects);
             player.updateInventory();
         }
@@ -92,14 +103,19 @@ public final class DimensionLinkListener implements Listener {
             return;
         }
         // Entities only ever use nether portals to leave a dimension.
-        World target = from.getEnvironment() == World.Environment.NETHER
-                ? worlds.dimension(base, World.Environment.NORMAL)
-                : worlds.getOrCreateDimension(base, World.Environment.NETHER);
+        World target =
+                from.getEnvironment() == World.Environment.NETHER
+                        ? worlds.dimension(base, World.Environment.NORMAL)
+                        : worlds.getOrCreateDimension(base, World.Environment.NETHER);
         if (target == null) {
             return;
         }
-        event.setTo(destinationIn(target, event.getFrom(), event.getTo(),
-                PlayerTeleportEvent.TeleportCause.NETHER_PORTAL));
+        event.setTo(
+                destinationIn(
+                        target,
+                        event.getFrom(),
+                        event.getTo(),
+                        PlayerTeleportEvent.TeleportCause.NETHER_PORTAL));
         event.setSearchRadius(128);
     }
 
@@ -122,18 +138,25 @@ public final class DimensionLinkListener implements Listener {
 
     private World resolveTarget(String base, World from, PlayerTeleportEvent.TeleportCause cause) {
         return switch (cause) {
-            case NETHER_PORTAL -> from.getEnvironment() == World.Environment.NETHER
-                    ? worlds.dimension(base, World.Environment.NORMAL)
-                    : worlds.getOrCreateDimension(base, World.Environment.NETHER);
-            case END_PORTAL -> from.getEnvironment() == World.Environment.THE_END
-                    ? worlds.dimension(base, World.Environment.NORMAL)
-                    : worlds.getOrCreateDimension(base, World.Environment.THE_END);
+            case NETHER_PORTAL ->
+                    from.getEnvironment() == World.Environment.NETHER
+                            ? worlds.dimension(base, World.Environment.NORMAL)
+                            : worlds.getOrCreateDimension(base, World.Environment.NETHER);
+            case END_PORTAL ->
+                    from.getEnvironment() == World.Environment.THE_END
+                            ? worlds.dimension(base, World.Environment.NORMAL)
+                            : worlds.getOrCreateDimension(base, World.Environment.THE_END);
             default -> null;
         };
     }
 
-    /** Keeps vanilla's computed coordinates and swaps the world; end travel uses vanilla anchors. */
-    private Location destinationIn(World target, Location from, Location computed,
+    /**
+     * Keeps vanilla's computed coordinates and swaps the world; end travel uses vanilla anchors.
+     */
+    private Location destinationIn(
+            World target,
+            Location from,
+            Location computed,
             PlayerTeleportEvent.TeleportCause cause) {
         if (cause == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
             return target.getEnvironment() == World.Environment.THE_END
@@ -147,10 +170,14 @@ public final class DimensionLinkListener implements Listener {
 
     private void carryState(Player player) {
         CarriedState state = CarriedState.of(player);
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            if (player.isOnline()) {
-                state.apply(player);
-            }
-        });
+        plugin.getServer()
+                .getScheduler()
+                .runTask(
+                        plugin,
+                        () -> {
+                            if (player.isOnline()) {
+                                state.apply(player);
+                            }
+                        });
     }
 }

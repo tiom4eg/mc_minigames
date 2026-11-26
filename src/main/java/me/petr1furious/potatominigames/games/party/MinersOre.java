@@ -1,6 +1,7 @@
 package me.petr1furious.potatominigames.games.party;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 
 import org.bukkit.Material;
@@ -17,8 +18,11 @@ enum MinersOre {
     final Material material;
     final int perCell;
     final Component description;
+
     MinersOre(Material material, int perCell) {
-        this.material = material; this.perCell = perCell;
-        this.description = I18n.tr("party.rounds.miners.ore." + name().toLowerCase(java.util.Locale.ROOT));
+        this.material = material;
+        this.perCell = perCell;
+        this.description =
+                I18n.tr("party.rounds.miners.ore." + name().toLowerCase(java.util.Locale.ROOT));
     }
 }

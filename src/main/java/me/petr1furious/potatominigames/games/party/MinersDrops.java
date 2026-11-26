@@ -1,13 +1,14 @@
 package me.petr1furious.potatominigames.games.party;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.bukkit.entity.Item;
 
 /** Bound abandoned loot without scanning the world or removing inventory items. */
 final class MinersDrops {
@@ -37,15 +38,25 @@ final class MinersDrops {
         identity.setAmount(1);
         return identity;
     }
+
     void track(Item item) {
         prune();
         items.put(item.getUniqueId(), item);
         while (items.size() > LIMIT) {
             var oldest = items.entrySet().iterator();
-            Item removed = oldest.next().getValue(); oldest.remove();
+            Item removed = oldest.next().getValue();
+            oldest.remove();
             if (removed.isValid()) removed.remove();
         }
     }
-    void prune() { items.values().removeIf(item -> !item.isValid()); }
-    void clear() { for (Item item : items.values()) if (item.isValid()) item.remove(); items.clear(); templates.clear(); }
+
+    void prune() {
+        items.values().removeIf(item -> !item.isValid());
+    }
+
+    void clear() {
+        for (Item item : items.values()) if (item.isValid()) item.remove();
+        items.clear();
+        templates.clear();
+    }
 }

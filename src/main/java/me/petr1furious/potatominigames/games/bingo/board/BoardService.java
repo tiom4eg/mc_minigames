@@ -1,5 +1,8 @@
 package me.petr1furious.potatominigames.games.bingo.board;
 
+import me.petr1furious.potatominigames.games.bingo.model.BoardEntry;
+import me.petr1furious.potatominigames.games.bingo.model.GameDifficulty;
+import me.petr1furious.potatominigames.games.bingo.model.GameMode;
 import me.petr1furious.potatominigames.i18n.I18n;
 
 import java.util.ArrayList;
@@ -7,33 +10,35 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-
-
-import me.petr1furious.potatominigames.games.bingo.model.BoardEntry;
-import me.petr1furious.potatominigames.games.bingo.model.GameDifficulty;
-import me.petr1furious.potatominigames.games.bingo.model.GameMode;
-
 public final class BoardService {
-    public record Board(BoardEntry[] entries, int[] effectiveDifficulties) {
-    }
+    public record Board(BoardEntry[] entries, int[] effectiveDifficulties) {}
 
-    public record GeneratedBoard(Board board, int selectionDistance, int attemptsTried, int candidateCount,
-            int poolSize, int requiredCount, double lowestLineAverage, double highestLineAverage,
-            double averageLineAverage) {
-    }
+    public record GeneratedBoard(
+            Board board,
+            int selectionDistance,
+            int attemptsTried,
+            int candidateCount,
+            int poolSize,
+            int requiredCount,
+            double lowestLineAverage,
+            double highestLineAverage,
+            double averageLineAverage) {}
 
-    private record BoardAssessment(int distance, double lowestLineAverage, double highestLineAverage,
-            double averageLineAverage) {
-    }
+    private record BoardAssessment(
+            int distance,
+            double lowestLineAverage,
+            double highestLineAverage,
+            double averageLineAverage) {}
 
-    private static final int[] COLLECT_ALL_SLOTS = { 6, 7, 8, 11, 12, 13, 16, 17, 18 };
+    private static final int[] COLLECT_ALL_SLOTS = {6, 7, 8, 11, 12, 13, 16, 17, 18};
     private final DependencyCostService dependencyCostService;
 
     public BoardService(DependencyCostService dependencyCostService) {
         this.dependencyCostService = dependencyCostService;
     }
 
-    public GeneratedBoard generateBoard(GameMode mode, GameDifficulty difficulty, List<BoardEntry> pool) {
+    public GeneratedBoard generateBoard(
+            GameMode mode, GameDifficulty difficulty, List<BoardEntry> pool) {
         if (pool.isEmpty()) {
             throw I18n.exception("bingo.board.empty_pool");
         }
@@ -84,8 +89,16 @@ public final class BoardService {
         if (bestBoard == null) {
             throw I18n.exception("bingo.board.generation_failed");
         }
-        return new GeneratedBoard(bestBoard, bestDistance, attemptsTried, candidates.size(),
-                pool.size(), required, bestLowestLineAverage, bestHighestLineAverage, bestAverageLineAverage);
+        return new GeneratedBoard(
+                bestBoard,
+                bestDistance,
+                attemptsTried,
+                candidates.size(),
+                pool.size(),
+                required,
+                bestLowestLineAverage,
+                bestHighestLineAverage,
+                bestAverageLineAverage);
     }
 
     private static Board placeOnBoard(GameMode mode, List<Candidate> chosen) {
@@ -130,7 +143,8 @@ public final class BoardService {
             }
             double spread = maxAverage - minAverage;
             double meanAverage = averageSum / lineCount;
-            return new BoardAssessment((int) Math.round(spread * 1000d), minAverage, maxAverage, meanAverage);
+            return new BoardAssessment(
+                    (int) Math.round(spread * 1000d), minAverage, maxAverage, meanAverage);
         }
 
         int sum = 0;
@@ -152,13 +166,13 @@ public final class BoardService {
     private static List<int[]> lines() {
         List<int[]> lines = new ArrayList<>();
         for (int row = 0; row < 5; row++) {
-            lines.add(new int[] { row * 5, row * 5 + 1, row * 5 + 2, row * 5 + 3, row * 5 + 4 });
+            lines.add(new int[] {row * 5, row * 5 + 1, row * 5 + 2, row * 5 + 3, row * 5 + 4});
         }
         for (int col = 0; col < 5; col++) {
-            lines.add(new int[] { col, col + 5, col + 10, col + 15, col + 20 });
+            lines.add(new int[] {col, col + 5, col + 10, col + 15, col + 20});
         }
-        lines.add(new int[] { 0, 6, 12, 18, 24 });
-        lines.add(new int[] { 4, 8, 12, 16, 20 });
+        lines.add(new int[] {0, 6, 12, 18, 24});
+        lines.add(new int[] {4, 8, 12, 16, 20});
         return lines;
     }
 
@@ -183,6 +197,5 @@ public final class BoardService {
         return count;
     }
 
-    private record Candidate(BoardEntry entry, int effectiveDifficulty) {
-    }
+    private record Candidate(BoardEntry entry, int effectiveDifficulty) {}
 }

@@ -107,8 +107,7 @@ final class TanksRadar extends MapRenderer {
                 blip.self ? MapPalette.WHITE : blip.ally ? MapPalette.PALE_BLUE : MapPalette.RED;
         for (boolean[] row : ink) Arrays.fill(row, false);
         double a = Math.toRadians(blip.yaw), dx = -Math.sin(a), dy = Math.cos(a);
-        for (int i = blip.self ? -2 : 0; i <= 4; i++)
-            mark(dx * i, dy * i);
+        for (int i = blip.self ? -2 : 0; i <= 4; i++) mark(dx * i, dy * i);
         if (blip.self) {
             // Two swept wings give the pilot an arrowhead aligned with the heading tick.
             for (int i = 1; i <= 2; i++) {
@@ -126,7 +125,11 @@ final class TanksRadar extends MapRenderer {
             for (int x = 1; x < ink[y].length - 1; x++) {
                 boolean fill = ink[y][x];
                 if (fill || ink[y - 1][x] || ink[y + 1][x] || ink[y][x - 1] || ink[y][x + 1])
-                    dot(canvas, painted, cx + x - CENTER, cy + y - CENTER,
+                    dot(
+                            canvas,
+                            painted,
+                            cx + x - CENTER,
+                            cy + y - CENTER,
                             fill ? color : MapPalette.DARK_GRAY);
             }
         }

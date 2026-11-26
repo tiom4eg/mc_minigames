@@ -5,20 +5,6 @@
  */
 package me.petr1furious.potatominigames.games.pillars;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.logging.Logger;
-
-import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
-
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
-
 import me.petr1furious.potatominigames.core.config.ConfigRegistry;
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyBag;
@@ -26,13 +12,41 @@ import me.petr1furious.potatominigames.core.config.PropertyCodec;
 import me.petr1furious.potatominigames.games.pillars.PillarsPresets.Parameter;
 import me.petr1furious.potatominigames.games.pillars.PillarsPresets.Settings;
 
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
+
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.logging.Logger;
+
 /** Items and arenas are read from the file at each game start; other values are properties. */
 public final class PillarsConfig {
     static final String FILE = "games/pillars.yml";
-    static final List<String> MODES = List.of("original", "chaos", "item-shuffle", "lucky", "tactical", "big_house",
-            "sniper_duel", "party", "casino", "adhd", "perks", "flood", "fusion");
+    static final List<String> MODES =
+            List.of(
+                    "original",
+                    "chaos",
+                    "item-shuffle",
+                    "lucky",
+                    "tactical",
+                    "big_house",
+                    "sniper_duel",
+                    "party",
+                    "casino",
+                    "adhd",
+                    "perks",
+                    "flood",
+                    "fusion");
     static final List<String> LEGACY_MODES = List.of("rave", "casino_lucky", "casino_unlucky");
-    static final List<String> RESERVED = java.util.stream.Stream.concat(MODES.stream(), LEGACY_MODES.stream()).toList();
+    static final List<String> RESERVED =
+            java.util.stream.Stream.concat(MODES.stream(), LEGACY_MODES.stream()).toList();
 
     static final String VARIANT_OPTION = "variant";
     static final List<String> PARTY_VARIANTS = List.of("party", "rave");
@@ -56,34 +70,52 @@ public final class PillarsConfig {
 
     private final ConfigRegistry configs;
     private final PropertyBag bag = new PropertyBag("pillars");
-    public final Property<String> mode = bag.define("mode", PropertyCodec.STRING, "original")
-            .oneOf(() -> RESERVED);
-    public final Property<Integer> startCountdown = bag.define("startCountdown", PropertyCodec.INT, 3);
-    public final Property<Integer> reconnectGraceSeconds = bag.define("reconnectGraceSeconds", PropertyCodec.INT, 60);
-    public final Property<Double> platformHeight = bag.define("platformHeight", PropertyCodec.DOUBLE, 200.0);
+    public final Property<String> mode =
+            bag.define("mode", PropertyCodec.STRING, "original").oneOf(() -> RESERVED);
+    public final Property<Integer> startCountdown =
+            bag.define("startCountdown", PropertyCodec.INT, 3);
+    public final Property<Integer> reconnectGraceSeconds =
+            bag.define("reconnectGraceSeconds", PropertyCodec.INT, 60);
+    public final Property<Double> platformHeight =
+            bag.define("platformHeight", PropertyCodec.DOUBLE, 200.0);
     public final Property<Material> platformMaterial =
             bag.define("platformMaterial", PropertyCodec.MATERIAL, Material.BEDROCK);
     public final Property<Double> maxFall = bag.define("maxFall", PropertyCodec.DOUBLE, 40.0);
-    public final Property<Double> pillarDistance = bag.define("pillarDistance", PropertyCodec.DOUBLE, 8.0);
-    public final Property<Boolean> enableDraws = bag.define("enableDraws", PropertyCodec.BOOL, true);
-    public final Property<Boolean> soundEffects = bag.define("soundEffects", PropertyCodec.BOOL, true);
-    public final Property<Integer> soundCooldownSeconds = bag.define("soundCooldownSeconds", PropertyCodec.INT, 3);
+    public final Property<Double> pillarDistance =
+            bag.define("pillarDistance", PropertyCodec.DOUBLE, 8.0);
+    public final Property<Boolean> enableDraws =
+            bag.define("enableDraws", PropertyCodec.BOOL, true);
+    public final Property<Boolean> soundEffects =
+            bag.define("soundEffects", PropertyCodec.BOOL, true);
+    public final Property<Integer> soundCooldownSeconds =
+            bag.define("soundCooldownSeconds", PropertyCodec.INT, 3);
     public final Property<Boolean> itemSound = bag.define("itemSound", PropertyCodec.BOOL, true);
-    /** Chance that a handed-out item that can be enchanted comes enchanted, as from an enchanting table. */
-    public final Property<Double> enchantChance = bag.define("enchantChance", PropertyCodec.DOUBLE, 1.0 / 3)
-            .validate(value -> value >= 0 && value <= 1);
-    public final Property<Double> adhdMeanSeconds = bag.define("adhd.meanSeconds", PropertyCodec.DOUBLE, 120.0)
-            .validate(value -> Double.isFinite(value) && value >= 1);
-    public final Property<Integer> adhdDurationSeconds = bag.define("adhd.durationSeconds", PropertyCodec.INT, 30)
-            .validate(value -> value >= 1 && value <= 300);
 
-    public final Property<Double> perkChance = bag.define("perks.dropChance", PropertyCodec.DOUBLE, 0.20)
-            .validate(value -> Double.isFinite(value) && value >= 0 && value <= 1);
+    /**
+     * Chance that a handed-out item that can be enchanted comes enchanted, as from an enchanting
+     * table.
+     */
+    public final Property<Double> enchantChance =
+            bag.define("enchantChance", PropertyCodec.DOUBLE, 1.0 / 3)
+                    .validate(value -> value >= 0 && value <= 1);
 
-    public final Property<Integer> floodStartBelow = bag.define("flood.startBelow", PropertyCodec.INT, FloodModifier.START_BELOW)
-            .validate(value -> value >= 1 && value <= 64);
-    public final Property<Integer> floodRiseSeconds = bag.define("flood.riseSeconds", PropertyCodec.INT, FloodModifier.RISE_TICKS / 20)
-            .validate(value -> value >= 1 && value <= 300);
+    public final Property<Double> adhdMeanSeconds =
+            bag.define("adhd.meanSeconds", PropertyCodec.DOUBLE, 120.0)
+                    .validate(value -> Double.isFinite(value) && value >= 1);
+    public final Property<Integer> adhdDurationSeconds =
+            bag.define("adhd.durationSeconds", PropertyCodec.INT, 30)
+                    .validate(value -> value >= 1 && value <= 300);
+
+    public final Property<Double> perkChance =
+            bag.define("perks.dropChance", PropertyCodec.DOUBLE, 0.20)
+                    .validate(value -> Double.isFinite(value) && value >= 0 && value <= 1);
+
+    public final Property<Integer> floodStartBelow =
+            bag.define("flood.startBelow", PropertyCodec.INT, FloodModifier.START_BELOW)
+                    .validate(value -> value >= 1 && value <= 64);
+    public final Property<Integer> floodRiseSeconds =
+            bag.define("flood.riseSeconds", PropertyCodec.INT, FloodModifier.RISE_TICKS / 20)
+                    .validate(value -> value >= 1 && value <= 300);
 
     private final Map<String, Mode> modes = new LinkedHashMap<>();
 
@@ -96,48 +128,79 @@ public final class PillarsConfig {
         public final Property<Boolean> scoreboard;
         public final Property<Boolean> actionBar;
         public final Property<Boolean> bossBar;
+
         /** "circular" or "random". */
         public final Property<String> layout;
+
         /** Empty means platformMaterial. */
         public final Property<String> pillarMaterial;
+
         /** Pillar blocks are NewAmazingLuckyBlocks lucky blocks. */
         public final Property<Boolean> luckyBlocks;
+
         /** Every player gets the same random items each round, so the luck is shared. */
         public final Property<Boolean> sameItems;
+
         /** Scales pillarDistance, the gap between neighbouring pillars. */
         public final Property<Double> distanceMultiplier;
+
         /** Average seconds between random events (see PillarsEvents); 0 turns them off. */
         public final Property<Double> eventMeanSeconds;
+
         /** Intermittent accelerated shuffle/rave, also available on otherwise ordinary modes. */
         public final Property<Boolean> adhd;
+
         public final Property<Boolean> perks;
         public final Property<Boolean> flood;
 
-        Mode(String id, PropertyBag bag, int cooldown, String timeLimit, String color, boolean actionBar,
-                boolean bossBar, String layout, String pillarMaterial, boolean luckyBlocks, boolean sameItems,
-                double distanceMultiplier, double eventMeanSeconds) {
+        Mode(
+                String id,
+                PropertyBag bag,
+                int cooldown,
+                String timeLimit,
+                String color,
+                boolean actionBar,
+                boolean bossBar,
+                String layout,
+                String pillarMaterial,
+                boolean luckyBlocks,
+                boolean sameItems,
+                double distanceMultiplier,
+                double eventMeanSeconds) {
             this.id = id;
             this.cooldownSeconds = bag.define("cooldownSeconds", PropertyCodec.INT, cooldown);
-            this.timeLimit = bag.define("timeLimit", PropertyCodec.STRING, timeLimit)
-                    .type("duration like 5min").validate(value -> parseDuration(value) != null);
-            this.color = bag.define("color", PropertyCodec.STRING, color)
-                    .type("#RRGGBB colour").validate(value -> TextColor.fromHexString(value.trim()) != null);
+            this.timeLimit =
+                    bag.define("timeLimit", PropertyCodec.STRING, timeLimit)
+                            .type("duration like 5min")
+                            .validate(value -> parseDuration(value) != null);
+            this.color =
+                    bag.define("color", PropertyCodec.STRING, color)
+                            .type("#RRGGBB colour")
+                            .validate(value -> TextColor.fromHexString(value.trim()) != null);
             this.scoreboard = bag.define("scoreboard", PropertyCodec.BOOL, true);
             this.actionBar = bag.define("actionBar", PropertyCodec.BOOL, actionBar);
             this.bossBar = bag.define("bossBar", PropertyCodec.BOOL, bossBar);
-            this.layout = bag.define("layout", PropertyCodec.STRING, layout)
-                    .oneOf(() -> List.of("circular", "random"));
-            this.pillarMaterial = bag.define("pillarMaterial", PropertyCodec.STRING, pillarMaterial)
-                    .type("block, empty for platformMaterial")
-                    .validate(value -> value.isBlank() || isBlock(value));
+            this.layout =
+                    bag.define("layout", PropertyCodec.STRING, layout)
+                            .oneOf(() -> List.of("circular", "random"));
+            this.pillarMaterial =
+                    bag.define("pillarMaterial", PropertyCodec.STRING, pillarMaterial)
+                            .type("block, empty for platformMaterial")
+                            .validate(value -> value.isBlank() || isBlock(value));
             this.luckyBlocks = bag.define("luckyBlocks", PropertyCodec.BOOL, luckyBlocks);
             this.sameItems = bag.define("sameItems", PropertyCodec.BOOL, sameItems);
-            this.distanceMultiplier = bag.define("distanceMultiplier", PropertyCodec.DOUBLE, distanceMultiplier)
-                    .validate(value -> value > 0);
-            this.eventMeanSeconds = bag.define("eventMeanSeconds", PropertyCodec.DOUBLE, eventMeanSeconds)
-                    .validate(value -> value >= 0);
+            this.distanceMultiplier =
+                    bag.define("distanceMultiplier", PropertyCodec.DOUBLE, distanceMultiplier)
+                            .validate(value -> value > 0);
+            this.eventMeanSeconds =
+                    bag.define("eventMeanSeconds", PropertyCodec.DOUBLE, eventMeanSeconds)
+                            .validate(value -> value >= 0);
             this.adhd = bag.define("adhd", PropertyCodec.BOOL, id.equals("adhd"));
-            this.perks = bag.define("perks", PropertyCodec.BOOL, id.equals("perks") || PillarsEvents.Casino.fromMode(id) != null);
+            this.perks =
+                    bag.define(
+                            "perks",
+                            PropertyCodec.BOOL,
+                            id.equals("perks") || PillarsEvents.Casino.fromMode(id) != null);
             this.flood = bag.define("flood", PropertyCodec.BOOL, id.equals("flood"));
         }
 
@@ -147,7 +210,10 @@ public final class PillarsConfig {
         }
 
         public Material pillarMaterial(Material fallback) {
-            Material material = pillarMaterial.get().isBlank() ? null : Material.matchMaterial(pillarMaterial.get().trim());
+            Material material =
+                    pillarMaterial.get().isBlank()
+                            ? null
+                            : Material.matchMaterial(pillarMaterial.get().trim());
             return material != null && material.isBlock() ? material : fallback;
         }
 
@@ -162,9 +228,13 @@ public final class PillarsConfig {
         }
     }
 
-    public record Items(List<String> blacklist, List<String> blacklistPatterns, List<String> blacklistExceptions,
-            Map<String, Integer> weights, Map<String, String> customItems, List<ItemPool.ItemGroup> groups) {
-    }
+    public record Items(
+            List<String> blacklist,
+            List<String> blacklistPatterns,
+            List<String> blacklistExceptions,
+            Map<String, Integer> weights,
+            Map<String, String> customItems,
+            List<ItemPool.ItemGroup> groups) {}
 
     public PillarsConfig(ConfigRegistry configs) {
         this.configs = configs;
@@ -174,22 +244,83 @@ public final class PillarsConfig {
         configs.key(FILE, "arenas.*.x", PropertyCodec.INT);
         configs.key(FILE, "arenas.*.z", PropertyCodec.INT);
         configs.key(FILE, "arenas.*.template", PropertyCodec.STRING);
-        configs.key(FILE, "items.weights.*", PropertyCodec.INT).type("weight, 0 removes the item")
+        configs.key(FILE, "items.weights.*", PropertyCodec.INT)
+                .type("weight, 0 removes the item")
                 .validate(value -> value >= 0);
         addMode("original", 5, "5min", "#FFFFFF", false, true, "circular");
         addMode("chaos", 3, "8min", "#FF5555", false, true, "random");
         addMode("item-shuffle", 10, "5min", "#A3FF54", true, false, "circular");
-        addMode("lucky", 5, "5min", "#FFD34D", false, true, "circular", "SPONGE", true, false, 1.0, 0);
+        addMode(
+                "lucky",
+                5,
+                "5min",
+                "#FFD34D",
+                false,
+                true,
+                "circular",
+                "SPONGE",
+                true,
+                false,
+                1.0,
+                0);
         addMode("tactical", 5, "5min", "#55AAFF", false, true, "circular", "", false, true, 1.0, 0);
         // Pillars 2.5x further apart, items as fast as chaos.
-        addMode("big_house", 3, "8min", "#C77DFF", false, true, "circular", "", false, false, 2.5, 0);
-        addMode("sniper_duel", 5, "5min", "#55FFFF", false, true, "circular", "", false, false, 1.5, 0);
+        addMode(
+                "big_house",
+                3,
+                "8min",
+                "#C77DFF",
+                false,
+                true,
+                "circular",
+                "",
+                false,
+                false,
+                2.5,
+                0);
+        addMode(
+                "sniper_duel",
+                5,
+                "5min",
+                "#55FFFF",
+                false,
+                true,
+                "circular",
+                "",
+                false,
+                false,
+                1.5,
+                0);
         // Random events: one a minute on average; rave twice as often, with chaos-speed items.
         addMode("party", 5, "8min", "#FF77FF", false, true, "circular", "", false, false, 1.0, 60);
         addMode("rave", 3, "8min", "#FF2E97", false, true, "circular", "", false, false, 1.0, 30);
-        addMode("casino_lucky", 5, "8min", "#6DDD84", false, true, "circular", "", false, false, 1.0, 40);
+        addMode(
+                "casino_lucky",
+                5,
+                "8min",
+                "#6DDD84",
+                false,
+                true,
+                "circular",
+                "",
+                false,
+                false,
+                1.0,
+                40);
         addMode("casino", 5, "8min", "#F2C358", false, true, "circular", "", false, false, 1.0, 40);
-        addMode("casino_unlucky", 5, "8min", "#E57575", false, true, "circular", "", false, false, 1.0, 40);
+        addMode(
+                "casino_unlucky",
+                5,
+                "8min",
+                "#E57575",
+                false,
+                true,
+                "circular",
+                "",
+                false,
+                false,
+                1.0,
+                40);
         addMode("adhd", 5, "8min", "#FFAA00", false, true, "circular");
         addMode("perks", 5, "5min", "#D477FF", false, true, "circular");
         addMode("flood", 5, "5min", "#3399FF", false, true, "circular");
@@ -197,17 +328,49 @@ public final class PillarsConfig {
         addMode("fusion", 5, "8min", "#7DF9FF", false, true, "circular", "", false, false, 1.0, 0);
     }
 
-    private void addMode(String id, int cooldown, String timeLimit, String color, boolean actionBar,
-            boolean bossBar, String layout) {
-        addMode(id, cooldown, timeLimit, color, actionBar, bossBar, layout, "", false, false, 1.0, 0);
+    private void addMode(
+            String id,
+            int cooldown,
+            String timeLimit,
+            String color,
+            boolean actionBar,
+            boolean bossBar,
+            String layout) {
+        addMode(
+                id, cooldown, timeLimit, color, actionBar, bossBar, layout, "", false, false, 1.0,
+                0);
     }
 
-    private void addMode(String id, int cooldown, String timeLimit, String color, boolean actionBar,
-            boolean bossBar, String layout, String pillarMaterial, boolean luckyBlocks, boolean sameItems,
-            double distanceMultiplier, double eventMeanSeconds) {
+    private void addMode(
+            String id,
+            int cooldown,
+            String timeLimit,
+            String color,
+            boolean actionBar,
+            boolean bossBar,
+            String layout,
+            String pillarMaterial,
+            boolean luckyBlocks,
+            boolean sameItems,
+            double distanceMultiplier,
+            double eventMeanSeconds) {
         PropertyBag modeBag = new PropertyBag("pillars.modes." + id);
-        modes.put(id, new Mode(id, modeBag, cooldown, timeLimit, color, actionBar, bossBar, layout,
-                pillarMaterial, luckyBlocks, sameItems, distanceMultiplier, eventMeanSeconds));
+        modes.put(
+                id,
+                new Mode(
+                        id,
+                        modeBag,
+                        cooldown,
+                        timeLimit,
+                        color,
+                        actionBar,
+                        bossBar,
+                        layout,
+                        pillarMaterial,
+                        luckyBlocks,
+                        sameItems,
+                        distanceMultiplier,
+                        eventMeanSeconds));
         configs.register(modeBag, FILE, "modes." + id);
     }
 
@@ -222,7 +385,10 @@ public final class PillarsConfig {
     }
 
     Mode variantMode(String queueMode, String selected) {
-        return mode(selected != null && variants(queueMode).contains(selected) ? selected : defaultVariant(queueMode));
+        return mode(
+                selected != null && variants(queueMode).contains(selected)
+                        ? selected
+                        : defaultVariant(queueMode));
     }
 
     /** Dialog previews and sessions use the same game/admin defaults and per-match overrides. */
@@ -236,11 +402,18 @@ public final class PillarsConfig {
 
     double defaultValue(Mode mode, Settings fusion, Parameter parameter) {
         return switch (parameter) {
-            case ITEM_INTERVAL -> fusion == null ? mode.cooldownSeconds.get() : fusionCooldown(mode, fusion);
-            case DISTANCE -> fusion != null && fusion.enabled("big_house")
-                    ? mode("big_house").distanceMultiplier.get() : mode.distanceMultiplier.get();
-            case EVENT_MEAN -> fusion == null ? mode.eventMeanSeconds.get()
-                    : fusion.enabled("party") ? mode(fusion.partyVariant()).eventMeanSeconds.get() : 0;
+            case ITEM_INTERVAL ->
+                    fusion == null ? mode.cooldownSeconds.get() : fusionCooldown(mode, fusion);
+            case DISTANCE ->
+                    fusion != null && fusion.enabled("big_house")
+                            ? mode("big_house").distanceMultiplier.get()
+                            : mode.distanceMultiplier.get();
+            case EVENT_MEAN ->
+                    fusion == null
+                            ? mode.eventMeanSeconds.get()
+                            : fusion.enabled("party")
+                                    ? mode(fusion.partyVariant()).eventMeanSeconds.get()
+                                    : 0;
             case ADHD_MEAN -> adhdMeanSeconds.get();
             case ADHD_DURATION -> adhdDurationSeconds.get();
             case PERK_CHANCE -> perkChance.get();
@@ -252,7 +425,8 @@ public final class PillarsConfig {
     private int fusionCooldown(Mode mode, Settings settings) {
         if (settings.enabled("shuffle")) return mode("item-shuffle").cooldownSeconds.get();
         int cooldown = mode.cooldownSeconds.get();
-        if (settings.enabled("chaos")) cooldown = Math.min(cooldown, mode("chaos").cooldownSeconds.get());
+        if (settings.enabled("chaos"))
+            cooldown = Math.min(cooldown, mode("chaos").cooldownSeconds.get());
         if (settings.rave()) cooldown = Math.min(cooldown, mode("rave").cooldownSeconds.get());
         return cooldown;
     }
@@ -285,7 +459,12 @@ public final class PillarsConfig {
             for (String pattern : weightSection.getKeys(false)) {
                 Integer weight = weightOf(weightSection.get(pattern));
                 if (weight == null) {
-                    log.warning("pillars: invalid weight '" + weightSection.get(pattern) + "' for '" + pattern + "'");
+                    log.warning(
+                            "pillars: invalid weight '"
+                                    + weightSection.get(pattern)
+                                    + "' for '"
+                                    + pattern
+                                    + "'");
                 } else {
                     weights.put(pattern, weight);
                 }
@@ -311,24 +490,36 @@ public final class PillarsConfig {
                 if (group == null) {
                     continue;
                 }
-                List<String> items = group.getStringList("items").stream().filter(s -> !s.isBlank()).toList();
+                List<String> items =
+                        group.getStringList("items").stream().filter(s -> !s.isBlank()).toList();
                 if (items.isEmpty()) {
                     log.warning("pillars: item group '" + name + "' has no items and does nothing");
                     continue;
                 }
-                List<String> triggers = group.getStringList("triggers").stream().filter(s -> !s.isBlank()).toList();
+                List<String> triggers =
+                        group.getStringList("triggers").stream().filter(s -> !s.isBlank()).toList();
                 Integer weight = weightOf(group.get("weight"));
-                boolean repeating = group.getString("mode", "").trim().equalsIgnoreCase("repeating");
-                groups.add(new ItemPool.ItemGroup(name, weight != null ? weight : 250,
-                        repeating ? ItemPool.GroupMode.REPEATING : ItemPool.GroupMode.ONCE,
-                        // No triggers: every item in the group triggers it.
-                        (triggers.isEmpty() ? items : triggers).stream().map(ItemPool::wildcard).toList(),
-                        items.stream().map(ItemPool::wildcard).toList()));
+                boolean repeating =
+                        group.getString("mode", "").trim().equalsIgnoreCase("repeating");
+                groups.add(
+                        new ItemPool.ItemGroup(
+                                name,
+                                weight != null ? weight : 250,
+                                repeating ? ItemPool.GroupMode.REPEATING : ItemPool.GroupMode.ONCE,
+                                // No triggers: every item in the group triggers it.
+                                (triggers.isEmpty() ? items : triggers)
+                                        .stream().map(ItemPool::wildcard).toList(),
+                                items.stream().map(ItemPool::wildcard).toList()));
             }
         }
 
-        return new Items(blacklist, section.getStringList("blacklist-patterns"),
-                section.getStringList("blacklist-exceptions"), weights, custom, groups);
+        return new Items(
+                blacklist,
+                section.getStringList("blacklist-patterns"),
+                section.getStringList("blacklist-exceptions"),
+                weights,
+                custom,
+                groups);
     }
 
     /** Non-negative integer, else null. */
@@ -364,8 +555,13 @@ public final class PillarsConfig {
                     gameRules.put(rule, rules.get(rule));
                 }
             }
-            arenas.add(new PillarsArena(name, arena.getString("template", PillarsArena.templateFor(name)),
-                    arena.getDouble("x"), arena.getDouble("z"), gameRules));
+            arenas.add(
+                    new PillarsArena(
+                            name,
+                            arena.getString("template", PillarsArena.templateFor(name)),
+                            arena.getDouble("x"),
+                            arena.getDouble("z"),
+                            gameRules));
         }
         return arenas;
     }
@@ -390,11 +586,12 @@ public final class PillarsConfig {
                 return null;
             }
             long amount = Long.parseLong(matcher.group(1));
-            total += switch (matcher.group(2)) {
-                case "h" -> amount * 3600;
-                case "min", "m" -> amount * 60;
-                default -> amount;
-            };
+            total +=
+                    switch (matcher.group(2)) {
+                        case "h" -> amount * 3600;
+                        case "min", "m" -> amount * 60;
+                        default -> amount;
+                    };
             end = matcher.end();
         }
         return end == text.length() ? total : null;

@@ -13,12 +13,12 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Ravager;
 import org.bukkit.entity.SplashPotion;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
@@ -136,8 +136,10 @@ final class RhinoSession extends PartySurvivalSession {
 
     private void addRhino(int index) {
         double angle = index * 2.399963229728653;
-        Location location = arena.spread(arena.safe(Math.cos(angle) * (radius - 4), Math.sin(angle) * (radius - 4)),
-                otherRhinoLocations(null));
+        Location location =
+                arena.spread(
+                        arena.safe(Math.cos(angle) * (radius - 4), Math.sin(angle) * (radius - 4)),
+                        otherRhinoLocations(null));
         Ravager entity = world.spawn(location, Ravager.class);
         entity.setAI(false);
         entity.setAware(false);
@@ -149,19 +151,25 @@ final class RhinoSession extends PartySurvivalSession {
         entity.setRemoveWhenFarAway(false);
         rhinos.add(new Rhino(entity, elapsed() + 20L + index * 20L));
     }
+
     private List<Location> otherRhinoLocations(Rhino excluded) {
         List<Location> locations = new ArrayList<>();
         for (Rhino other : rhinos) {
-            if (other != excluded && other.entity.isValid()) locations.add(other.entity.getLocation());
+            if (other != excluded && other.entity.isValid())
+                locations.add(other.entity.getLocation());
         }
         return locations;
     }
+
     private Player chooseTarget(Rhino rhino, List<Player> players) {
         List<UUID> assigned = new ArrayList<>();
         for (Rhino other : rhinos) {
-            if (other != rhino && other.entity.isValid() && other.target != null) assigned.add(other.target);
+            if (other != rhino && other.entity.isValid() && other.target != null)
+                assigned.add(other.target);
         }
-        int index = RhinoHazards.targetIndex(players.stream().map(Player::getUniqueId).toList(), assigned, random);
+        int index =
+                RhinoHazards.targetIndex(
+                        players.stream().map(Player::getUniqueId).toList(), assigned, random);
         Player target = players.get(index);
         rhino.target = target.getUniqueId();
         return target;
@@ -182,8 +190,11 @@ final class RhinoSession extends PartySurvivalSession {
         for (Rhino rhino : rhinos) {
             tickRhino(rhino, players, elapsed, stage);
             if (tick % 5 == 0)
-                labels(rhino.labels, rhino.entity,
-                        text(I18n.tr("party.rounds.rhino.entity")), true);
+                labels(
+                        rhino.labels,
+                        rhino.entity,
+                        text(I18n.tr("party.rounds.rhino.entity")),
+                        true);
         }
         if (elapsed >= nextMine) {
             for (int i = 0; i < RhinoHazards.mineBatch(stage) && mines.size() < 30; i++)
@@ -193,30 +204,42 @@ final class RhinoSession extends PartySurvivalSession {
         for (Mine mine : List.copyOf(mines.values())) tickMine(mine);
     }
 
-    private void labels(Map<UUID, TextDisplay> labels, Entity owner, Component message, boolean pointed) {
+    private void labels(
+            Map<UUID, TextDisplay> labels, Entity owner, Component message, boolean pointed) {
         Set<UUID> viewers = new HashSet<>();
         for (Player viewer : services.session().audiencePlayers()) {
             if (!viewer.getWorld().equals(world)) continue;
             viewers.add(viewer.getUniqueId());
-            TextDisplay label = labels.computeIfAbsent(viewer.getUniqueId(), id -> {
-                TextDisplay created = world.spawn(owner.getLocation(), TextDisplay.class, display -> {
-                    display.setVisibleByDefault(false);
-                    display.setPersistent(false);
-                    display.setBillboard(Display.Billboard.CENTER);
-                    display.setShadowed(true);
-                });
-                viewer.showEntity(services.plugin(), created);
-                return created;
-            });
+            TextDisplay label =
+                    labels.computeIfAbsent(
+                            viewer.getUniqueId(),
+                            id -> {
+                                TextDisplay created =
+                                        world.spawn(
+                                                owner.getLocation(),
+                                                TextDisplay.class,
+                                                display -> {
+                                                    display.setVisibleByDefault(false);
+                                                    display.setPersistent(false);
+                                                    display.setBillboard(Display.Billboard.CENTER);
+                                                    display.setShadowed(true);
+                                                });
+                                viewer.showEntity(services.plugin(), created);
+                                return created;
+                            });
             label.teleport(owner.getLocation().add(0, owner.getHeight() + .3, 0));
-            label.text(pointed && !owner.equals(viewer.getTargetEntity(64))
-                    ? Component.empty() : I18n.render(message, viewer));
+            label.text(
+                    pointed && !owner.equals(viewer.getTargetEntity(64))
+                            ? Component.empty()
+                            : I18n.render(message, viewer));
         }
-        labels.entrySet().removeIf(entry -> {
-            if (viewers.contains(entry.getKey())) return false;
-            entry.getValue().remove();
-            return true;
-        });
+        labels.entrySet()
+                .removeIf(
+                        entry -> {
+                            if (viewers.contains(entry.getKey())) return false;
+                            entry.getValue().remove();
+                            return true;
+                        });
     }
 
     private static void clearLabels(Map<UUID, TextDisplay> labels) {
@@ -293,8 +316,12 @@ final class RhinoSession extends PartySurvivalSession {
                 PotionMeta.class,
                 meta -> {
                     meta.setColor(Color.ORANGE);
-                    meta.displayName(I18n.tr("party.rounds.rhino.mine.name").color(NamedTextColor.RED));
-                    meta.lore(List.of(I18n.tr("party.rounds.rhino.mine.lore").color(NamedTextColor.GRAY)));
+                    meta.displayName(
+                            I18n.tr("party.rounds.rhino.mine.name").color(NamedTextColor.RED));
+                    meta.lore(
+                            List.of(
+                                    I18n.tr("party.rounds.rhino.mine.lore")
+                                            .color(NamedTextColor.GRAY)));
                     meta.getPersistentDataContainer()
                             .set(mineKey, PersistentDataType.LONG, mine.state.id);
                 });
@@ -358,9 +385,13 @@ final class RhinoSession extends PartySurvivalSession {
                 mine.location = carrier.getLocation().add(0, .5, 0);
                 if (tick % 5 == 0)
                     carrier.sendActionBar(
-                            I18n.tr("party.rounds.rhino.mine.carried",
-                                    String.format(java.util.Locale.ROOT, "%.1f",
-                                            Math.max(0, mine.state.expiresAt - tick) / 20.0))
+                            I18n.tr(
+                                            "party.rounds.rhino.mine.carried",
+                                            String.format(
+                                                    java.util.Locale.ROOT,
+                                                    "%.1f",
+                                                    Math.max(0, mine.state.expiresAt - tick)
+                                                            / 20.0))
                                     .color(NamedTextColor.RED));
             }
         } else if (mine.thrown != null && mine.thrown.isValid())
@@ -368,11 +399,17 @@ final class RhinoSession extends PartySurvivalSession {
         else if (mine.ground != null && mine.ground.isValid())
             mine.location = mine.ground.getLocation();
         if (mine.ground != null && tick % 5 == 0)
-            labels(mine.labels, mine.ground,
-                    I18n.tr("party.rounds.rhino.mine.timer",
-                            String.format(java.util.Locale.ROOT, "%.1f",
-                                    Math.max(0, mine.state.expiresAt - tick) / 20.0))
-                            .color(NamedTextColor.RED), false);
+            labels(
+                    mine.labels,
+                    mine.ground,
+                    I18n.tr(
+                                    "party.rounds.rhino.mine.timer",
+                                    String.format(
+                                            java.util.Locale.ROOT,
+                                            "%.1f",
+                                            Math.max(0, mine.state.expiresAt - tick) / 20.0))
+                            .color(NamedTextColor.RED),
+                    false);
         if (!mine.state.expire(tick)) return;
         clearGround(mine);
         clearCarried(mine);
@@ -403,9 +440,10 @@ final class RhinoSession extends PartySurvivalSession {
                 || !(event.getEntity() instanceof Player player)
                 || !alive(player)) return;
         if (mines.values().stream()
-                .anyMatch(m ->
-                        m.state.state() == TimedMine.State.CARRIED
-                                && player.getUniqueId().equals(m.state.carrier()))) return;
+                .anyMatch(
+                        m ->
+                                m.state.state() == TimedMine.State.CARRIED
+                                        && player.getUniqueId().equals(m.state.carrier()))) return;
         Mine mine = mines.get(id);
         if (mine == null || !mine.state.pickup(player.getUniqueId(), tick)) return;
         clearGround(mine);
@@ -487,10 +525,11 @@ final class RhinoSession extends PartySurvivalSession {
         }
         mines.clear();
         groundIds.clear();
-        rhinos.forEach(r -> {
-            clearLabels(r.labels);
-            r.entity.remove();
-        });
+        rhinos.forEach(
+                r -> {
+                    clearLabels(r.labels);
+                    r.entity.remove();
+                });
         rhinos.clear();
     }
 }

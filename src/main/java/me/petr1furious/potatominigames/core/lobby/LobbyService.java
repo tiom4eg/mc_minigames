@@ -44,9 +44,9 @@ import java.util.function.Consumer;
 /**
  * Lobby world and player state around queues and games.
  *
- * <p>Each player has at most one on-disk snapshot, taken on entering the lobby, a
- * queue or a game. Players who queued in the lobby return to it; others are restored.
- * Admins are not put into the lobby state but are still protected from damage and hunger.
+ * <p>Each player has at most one on-disk snapshot, taken on entering the lobby, a queue or a game.
+ * Players who queued in the lobby return to it; others are restored. Admins are not put into the
+ * lobby state but are still protected from damage and hunger.
  */
 public final class LobbyService implements Listener {
     private enum Target {
@@ -62,19 +62,22 @@ public final class LobbyService implements Listener {
 
     private final PropertyBag config = new PropertyBag("lobby");
     private final Property<Boolean> enabled = config.define("enabled", PropertyCodec.BOOL, true);
-    private final Property<String> worldName = config.define("world", PropertyCodec.STRING, "lobby")
-            .suggest(() -> Bukkit.getWorlds().stream().map(World::getName).toList());
-    private final Property<Boolean> firstJoinToLobby = config.define("firstJoinToLobby", PropertyCodec.BOOL, true);
+    private final Property<String> worldName =
+            config.define("world", PropertyCodec.STRING, "lobby")
+                    .suggest(() -> Bukkit.getWorlds().stream().map(World::getName).toList());
+    private final Property<Boolean> firstJoinToLobby =
+            config.define("firstJoinToLobby", PropertyCodec.BOOL, true);
     private final Property<Integer> menuSlot = config.define("menuSlot", PropertyCodec.INT, 4);
 
     private final Map<UUID, Target> targets = new HashMap<>();
+
     /** Where a player stood before a world change, recorded by the teleport that caused it. */
     private final Map<UUID, Location> departedFrom = new HashMap<>();
 
-    private Consumer<Player> menuOpener = player -> {
-    };
+    private Consumer<Player> menuOpener = player -> {};
 
-    public LobbyService(JavaPlugin plugin, PlayerStateService playerState, SessionManager sessions) {
+    public LobbyService(
+            JavaPlugin plugin, PlayerStateService playerState, SessionManager sessions) {
         this.plugin = plugin;
         this.playerState = playerState;
         this.sessions = sessions;
@@ -236,7 +239,8 @@ public final class LobbyService implements Listener {
             return;
         }
         if (isExempt(player)) {
-            if (java.util.Arrays.stream(player.getInventory().getContents()).noneMatch(this::isMenuItem)) {
+            if (java.util.Arrays.stream(player.getInventory().getContents())
+                    .noneMatch(this::isMenuItem)) {
                 if (player.getInventory().getItem(menuSlot.get()) == null) {
                     player.getInventory().setItem(menuSlot.get(), I18n.item(menuItem(), player));
                 } else {
@@ -253,19 +257,29 @@ public final class LobbyService implements Listener {
 
     public ItemStack menuItem() {
         ItemStack item = new ItemStack(Material.COMPASS);
-        item.editMeta(meta -> {
-            meta.displayName(I18n.tr("core.menu.play").color(NamedTextColor.GOLD)
-                    .decoration(TextDecoration.ITALIC, false));
-            meta.lore(java.util.List.of(I18n.tr("core.lobby.menu_hint").color(NamedTextColor.GRAY)
-                    .decoration(TextDecoration.ITALIC, false)));
-            meta.getPersistentDataContainer().set(menuKey, PersistentDataType.BYTE, (byte) 1);
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(
+                            I18n.tr("core.menu.play")
+                                    .color(NamedTextColor.GOLD)
+                                    .decoration(TextDecoration.ITALIC, false));
+                    meta.lore(
+                            java.util.List.of(
+                                    I18n.tr("core.lobby.menu_hint")
+                                            .color(NamedTextColor.GRAY)
+                                            .decoration(TextDecoration.ITALIC, false)));
+                    meta.getPersistentDataContainer()
+                            .set(menuKey, PersistentDataType.BYTE, (byte) 1);
+                });
         return item;
     }
 
     private boolean isMenuItem(ItemStack item) {
-        return item != null && item.hasItemMeta()
-                && item.getItemMeta().getPersistentDataContainer().has(menuKey, PersistentDataType.BYTE);
+        return item != null
+                && item.hasItemMeta()
+                && item.getItemMeta()
+                        .getPersistentDataContainer()
+                        .has(menuKey, PersistentDataType.BYTE);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -310,12 +324,15 @@ public final class LobbyService implements Listener {
             return;
         }
         // Teleports in the join event are unreliable.
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!player.isOnline() || sessions.isBusy(player)) {
-                return;
-            }
-            settleAfterLogin(player);
-        });
+        Bukkit.getScheduler()
+                .runTask(
+                        plugin,
+                        () -> {
+                            if (!player.isOnline() || sessions.isBusy(player)) {
+                                return;
+                            }
+                            settleAfterLogin(player);
+                        });
     }
 
     private void settleAfterLogin(Player player) {
@@ -355,7 +372,8 @@ public final class LobbyService implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onHunger(FoodLevelChangeEvent event) {
-        if (isLobby(event.getEntity().getWorld()) && event.getFoodLevel() < event.getEntity().getFoodLevel()) {
+        if (isLobby(event.getEntity().getWorld())
+                && event.getFoodLevel() < event.getEntity().getFoodLevel()) {
             event.setCancelled(true);
         }
     }
@@ -381,7 +399,8 @@ public final class LobbyService implements Listener {
 
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+        if (event.getAction() != Action.RIGHT_CLICK_AIR
+                && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
         if (isMenuItem(event.getItem())) {

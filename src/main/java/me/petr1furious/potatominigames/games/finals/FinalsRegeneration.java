@@ -25,7 +25,10 @@ final class FinalsRegeneration implements Listener {
 
     private static final class Life {
         long damagedAt, healedAt = Long.MIN_VALUE;
-        Life(long tick) { damagedAt = tick; }
+
+        Life(long tick) {
+            damagedAt = tick;
+        }
     }
 
     FinalsRegeneration(Predicate<Player> active, LongSupplier tick) {
@@ -43,12 +46,17 @@ final class FinalsRegeneration implements Listener {
         if (!closed) lives.put(player, new Life(tick));
     }
 
-    void forget(UUID player) { lives.remove(player); }
+    void forget(UUID player) {
+        lives.remove(player);
+    }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (closed || event.isCancelled() || event.getFinalDamage() <= 0
-                || !(event.getEntity() instanceof Player player) || !active.test(player)) return;
+        if (closed
+                || event.isCancelled()
+                || event.getFinalDamage() <= 0
+                || !(event.getEntity() instanceof Player player)
+                || !active.test(player)) return;
         Life life = lives.get(player.getUniqueId());
         if (life != null) life.damagedAt = clock.getAsLong();
     }
@@ -59,10 +67,18 @@ final class FinalsRegeneration implements Listener {
         Life life = lives.get(player.getUniqueId());
         if (life == null) return;
         long now = clock.getAsLong();
-        int delay = switch (type) { case LIGHT -> 160; case MEDIUM -> 180; case HEAVY -> 200; };
+        int delay =
+                switch (type) {
+                    case LIGHT -> 160;
+                    case MEDIUM -> 180;
+                    case HEAVY -> 200;
+                };
         if (now < life.damagedAt || now - life.damagedAt < delay || now == life.healedAt) return;
         double health = player.getHealth(), maximum = player.getMaxHealth();
-        if (!Double.isFinite(health) || !Double.isFinite(maximum) || health <= 0 || health >= maximum) return;
+        if (!Double.isFinite(health)
+                || !Double.isFinite(maximum)
+                || health <= 0
+                || health >= maximum) return;
         player.setHealth(Math.min(maximum, health + HEALTH_PER_TICK));
         life.healedAt = now;
     }

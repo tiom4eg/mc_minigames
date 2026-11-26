@@ -14,7 +14,13 @@ import java.util.function.Predicate;
 public final class TanksMatch {
     private static final int TRACK_RECOVERY_TICKS = 40;
     public static final int ACTIVE = -2, DRAW = -1;
-    enum CaptureState { IDLE, CAPTURING, CONTESTED }
+
+    enum CaptureState {
+        IDLE,
+        CAPTURING,
+        CONTESTED
+    }
+
     private final Map<UUID, Actor> actors = new LinkedHashMap<>();
     private final int battleTicks, captureRequired;
     private final boolean practice;
@@ -173,13 +179,16 @@ public final class TanksMatch {
     Spotters spottersFor(Actor shooter, long now, Predicate<Actor> directlyVisible) {
         Map<UUID, List<Actor>> byTarget = new HashMap<>();
         for (Actor target : actors.values()) {
-            if (!target.alive || target.team == shooter.team || target.spottedUntil < now
+            if (!target.alive
+                    || target.team == shooter.team
+                    || target.spottedUntil < now
                     || target.contactUntil.getOrDefault(shooter, -1L) >= now
                     || directlyVisible.test(target)) continue;
-            var scouts = target.contactUntil.entrySet().stream()
-                    .filter(entry -> entry.getValue() == target.spottedUntil)
-                    .map(Map.Entry::getKey)
-                    .toList();
+            var scouts =
+                    target.contactUntil.entrySet().stream()
+                            .filter(entry -> entry.getValue() == target.spottedUntil)
+                            .map(Map.Entry::getKey)
+                            .toList();
             byTarget.put(target.id, scouts);
         }
         return new Spotters(Map.copyOf(byTarget));
@@ -332,8 +341,12 @@ public final class TanksMatch {
 
         public void damageTrack(int ticks) {
             if (ticks < 0) throw new IllegalArgumentException("Negative module duration");
-            if (!started || finished() || !alive || ticks == 0 || trackTicks > 0 || trackRecoveryTicks > 0)
-                return;
+            if (!started
+                    || finished()
+                    || !alive
+                    || ticks == 0
+                    || trackTicks > 0
+                    || trackRecoveryTicks > 0) return;
             trackTicks = ticks;
             captureTicks = 0;
         }

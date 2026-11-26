@@ -4,17 +4,7 @@ import io.papermc.paper.event.packet.PlayerChunkLoadEvent;
 import io.papermc.paper.event.packet.PlayerChunkUnloadEvent;
 import io.papermc.paper.math.BlockPosition;
 import io.papermc.paper.math.Position;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -27,7 +17,21 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-/** Client-only water surface; the session applies the lethal plane independently of these visuals. */
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * Client-only water surface; the session applies the lethal plane independently of these visuals.
+ */
 final class FloodModifier implements Listener, AutoCloseable {
     static final int START_BELOW = 20;
     static final int RISE_TICKS = 200;
@@ -47,6 +51,7 @@ final class FloodModifier implements Listener, AutoCloseable {
             key = key(x, z);
         }
     }
+
     private record Shown(int y, BitSet cells) {}
 
     private static final class PreparedChunk {
@@ -103,7 +108,13 @@ final class FloodModifier implements Listener, AutoCloseable {
     private boolean ready;
     private boolean closed;
 
-    FloodModifier(World world, int feetY, Location center, List<Location> pillars, int startBelow, int riseSeconds) {
+    FloodModifier(
+            World world,
+            int feetY,
+            Location center,
+            List<Location> pillars,
+            int startBelow,
+            int riseSeconds) {
         this.world = world;
         this.feetY = feetY;
         this.startBelow = startBelow;
@@ -125,7 +136,8 @@ final class FloodModifier implements Listener, AutoCloseable {
         columns = new ArrayList<>();
         for (int x = minX; x <= maxX; x++)
             for (int z = minZ; z <= maxZ; z++) columns.add(new Column(x, z));
-        columns.sort(Comparator.comparingLong(column -> distance(column.x, column.z, centerX, centerZ)));
+        columns.sort(
+                Comparator.comparingLong(column -> distance(column.x, column.z, centerX, centerZ)));
         for (int index = 0; index < columns.size(); index++) {
             Column column = columns.get(index);
             column.index = index;
@@ -203,8 +215,9 @@ final class FloodModifier implements Listener, AutoCloseable {
                 remaining -= CHUNK_CELLS;
             }
             Shown previous = view.shown.get(column.key);
-            int cost = (current.renderable ? CHUNK_CELLS * 2 : 0)
-                    + (previous == null ? 0 : previous.cells.cardinality() * 2);
+            int cost =
+                    (current.renderable ? CHUNK_CELLS * 2 : 0)
+                            + (previous == null ? 0 : previous.cells.cardinality() * 2);
             if (remaining < cost) {
                 enqueue(view);
                 stalled++;
@@ -217,7 +230,8 @@ final class FloodModifier implements Listener, AutoCloseable {
                 refresh(prepared);
                 if (!prepared.water.isEmpty()) {
                     view.player.sendMultiBlockChange(prepared.water);
-                    view.shown.put(column.key, new Shown(current.y, (BitSet) prepared.cells.clone()));
+                    view.shown.put(
+                            column.key, new Shown(current.y, (BitSet) prepared.cells.clone()));
                 }
             }
             lastWorkUnits += cost;
@@ -245,7 +259,8 @@ final class FloodModifier implements Listener, AutoCloseable {
 
     private int preparePlane(Plane plane, int budget) {
         int used = 0;
-        for (int index = plane.pending.nextSetBit(0); index >= 0;
+        for (int index = plane.pending.nextSetBit(0);
+                index >= 0;
                 index = plane.pending.nextSetBit(index + 1)) {
             Column column = columns.get(index);
             if (!world.isChunkLoaded(column.x, column.z)) {
@@ -263,8 +278,11 @@ final class FloodModifier implements Listener, AutoCloseable {
     private PreparedChunk prepareChunk(Plane plane, Column column) {
         PreparedChunk prepared = new PreparedChunk();
         for (int index = 0; index < CHUNK_CELLS; index++)
-            prepared.positions[index] = Position.block(
-                    (column.x << 4) + (index & 15), plane.y, (column.z << 4) + (index >> 4));
+            prepared.positions[index] =
+                    Position.block(
+                            (column.x << 4) + (index & 15),
+                            plane.y,
+                            (column.z << 4) + (index >> 4));
         refresh(prepared);
         plane.chunks[column.index] = prepared;
         plane.pending.clear(column.index);
@@ -278,7 +296,9 @@ final class FloodModifier implements Listener, AutoCloseable {
         prepared.refreshedPass = workPass;
         for (int index = 0; index < CHUNK_CELLS; index++) {
             BlockPosition position = prepared.positions[index];
-            if (world.getBlockAt(position.blockX(), position.blockY(), position.blockZ()).getType().isAir()) {
+            if (world.getBlockAt(position.blockX(), position.blockY(), position.blockZ())
+                    .getType()
+                    .isAir()) {
                 prepared.water.put(position, water);
                 prepared.cells.set(index);
             } else {
@@ -289,9 +309,8 @@ final class FloodModifier implements Listener, AutoCloseable {
     }
 
     private void discoverViewers() {
-        for (Player player : world.getPlayers())
-            if (available(player)) view(player);
-        for (Iterator<View> iterator = views.values().iterator(); iterator.hasNext();) {
+        for (Player player : world.getPlayers()) if (available(player)) view(player);
+        for (Iterator<View> iterator = views.values().iterator(); iterator.hasNext(); ) {
             View view = iterator.next();
             if (!available(view.player)) {
                 discard(view);
@@ -311,15 +330,15 @@ final class FloodModifier implements Listener, AutoCloseable {
         if (view != null) discard(view);
         view = new View(player, world);
         views.put(id, view);
-        for (Column column : columns)
-            if (player.isChunkSent(column.key)) request(view, column);
+        for (Column column : columns) if (player.isChunkSent(column.key)) request(view, column);
         return view;
     }
 
     private void request(View view, Column column) {
         view.visible.add(column);
         view.pending.add(column);
-        if (current.renderable && current.chunks[column.index] == null) current.pending.set(column.index);
+        if (current.renderable && current.chunks[column.index] == null)
+            current.pending.set(column.index);
         if (next.renderable && next.chunks[column.index] == null) next.pending.set(column.index);
         if (ticks == 0) ready = false;
         enqueue(view);
@@ -338,7 +357,7 @@ final class FloodModifier implements Listener, AutoCloseable {
         int z = view.position.getBlockZ() >> 4;
         Column nearest = null;
         long best = Long.MAX_VALUE;
-        for (Iterator<Column> iterator = view.pending.iterator(); iterator.hasNext();) {
+        for (Iterator<Column> iterator = view.pending.iterator(); iterator.hasNext(); ) {
             Column column = iterator.next();
             if (!view.player.isChunkSent(column.key) || !world.isChunkLoaded(column.x, column.z)) {
                 iterator.remove();
@@ -357,11 +376,13 @@ final class FloodModifier implements Listener, AutoCloseable {
 
     private void restore(View view, Column column, Shown shown) {
         Map<BlockPosition, BlockData> updates = new HashMap<>(shown.cells.cardinality() * 2);
-        for (int index = shown.cells.nextSetBit(0); index >= 0;
+        for (int index = shown.cells.nextSetBit(0);
+                index >= 0;
                 index = shown.cells.nextSetBit(index + 1)) {
             int x = (column.x << 4) + (index & 15);
             int z = (column.z << 4) + (index >> 4);
-            updates.put(Position.block(x, shown.y, z), world.getBlockAt(x, shown.y, z).getBlockData());
+            updates.put(
+                    Position.block(x, shown.y, z), world.getBlockAt(x, shown.y, z).getBlockData());
         }
         if (!updates.isEmpty()) view.player.sendMultiBlockChange(updates);
     }
@@ -381,7 +402,8 @@ final class FloodModifier implements Listener, AutoCloseable {
     @EventHandler
     public void onChunkUnload(PlayerChunkUnloadEvent event) {
         View view = views.get(event.getPlayer().getUniqueId());
-        if (closed || event.getWorld() != world || view == null || view.player != event.getPlayer()) return;
+        if (closed || event.getWorld() != world || view == null || view.player != event.getPlayer())
+            return;
         Column column = byKey.get(key(event.getChunk().getX(), event.getChunk().getZ()));
         if (column == null) return;
         view.visible.remove(column);

@@ -23,9 +23,10 @@ final class BuildMemoryJudging {
         int correct =
                 (int)
                         pattern.blocks().entrySet().stream()
-                                .filter(e ->
-                                        MemoryBlock.sameForBuild(
-                                                e.getValue(), actual.get(e.getKey())))
+                                .filter(
+                                        e ->
+                                                MemoryBlock.sameForBuild(
+                                                        e.getValue(), actual.get(e.getKey())))
                                 .count();
         return new Grade(correct, pattern.blocks().size(), errors);
     }

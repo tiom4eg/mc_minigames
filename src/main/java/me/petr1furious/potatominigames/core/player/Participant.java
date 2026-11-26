@@ -1,11 +1,11 @@
 package me.petr1furious.potatominigames.core.player;
 
-import java.util.UUID;
+import me.petr1furious.potatominigames.core.team.TeamColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import me.petr1furious.potatominigames.core.team.TeamColor;
+import java.util.UUID;
 
 public final class Participant {
     private final UUID id;

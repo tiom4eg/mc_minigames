@@ -45,8 +45,11 @@ public final class ColorFloorCheck {
         for (int seed = 0; seed < 200; seed++) {
             var r = ColorFloorRound.generate(12, new Random(seed * 7919L));
             targets.add(r.target());
-            titles.forEach((locale, names) ->
-                    names.add(me.petr1furious.potatominigames.i18n.I18n.plain(r.title(), locale)));
+            titles.forEach(
+                    (locale, names) ->
+                            names.add(
+                                    me.petr1furious.potatominigames.i18n.I18n.plain(
+                                            r.title(), locale)));
         }
         check(targets.size() == 32, "Every concrete and glazed variant can be the target");
         for (var names : titles.values())

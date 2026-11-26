@@ -1,11 +1,13 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import java.util.Collection;
-
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
-/** Friendliness, targeting and name masking from the player's session, with defaults outside games. */
+import java.util.Collection;
+
+/**
+ * Friendliness, targeting and name masking from the player's session, with defaults outside games.
+ */
 public interface GadgetContext {
 
     Plugin plugin();

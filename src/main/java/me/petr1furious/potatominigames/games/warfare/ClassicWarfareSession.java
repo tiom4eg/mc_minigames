@@ -1,23 +1,22 @@
 package me.petr1furious.potatominigames.games.warfare;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
-import org.bukkit.event.entity.PlayerDeathEvent;
-
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
 import me.petr1furious.potatominigames.core.command.CommandFailure;
 import me.petr1furious.potatominigames.core.game.EndReason;
 import me.petr1furious.potatominigames.core.game.SessionServices;
 import me.petr1furious.potatominigames.core.text.Summary;
 import me.petr1furious.potatominigames.gadgets.FPVDroneGadget;
+import me.petr1furious.potatominigames.i18n.I18n;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.event.entity.PlayerDeathEvent;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 final class ClassicWarfareSession extends WarfareSessionBase {
     private boolean checkingGameEnd = false;
@@ -37,7 +36,8 @@ final class ClassicWarfareSession extends WarfareSessionBase {
     }
 
     private void spawnPlayer(Player player) {
-        Location spawn = services.spawnFinder().findSpawnAround(currentGameCenter(), currentGameRadius());
+        Location spawn =
+                services.spawnFinder().findSpawnAround(currentGameCenter(), currentGameRadius());
         if (spawn == null) {
             spawn = gameWorld().getSpawnLocation();
         }
@@ -92,10 +92,16 @@ final class ClassicWarfareSession extends WarfareSessionBase {
             return;
         }
         checkingGameEnd = true;
-        services.plugin().getServer().getScheduler().runTaskLater(services.plugin(), () -> {
-            checkingGameEnd = false;
-            checkGameEnd();
-        }, 60L);
+        services.plugin()
+                .getServer()
+                .getScheduler()
+                .runTaskLater(
+                        services.plugin(),
+                        () -> {
+                            checkingGameEnd = false;
+                            checkGameEnd();
+                        },
+                        60L);
     }
 
     private void checkGameEnd() {
@@ -112,7 +118,9 @@ final class ClassicWarfareSession extends WarfareSessionBase {
             summary.add(I18n.tr("warfare.nobody_survived").color(NamedTextColor.YELLOW));
         } else {
             Player winner = alive.getFirst();
-            summary.add(Summary.winners(List.of(Component.text(winner.getName(), NamedTextColor.WHITE))));
+            summary.add(
+                    Summary.winners(
+                            List.of(Component.text(winner.getName(), NamedTextColor.WHITE))));
             services.award("war", winner.getUniqueId(), 1);
         }
         services.session().endGame(EndReason.FINISHED);

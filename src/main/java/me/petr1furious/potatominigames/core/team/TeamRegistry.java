@@ -1,14 +1,14 @@
 package me.petr1furious.potatominigames.core.team;
 
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Saved team colours per game, in {@code data/teams.yml}:
@@ -85,7 +85,8 @@ public final class TeamRegistry {
             file.getParentFile().mkdirs();
             config.save(file);
         } catch (IOException exception) {
-            plugin.getLogger().warning("Failed to save team assignments: " + exception.getMessage());
+            plugin.getLogger()
+                    .warning("Failed to save team assignments: " + exception.getMessage());
         }
     }
 }

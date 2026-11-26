@@ -70,18 +70,27 @@ public final class TanksRadarCheck {
         radar.render(view, canvas(visible), red);
         radar.render(view, canvas(hidden), blue);
         int enemy = index(6, -37), ally = index(6, 37);
-        check(hidden[enemy] == MapPalette.RED && hidden[ally] == MapPalette.BLUE,
+        check(
+                hidden[enemy] == MapPalette.RED && hidden[ally] == MapPalette.BLUE,
                 "privacy reference samples both base rings");
-        check(visible[enemy] == MapPalette.RED && visible[ally] == MapPalette.PALE_BLUE,
+        check(
+                visible[enemy] == MapPalette.RED && visible[ally] == MapPalette.PALE_BLUE,
                 "authorized contacts retain team colors");
-        check(visible[enemy + 2 + 2 * 128] != MapPalette.RED
+        check(
+                visible[enemy + 2 + 2 * 128] != MapPalette.RED
                         && visible[ally + 2 + 2 * 128] == MapPalette.PALE_BLUE,
                 "enemy diamond and ally square have distinct corners");
-        check(visible[enemy - 3] == MapPalette.DARK_GRAY && visible[ally + 3] == MapPalette.DARK_GRAY,
+        check(
+                visible[enemy - 3] == MapPalette.DARK_GRAY
+                        && visible[ally + 3] == MapPalette.DARK_GRAY,
                 "contact outlines contrast with both base rings");
-        check(visible[enemy + 4 * 128] == MapPalette.RED && visible[ally - 4] == MapPalette.PALE_BLUE,
+        check(
+                visible[enemy + 4 * 128] == MapPalette.RED
+                        && visible[ally - 4] == MapPalette.PALE_BLUE,
                 "heading ticks follow each contact on the north-up map");
-        check(visible[index(0, 0)] == MapPalette.WHITE && visible[index(0, -3)] == MapPalette.WHITE,
+        check(
+                visible[index(0, 0)] == MapPalette.WHITE
+                        && visible[index(0, -3)] == MapPalette.WHITE,
                 "the white player arrow faces north and paints over overlapping contacts");
         spotted[0] = false;
         radar.render(view, canvas(visible), red);

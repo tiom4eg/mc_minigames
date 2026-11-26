@@ -23,9 +23,15 @@ public class LiftHandler {
     private final Map<UUID, Long> lastSoundTime = new HashMap<>();
 
     private final char[][][] liftPatterns = {
-            { { '?', 'x', 'x', '?' }, { 'x', 'o', 'o', 'x' }, { 'x', 'o', 'o', 'x' }, { '?', 'x', 'x', '?' } },
-            { { '?', '?', 'x', '?', '?' }, { '?', 'x', 'o', 'x', '?' }, { 'x', 'o', 'o', 'o', 'x' },
-                    { '?', 'x', 'o', 'x', '?' }, { '?', '?', 'x', '?', '?' } } };
+        {{'?', 'x', 'x', '?'}, {'x', 'o', 'o', 'x'}, {'x', 'o', 'o', 'x'}, {'?', 'x', 'x', '?'}},
+        {
+            {'?', '?', 'x', '?', '?'},
+            {'?', 'x', 'o', 'x', '?'},
+            {'x', 'o', 'o', 'o', 'x'},
+            {'?', 'x', 'o', 'x', '?'},
+            {'?', '?', 'x', '?', '?'}
+        }
+    };
 
     private int checkLiftSide(Location location, Material liftMaterial, boolean directionUp) {
         int liftWallCount = 0;
@@ -55,8 +61,9 @@ public class LiftHandler {
         return liftWallCount;
     }
 
-    private boolean isPlayerInLiftAtPosition(Location location, Material liftMaterial, int x, int z, int patternIndex) {
-        for (boolean directionUp : new boolean[] { false, true }) {
+    private boolean isPlayerInLiftAtPosition(
+            Location location, Material liftMaterial, int x, int z, int patternIndex) {
+        for (boolean directionUp : new boolean[] {false, true}) {
             boolean good = true;
 
             int totalLiftWallCount = 0;
@@ -68,7 +75,11 @@ public class LiftHandler {
                         continue;
                     }
 
-                    int liftWallCount = checkLiftSide(location.clone().add(i - x, 0, j - z), liftMaterial, directionUp);
+                    int liftWallCount =
+                            checkLiftSide(
+                                    location.clone().add(i - x, 0, j - z),
+                                    liftMaterial,
+                                    directionUp);
                     if (liftWallCount == -1) {
                         good = false;
                         break;
@@ -91,8 +102,8 @@ public class LiftHandler {
             }
 
             if (good
-                    && totalLiftWallCount * minLiftWallRatioB >= (wallPatternCount * liftCheckHeight)
-                            * minLiftWallRatioA) {
+                    && totalLiftWallCount * minLiftWallRatioB
+                            >= (wallPatternCount * liftCheckHeight) * minLiftWallRatioA) {
                 return true;
             }
         }
@@ -106,7 +117,8 @@ public class LiftHandler {
         for (int i = 0; i < liftPatterns[patternIndex].length; i++) {
             for (int j = 0; j < liftPatterns[patternIndex][i].length; j++) {
                 if (liftPatterns[patternIndex][i][j] == 'o') {
-                    if (isPlayerInLiftAtPosition(playerLocation, liftMaterial, i, j, patternIndex)) {
+                    if (isPlayerInLiftAtPosition(
+                            playerLocation, liftMaterial, i, j, patternIndex)) {
                         return true;
                     }
                 }
@@ -128,7 +140,8 @@ public class LiftHandler {
 
     /** Call only while a game is running; the caller checks drone mode and lift enablement. */
     public void handleLift(Player player, Material liftMaterial) {
-        if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) {
+        if (player.getGameMode() != GameMode.SURVIVAL
+                && player.getGameMode() != GameMode.ADVENTURE) {
             return;
         }
 
@@ -141,7 +154,8 @@ public class LiftHandler {
             long lastTime = lastSoundTime.getOrDefault(player.getUniqueId(), 0L);
             if (currentTime - lastTime >= 1000) {
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.playSound(player.getLocation(), Sound.BLOCK_PISTON_EXTEND, 4.0f, 1.0f);
+                    onlinePlayer.playSound(
+                            player.getLocation(), Sound.BLOCK_PISTON_EXTEND, 4.0f, 1.0f);
                 }
                 lastSoundTime.put(player.getUniqueId(), currentTime);
             }

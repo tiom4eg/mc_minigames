@@ -145,10 +145,11 @@ final class ChickenShooterSession extends PartySurvivalSession {
     void preparePlayer(Player player) {
         ItemStack bow = new ItemStack(Material.BOW);
         bow.addEnchantment(Enchantment.INFINITY, 1);
-        bow.editMeta(meta -> {
-            meta.displayName(I18n.tr(KEY + "bow").color(NamedTextColor.GOLD));
-            meta.setUnbreakable(true);
-        });
+        bow.editMeta(
+                meta -> {
+                    meta.displayName(I18n.tr(KEY + "bow").color(NamedTextColor.GOLD));
+                    meta.setUnbreakable(true);
+                });
         player.getInventory().setItem(0, I18n.item(bow, player));
         player.getInventory().setItem(9, new ItemStack(Material.ARROW));
         player.getInventory().setHeldItemSlot(0);
@@ -183,11 +184,12 @@ final class ChickenShooterSession extends PartySurvivalSession {
                 target.chicken().teleport(birdAt(target.lane(), target.path(), age));
         }
         shots.values()
-                .removeIf(shot -> {
-                    if (shot.arrow().isValid() && elapsed < shot.expires()) return false;
-                    shot.arrow().remove();
-                    return true;
-                });
+                .removeIf(
+                        shot -> {
+                            if (shot.arrow().isValid() && elapsed < shot.expires()) return false;
+                            shot.arrow().remove();
+                            return true;
+                        });
     }
 
     private void restock(int nextWave, long elapsed) {
@@ -347,17 +349,19 @@ final class ChickenShooterSession extends PartySurvivalSession {
     void playerOut(Player player) {
         UUID id = player.getUniqueId();
         targets.values()
-                .removeIf(target -> {
-                    if (!target.owner().equals(id)) return false;
-                    removeTarget(target);
-                    return true;
-                });
+                .removeIf(
+                        target -> {
+                            if (!target.owner().equals(id)) return false;
+                            removeTarget(target);
+                            return true;
+                        });
         shots.values()
-                .removeIf(shot -> {
-                    if (!shot.owner().equals(id)) return false;
-                    shot.arrow().remove();
-                    return true;
-                });
+                .removeIf(
+                        shot -> {
+                            if (!shot.owner().equals(id)) return false;
+                            shot.arrow().remove();
+                            return true;
+                        });
     }
 
     private void removeTarget(Target target) {

@@ -57,9 +57,10 @@ public final class FinalsMaps {
     public List<String> names() {
         List<String> result = new ArrayList<>();
         result.add("generated");
-        entries.forEach((name, entry) -> {
-            if (entry.saved != null) result.add(name);
-        });
+        entries.forEach(
+                (name, entry) -> {
+                    if (entry.saved != null) result.add(name);
+                });
         return List.copyOf(result);
     }
 
@@ -336,11 +337,15 @@ public final class FinalsMaps {
     }
 
     public void jumpPad(String name, Location location, boolean targeted) {
-        update(name, location, draft -> {
-            Point point = Point.of(location).centered();
-            if (draft.jumpPads.stream().anyMatch(p -> p.origin().sameBlock(point))) throw failure("pad_duplicate");
-            draft.jumpPads.add(new JumpPad(point, targeted, null));
-        });
+        update(
+                name,
+                location,
+                draft -> {
+                    Point point = Point.of(location).centered();
+                    if (draft.jumpPads.stream().anyMatch(p -> p.origin().sameBlock(point)))
+                        throw failure("pad_duplicate");
+                    draft.jumpPads.add(new JumpPad(point, targeted, null));
+                });
     }
 
     public void deathHeight(String name, Double height) {
@@ -354,19 +359,29 @@ public final class FinalsMaps {
     }
 
     public void jumpPadTarget(String name, int number, Location location) {
-        update(name, location, draft -> {
-            if (number < 1 || number > draft.jumpPads.size()) throw failure("point_number", number, draft.jumpPads.size());
-            JumpPad pad = draft.jumpPads.get(number - 1);
-            if (!pad.targeted()) throw failure("pad_not_targeted");
-            draft.jumpPads.set(number - 1, new JumpPad(pad.origin(), true, Point.of(location).centered()));
-        });
+        update(
+                name,
+                location,
+                draft -> {
+                    if (number < 1 || number > draft.jumpPads.size())
+                        throw failure("point_number", number, draft.jumpPads.size());
+                    JumpPad pad = draft.jumpPads.get(number - 1);
+                    if (!pad.targeted()) throw failure("pad_not_targeted");
+                    draft.jumpPads.set(
+                            number - 1,
+                            new JumpPad(pad.origin(), true, Point.of(location).centered()));
+                });
     }
 
     public void jumpPadRemove(String name, int number) {
-        update(name, null, draft -> {
-            if (number < 1 || number > draft.jumpPads.size()) throw failure("point_number", number, draft.jumpPads.size());
-            draft.jumpPads.remove(number - 1);
-        });
+        update(
+                name,
+                null,
+                draft -> {
+                    if (number < 1 || number > draft.jumpPads.size())
+                        throw failure("point_number", number, draft.jumpPads.size());
+                    draft.jumpPads.remove(number - 1);
+                });
     }
 
     public void save(String name) {
@@ -643,8 +658,15 @@ public final class FinalsMaps {
         invalidStandingPoints(world, saved.blue(), "blue_spawn", invalid);
         invalidStandingPoints(world, saved.vaults(), "vault", invalid);
         invalidStandingPoints(world, saved.cashouts(), "cashout", invalid);
-        invalidStandingPoints(world, saved.jumpPads().stream().map(JumpPad::origin).toList(), "pad", invalid);
-        invalidStandingPoints(world, saved.jumpPads().stream().map(p -> p.target() == null ? p.origin() : p.target()).toList(), "pad_target", invalid);
+        invalidStandingPoints(
+                world, saved.jumpPads().stream().map(JumpPad::origin).toList(), "pad", invalid);
+        invalidStandingPoints(
+                world,
+                saved.jumpPads().stream()
+                        .map(p -> p.target() == null ? p.origin() : p.target())
+                        .toList(),
+                "pad_target",
+                invalid);
         if (!invalid.isEmpty())
             throw failure(
                     "unsafe_points",
@@ -698,26 +720,38 @@ public final class FinalsMaps {
                                 ? "finals.map.status.draft"
                                 : "finals.map.status.saved");
         return I18n.tr(
-                "finals.map.info",
-                name,
-                status,
-                draft.world,
-                draft.red.size(),
-                draft.blue.size(),
-                mark(draft.first),
-                mark(draft.second),
-                draft.vaults.size(),
-                Component.join(
-                        net.kyori.adventure.text.JoinConfiguration.separator(Component.text("; ")),
-                        draft.vaults.stream().map(this::mark).toList()),
-                draft.cashouts.stream().filter(java.util.Objects::nonNull).count(),
-                Component.join(
-                        net.kyori.adventure.text.JoinConfiguration.separator(Component.text("; ")),
-                        draft.cashouts.stream().map(this::mark).toList()))
-                .append(Component.newline()).append(I18n.tr("finals.map.death_height_info",
-                        draft.deathHeight == null ? I18n.tr("finals.map.death_height_off") : draft.deathHeight))
-                .append(Component.newline()).append(I18n.tr("finals.map.time_info",
-                        draft.timeOfDay == null ? I18n.tr("finals.map.time_default") : draft.timeOfDay));
+                        "finals.map.info",
+                        name,
+                        status,
+                        draft.world,
+                        draft.red.size(),
+                        draft.blue.size(),
+                        mark(draft.first),
+                        mark(draft.second),
+                        draft.vaults.size(),
+                        Component.join(
+                                net.kyori.adventure.text.JoinConfiguration.separator(
+                                        Component.text("; ")),
+                                draft.vaults.stream().map(this::mark).toList()),
+                        draft.cashouts.stream().filter(java.util.Objects::nonNull).count(),
+                        Component.join(
+                                net.kyori.adventure.text.JoinConfiguration.separator(
+                                        Component.text("; ")),
+                                draft.cashouts.stream().map(this::mark).toList()))
+                .append(Component.newline())
+                .append(
+                        I18n.tr(
+                                "finals.map.death_height_info",
+                                draft.deathHeight == null
+                                        ? I18n.tr("finals.map.death_height_off")
+                                        : draft.deathHeight))
+                .append(Component.newline())
+                .append(
+                        I18n.tr(
+                                "finals.map.time_info",
+                                draft.timeOfDay == null
+                                        ? I18n.tr("finals.map.time_default")
+                                        : draft.timeOfDay));
     }
 
     private Component mark(Point point) {
@@ -787,26 +821,28 @@ public final class FinalsMaps {
     private void commit(Map<String, Entry> next, String selection) {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("selected", selection);
-        next.forEach((name, entry) -> {
-            entry.draft.write(yaml.createSection("maps." + name + ".draft"));
-            if (entry.saved != null) {
-                ConfigurationSection section = yaml.createSection("maps." + name + ".saved");
-                Draft snapshot = new Draft();
-                snapshot.world = entry.draft.world;
-                Bounds b = entry.saved.bounds();
-                snapshot.first = new Point(b.minX(), b.minY(), b.minZ(), 0, 0);
-                snapshot.second = new Point(b.maxX(), b.maxY(), b.maxZ(), 0, 0);
-                snapshot.red = entry.saved.red();
-                snapshot.blue = entry.saved.blue();
-                snapshot.vaults = entry.saved.vaults();
-                snapshot.cashouts = entry.saved.cashouts();
-                snapshot.jumpPads = entry.saved.jumpPads();
-                snapshot.deathHeight = entry.saved.deathHeight();
-                snapshot.timeOfDay = entry.saved.timeOfDay();
-                snapshot.write(section);
-                section.set("template", entry.saved.template());
-            }
-        });
+        next.forEach(
+                (name, entry) -> {
+                    entry.draft.write(yaml.createSection("maps." + name + ".draft"));
+                    if (entry.saved != null) {
+                        ConfigurationSection section =
+                                yaml.createSection("maps." + name + ".saved");
+                        Draft snapshot = new Draft();
+                        snapshot.world = entry.draft.world;
+                        Bounds b = entry.saved.bounds();
+                        snapshot.first = new Point(b.minX(), b.minY(), b.minZ(), 0, 0);
+                        snapshot.second = new Point(b.maxX(), b.maxY(), b.maxZ(), 0, 0);
+                        snapshot.red = entry.saved.red();
+                        snapshot.blue = entry.saved.blue();
+                        snapshot.vaults = entry.saved.vaults();
+                        snapshot.cashouts = entry.saved.cashouts();
+                        snapshot.jumpPads = entry.saved.jumpPads();
+                        snapshot.deathHeight = entry.saved.deathHeight();
+                        snapshot.timeOfDay = entry.saved.timeOfDay();
+                        snapshot.write(section);
+                        section.set("template", entry.saved.template());
+                    }
+                });
         Path temporary = root.resolve("maps-" + UUID.randomUUID() + ".tmp");
         try {
             yaml.save(temporary.toFile());

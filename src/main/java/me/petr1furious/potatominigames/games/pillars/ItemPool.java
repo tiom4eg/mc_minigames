@@ -5,6 +5,17 @@
  */
 package me.petr1furious.potatominigames.games.pillars;
 
+import com.mojang.brigadier.StringReader;
+
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
+
+import org.bukkit.Registry;
+import org.bukkit.World;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ItemType;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.potion.PotionType;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -17,23 +28,11 @@ import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.regex.Pattern;
 
-import org.bukkit.Registry;
-import org.bukkit.World;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.ItemType;
-import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.potion.PotionType;
-
-import com.mojang.brigadier.StringReader;
-
-import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
-
 public final class ItemPool {
-    private ItemPool() {
-    }
+    private ItemPool() {}
 
-    private static final Set<String> POTION_FORMS = Set.of("potion", "splash_potion", "lingering_potion",
-            "tipped_arrow");
+    private static final Set<String> POTION_FORMS =
+            Set.of("potion", "splash_potion", "lingering_potion", "tipped_arrow");
 
     /** Potion types with effects; water/mundane/thick/awkward are filler. */
     private static List<PotionType> effectivePotionTypes;
@@ -65,7 +64,9 @@ public final class ItemPool {
         }
     }
 
-    /** @param weight per-player weight, including item group boosts */
+    /**
+     * @param weight per-player weight, including item group boosts
+     */
     public static PoolItem randomByWeight(List<PoolItem> items, ToIntFunction<PoolItem> weight) {
         long total = 0;
         for (PoolItem item : items) {
@@ -93,9 +94,11 @@ public final class ItemPool {
         REPEATING
     }
 
-    /** Items that belong together (e.g. happy ghast + harness); receiving a trigger boosts the rest. */
-    public record ItemGroup(String name, int weight, GroupMode mode, List<Pattern> triggers,
-            List<Pattern> items) {
+    /**
+     * Items that belong together (e.g. happy ghast + harness); receiving a trigger boosts the rest.
+     */
+    public record ItemGroup(
+            String name, int weight, GroupMode mode, List<Pattern> triggers, List<Pattern> items) {
 
         public boolean triggeredBy(String id) {
             return triggers.stream().anyMatch(pattern -> pattern.matcher(id).matches());
@@ -134,8 +137,10 @@ public final class ItemPool {
         public int weightOf(PoolItem item) {
             int weight = item.weight();
             for (ItemGroup group : triggered) {
-                boolean active = group.boosts(item.id())
-                        && (group.mode() == GroupMode.REPEATING || !received.contains(item.id()));
+                boolean active =
+                        group.boosts(item.id())
+                                && (group.mode() == GroupMode.REPEATING
+                                        || !received.contains(item.id()));
                 if (active) {
                     weight = Math.max(weight, group.weight());
                 }
@@ -162,19 +167,26 @@ public final class ItemPool {
         return Pattern.compile(regex.toString());
     }
 
-    /** Parses {@code /give} syntax using the command parser, for full component support and clear errors. */
+    /**
+     * Parses {@code /give} syntax using the command parser, for full component support and clear
+     * errors.
+     */
     public static ItemStack parseCustomItem(String definition) throws Exception {
         StringReader reader = new StringReader(definition.trim());
         ItemStack stack = ArgumentTypes.itemStack().parse(reader);
         if (reader.canRead()) {
-            throw new IllegalArgumentException("unexpected text after the item: '" + reader.getRemaining() + "'");
+            throw new IllegalArgumentException(
+                    "unexpected text after the item: '" + reader.getRemaining() + "'");
         }
         return stack;
     }
 
-    /** @param world decides whether experimental items are enabled */
+    /**
+     * @param world decides whether experimental items are enabled
+     */
     public static List<PoolItem> build(World world, PillarsConfig.Items config) {
-        List<Pattern> patterns = config.blacklistPatterns().stream().map(ItemPool::wildcard).toList();
+        List<Pattern> patterns =
+                config.blacklistPatterns().stream().map(ItemPool::wildcard).toList();
         Set<String> exceptions = new HashSet<>();
         for (String exception : config.blacklistExceptions()) {
             exceptions.add(exception.trim().toLowerCase(java.util.Locale.ROOT));
@@ -191,7 +203,8 @@ public final class ItemPool {
             if (blacklist.contains(id) || !world.isEnabled(type)) {
                 continue;
             }
-            if (!exceptions.contains(id) && patterns.stream().anyMatch(pattern -> pattern.matcher(id).matches())) {
+            if (!exceptions.contains(id)
+                    && patterns.stream().anyMatch(pattern -> pattern.matcher(id).matches())) {
                 continue;
             }
             pool.add(poolItem(type, id, weightOf(id, weights)));
@@ -236,13 +249,21 @@ public final class ItemPool {
         if (!POTION_FORMS.contains(id) || effectivePotionTypes().isEmpty()) {
             return new PoolItem(id, weight, type::createItemStack);
         }
-        return new PoolItem(id, weight, () -> {
-            ItemStack stack = type.createItemStack();
-            List<PotionType> types = effectivePotionTypes();
-            stack.editMeta(PotionMeta.class, meta -> meta.setBasePotionType(
-                    types.get(ThreadLocalRandom.current().nextInt(types.size()))));
-            return stack;
-        });
+        return new PoolItem(
+                id,
+                weight,
+                () -> {
+                    ItemStack stack = type.createItemStack();
+                    List<PotionType> types = effectivePotionTypes();
+                    stack.editMeta(
+                            PotionMeta.class,
+                            meta ->
+                                    meta.setBasePotionType(
+                                            types.get(
+                                                    ThreadLocalRandom.current()
+                                                            .nextInt(types.size()))));
+                    return stack;
+                });
     }
 
     /** For config warnings. */

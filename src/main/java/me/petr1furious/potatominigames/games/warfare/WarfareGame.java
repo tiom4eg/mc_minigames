@@ -1,25 +1,15 @@
 package me.petr1furious.potatominigames.games.warfare;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.entity.Player;
-import org.bukkit.util.Vector;
+import static me.petr1furious.potatominigames.core.command.GameCommands.requirePlayer;
+import static me.petr1furious.potatominigames.core.command.GameCommands.run;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
-
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import me.petr1furious.potatominigames.core.command.CommandFailure;
 import me.petr1furious.potatominigames.core.command.GameCommands;
@@ -32,9 +22,18 @@ import me.petr1furious.potatominigames.core.game.SessionServices;
 import me.petr1furious.potatominigames.core.game.StartOption;
 import me.petr1furious.potatominigames.core.team.TeamColor;
 import me.petr1furious.potatominigames.gadgets.FPVDroneGadget;
+import me.petr1furious.potatominigames.i18n.I18n;
 
-import static me.petr1furious.potatominigames.core.command.GameCommands.run;
-import static me.petr1furious.potatominigames.core.command.GameCommands.requirePlayer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class WarfareGame implements Minigame {
     private final WarfareConfig config;
@@ -88,15 +87,20 @@ public final class WarfareGame implements Minigame {
     /** The map, among those the mode can play; random on a tie. */
     @Override
     public List<Ballot> ballots(String mode) {
-        return List.of(new Ballot(WarfareSessionBase.MAP_OPTION, "map",
-                () -> config.mapsFor(mode).stream().map(WarfareMap::name).toList(), null,
-                List.of(Material.FILLED_MAP)));
+        return List.of(
+                new Ballot(
+                        WarfareSessionBase.MAP_OPTION,
+                        "map",
+                        () -> config.mapsFor(mode).stream().map(WarfareMap::name).toList(),
+                        null,
+                        List.of(Material.FILLED_MAP)));
     }
 
     /** {@code /war start [mode] [players] [map]}. */
     @Override
     public StartOption startOption() {
-        return new StartOption(WarfareSessionBase.MAP_OPTION,
+        return new StartOption(
+                WarfareSessionBase.MAP_OPTION,
                 () -> config.maps().stream().map(WarfareMap::name).toList());
     }
 
@@ -130,8 +134,10 @@ public final class WarfareGame implements Minigame {
 
     @Override
     public Component description(String mode) {
-        return I18n.tr(mode.equals("team_beacon")
-                ? "warfare.description.team_beacon" : "warfare.description.classic");
+        return I18n.tr(
+                mode.equals("team_beacon")
+                        ? "warfare.description.team_beacon"
+                        : "warfare.description.classic");
     }
 
     @Override
@@ -144,128 +150,393 @@ public final class WarfareGame implements Minigame {
 
     @Override
     public void extendCommands(LiteralArgumentBuilder<CommandSourceStack> root) {
-        root.then(Commands.literal("setcenter")
-                .requires(source -> source.getSender().hasPermission(GameCommands.ADMIN_PERMISSION))
-                .executes(ctx -> run(ctx, c -> {
-                    Player player = requirePlayer(c);
-                    configs.set("war", "gameCenter", player.getLocation().getX() + " "
-                            + player.getLocation().getY() + " " + player.getLocation().getZ());
-                    configs.set("war", "gameWorld", player.getWorld().getName());
-                    c.getSource().getSender().sendMessage(I18n.tr("warfare.center_set",
-                            player.getWorld().getName()).color(NamedTextColor.GREEN));
-                })));
+        root.then(
+                Commands.literal("setcenter")
+                        .requires(
+                                source ->
+                                        source.getSender()
+                                                .hasPermission(GameCommands.ADMIN_PERMISSION))
+                        .executes(
+                                ctx ->
+                                        run(
+                                                ctx,
+                                                c -> {
+                                                    Player player = requirePlayer(c);
+                                                    configs.set(
+                                                            "war",
+                                                            "gameCenter",
+                                                            player.getLocation().getX()
+                                                                    + " "
+                                                                    + player.getLocation().getY()
+                                                                    + " "
+                                                                    + player.getLocation().getZ());
+                                                    configs.set(
+                                                            "war",
+                                                            "gameWorld",
+                                                            player.getWorld().getName());
+                                                    c.getSource()
+                                                            .getSender()
+                                                            .sendMessage(
+                                                                    I18n.tr(
+                                                                                    "warfare.center_set",
+                                                                                    player.getWorld()
+                                                                                            .getName())
+                                                                            .color(
+                                                                                    NamedTextColor
+                                                                                            .GREEN));
+                                                })));
 
-        root.then(Commands.literal("map")
-                .requires(source -> source.getSender().hasPermission(GameCommands.ADMIN_PERMISSION))
-                .then(Commands.literal("list")
-                        .executes(ctx -> run(ctx, this::listMaps)))
-                .then(Commands.literal("add")
-                        .then(Commands.argument("name", StringArgumentType.word())
-                                .executes(ctx -> run(ctx, c -> addMap(c, null)))
-                                .then(Commands.argument("radius", IntegerArgumentType.integer(1, 10000))
-                                        .executes(ctx -> run(ctx, c -> addMap(c,
-                                                c.getArgument("radius", Integer.class)))))))
-                .then(Commands.literal("remove")
-                        .then(Commands.argument("name", StringArgumentType.word())
-                                .suggests(Suggest.dynamic(this::mapNames))
-                                .executes(ctx -> run(ctx, c -> {
-                                    WarfareMap map = requireMap(c.getArgument("name", String.class));
-                                    config.removeMap(map.name());
-                                    c.getSource().getSender().sendMessage(I18n.tr("warfare.map.removed",
-                                            map.name()).color(NamedTextColor.GREEN));
-                                })))));
+        root.then(
+                Commands.literal("map")
+                        .requires(
+                                source ->
+                                        source.getSender()
+                                                .hasPermission(GameCommands.ADMIN_PERMISSION))
+                        .then(Commands.literal("list").executes(ctx -> run(ctx, this::listMaps)))
+                        .then(
+                                Commands.literal("add")
+                                        .then(
+                                                Commands.argument("name", StringArgumentType.word())
+                                                        .executes(
+                                                                ctx ->
+                                                                        run(
+                                                                                ctx,
+                                                                                c ->
+                                                                                        addMap(
+                                                                                                c,
+                                                                                                null)))
+                                                        .then(
+                                                                Commands.argument(
+                                                                                "radius",
+                                                                                IntegerArgumentType
+                                                                                        .integer(
+                                                                                                1,
+                                                                                                10000))
+                                                                        .executes(
+                                                                                ctx ->
+                                                                                        run(
+                                                                                                ctx,
+                                                                                                c ->
+                                                                                                        addMap(
+                                                                                                                c,
+                                                                                                                c
+                                                                                                                        .getArgument(
+                                                                                                                                "radius",
+                                                                                                                                Integer
+                                                                                                                                        .class)))))))
+                        .then(
+                                Commands.literal("remove")
+                                        .then(
+                                                Commands.argument("name", StringArgumentType.word())
+                                                        .suggests(Suggest.dynamic(this::mapNames))
+                                                        .executes(
+                                                                ctx ->
+                                                                        run(
+                                                                                ctx,
+                                                                                c -> {
+                                                                                    WarfareMap map =
+                                                                                            requireMap(
+                                                                                                    c
+                                                                                                            .getArgument(
+                                                                                                                    "name",
+                                                                                                                    String
+                                                                                                                            .class));
+                                                                                    config
+                                                                                            .removeMap(
+                                                                                                    map
+                                                                                                            .name());
+                                                                                    c.getSource()
+                                                                                            .getSender()
+                                                                                            .sendMessage(
+                                                                                                    I18n
+                                                                                                            .tr(
+                                                                                                                    "warfare.map.removed",
+                                                                                                                    map
+                                                                                                                            .name())
+                                                                                                            .color(
+                                                                                                                    NamedTextColor
+                                                                                                                            .GREEN));
+                                                                                })))));
 
-        root.then(Commands.literal("beacon")
-                .requires(source -> source.getSender().hasPermission(GameCommands.ADMIN_PERMISSION))
-                .then(Commands.literal("set")
-                        .then(Commands.argument("team", StringArgumentType.word())
-                                .suggests(Suggest.strings(
-                                        java.util.Arrays.stream(TeamColor.values()).map(TeamColor::id).toList()))
-                                .executes(ctx -> run(ctx, c -> {
-                                    Player player = requirePlayer(c);
-                                    TeamColor team = parseTeam(c.getArgument("team", String.class));
-                                    var block = player.getTargetBlockExact(6);
-                                    var location = block != null ? block.getLocation()
-                                            : player.getLocation().getBlock().getLocation();
-                                    WarfareMap map = requireMapAt(player);
-                                    if (map != null) {
-                                        config.setMapBeacon(map, team, location);
-                                    } else {
-                                        config.setBeacon(team, location);
-                                    }
-                                    c.getSource().getSender().sendMessage((map != null
-                                            ? I18n.tr("warfare.beacon.set_on_map", team.displayNameComponent(),
-                                                    location.getBlockX(), location.getBlockY(), location.getBlockZ(), map.name())
-                                            : I18n.tr("warfare.beacon.set", team.displayNameComponent(),
-                                                    location.getBlockX(), location.getBlockY(), location.getBlockZ()))
-                                            .color(NamedTextColor.GREEN));
-                                }))))
-                .then(Commands.literal("clear")
-                        .then(Commands.argument("team", StringArgumentType.word())
-                                .suggests(Suggest.strings(
-                                        java.util.Arrays.stream(TeamColor.values()).map(TeamColor::id).toList()))
-                                .executes(ctx -> run(ctx, c -> {
-                                    TeamColor team = parseTeam(c.getArgument("team", String.class));
-                                    WarfareMap map = requireMapAt(requirePlayer(c));
-                                    if (map != null) {
-                                        config.setMapBeacon(map, team, null);
-                                    } else {
-                                        config.setBeacon(team, null);
-                                    }
-                                    c.getSource().getSender().sendMessage((map != null
-                                            ? I18n.tr("warfare.beacon.cleared_on_map", team.displayNameComponent(), map.name())
-                                            : I18n.tr("warfare.beacon.cleared", team.displayNameComponent()))
-                                            .color(NamedTextColor.GREEN));
-                                }))))
-                .then(Commands.literal("info")
-                        .executes(ctx -> run(ctx, c -> {
-                            if (!config.maps().isEmpty()) {
-                                listMaps(c);
-                                return;
-                            }
-                            var teams = config.teamsWithBeacons();
-                            if (teams.isEmpty()) {
-                                c.getSource().getSender().sendMessage(
-                                        I18n.tr("warfare.beacon.none_configured").color(NamedTextColor.GRAY));
-                                return;
-                            }
-                            for (TeamColor team : teams) {
-                                var location = config.getBeacon(team);
-                                c.getSource().getSender().sendMessage(Component.text()
-                                        .append(team.displayNameComponent())
-                                        .append(Component.text(": " + location.getWorld().getName() + " "
-                                                + location.getBlockX() + " " + location.getBlockY() + " "
-                                                + location.getBlockZ(), NamedTextColor.GRAY))
-                                        .build());
-                            }
-                        }))));
+        root.then(
+                Commands.literal("beacon")
+                        .requires(
+                                source ->
+                                        source.getSender()
+                                                .hasPermission(GameCommands.ADMIN_PERMISSION))
+                        .then(
+                                Commands.literal("set")
+                                        .then(
+                                                Commands.argument("team", StringArgumentType.word())
+                                                        .suggests(
+                                                                Suggest.strings(
+                                                                        java.util.Arrays.stream(
+                                                                                        TeamColor
+                                                                                                .values())
+                                                                                .map(TeamColor::id)
+                                                                                .toList()))
+                                                        .executes(
+                                                                ctx ->
+                                                                        run(
+                                                                                ctx,
+                                                                                c -> {
+                                                                                    Player player =
+                                                                                            requirePlayer(
+                                                                                                    c);
+                                                                                    TeamColor team =
+                                                                                            parseTeam(
+                                                                                                    c
+                                                                                                            .getArgument(
+                                                                                                                    "team",
+                                                                                                                    String
+                                                                                                                            .class));
+                                                                                    var block =
+                                                                                            player
+                                                                                                    .getTargetBlockExact(
+                                                                                                            6);
+                                                                                    var location =
+                                                                                            block
+                                                                                                            != null
+                                                                                                    ? block
+                                                                                                            .getLocation()
+                                                                                                    : player.getLocation()
+                                                                                                            .getBlock()
+                                                                                                            .getLocation();
+                                                                                    WarfareMap map =
+                                                                                            requireMapAt(
+                                                                                                    player);
+                                                                                    if (map
+                                                                                            != null) {
+                                                                                        config
+                                                                                                .setMapBeacon(
+                                                                                                        map,
+                                                                                                        team,
+                                                                                                        location);
+                                                                                    } else {
+                                                                                        config
+                                                                                                .setBeacon(
+                                                                                                        team,
+                                                                                                        location);
+                                                                                    }
+                                                                                    c.getSource()
+                                                                                            .getSender()
+                                                                                            .sendMessage(
+                                                                                                    (map
+                                                                                                                            != null
+                                                                                                                    ? I18n
+                                                                                                                            .tr(
+                                                                                                                                    "warfare.beacon.set_on_map",
+                                                                                                                                    team
+                                                                                                                                            .displayNameComponent(),
+                                                                                                                                    location
+                                                                                                                                            .getBlockX(),
+                                                                                                                                    location
+                                                                                                                                            .getBlockY(),
+                                                                                                                                    location
+                                                                                                                                            .getBlockZ(),
+                                                                                                                                    map
+                                                                                                                                            .name())
+                                                                                                                    : I18n
+                                                                                                                            .tr(
+                                                                                                                                    "warfare.beacon.set",
+                                                                                                                                    team
+                                                                                                                                            .displayNameComponent(),
+                                                                                                                                    location
+                                                                                                                                            .getBlockX(),
+                                                                                                                                    location
+                                                                                                                                            .getBlockY(),
+                                                                                                                                    location
+                                                                                                                                            .getBlockZ()))
+                                                                                                            .color(
+                                                                                                                    NamedTextColor
+                                                                                                                            .GREEN));
+                                                                                }))))
+                        .then(
+                                Commands.literal("clear")
+                                        .then(
+                                                Commands.argument("team", StringArgumentType.word())
+                                                        .suggests(
+                                                                Suggest.strings(
+                                                                        java.util.Arrays.stream(
+                                                                                        TeamColor
+                                                                                                .values())
+                                                                                .map(TeamColor::id)
+                                                                                .toList()))
+                                                        .executes(
+                                                                ctx ->
+                                                                        run(
+                                                                                ctx,
+                                                                                c -> {
+                                                                                    TeamColor team =
+                                                                                            parseTeam(
+                                                                                                    c
+                                                                                                            .getArgument(
+                                                                                                                    "team",
+                                                                                                                    String
+                                                                                                                            .class));
+                                                                                    WarfareMap map =
+                                                                                            requireMapAt(
+                                                                                                    requirePlayer(
+                                                                                                            c));
+                                                                                    if (map
+                                                                                            != null) {
+                                                                                        config
+                                                                                                .setMapBeacon(
+                                                                                                        map,
+                                                                                                        team,
+                                                                                                        null);
+                                                                                    } else {
+                                                                                        config
+                                                                                                .setBeacon(
+                                                                                                        team,
+                                                                                                        null);
+                                                                                    }
+                                                                                    c.getSource()
+                                                                                            .getSender()
+                                                                                            .sendMessage(
+                                                                                                    (map
+                                                                                                                            != null
+                                                                                                                    ? I18n
+                                                                                                                            .tr(
+                                                                                                                                    "warfare.beacon.cleared_on_map",
+                                                                                                                                    team
+                                                                                                                                            .displayNameComponent(),
+                                                                                                                                    map
+                                                                                                                                            .name())
+                                                                                                                    : I18n
+                                                                                                                            .tr(
+                                                                                                                                    "warfare.beacon.cleared",
+                                                                                                                                    team
+                                                                                                                                            .displayNameComponent()))
+                                                                                                            .color(
+                                                                                                                    NamedTextColor
+                                                                                                                            .GREEN));
+                                                                                }))))
+                        .then(
+                                Commands.literal("info")
+                                        .executes(
+                                                ctx ->
+                                                        run(
+                                                                ctx,
+                                                                c -> {
+                                                                    if (!config.maps().isEmpty()) {
+                                                                        listMaps(c);
+                                                                        return;
+                                                                    }
+                                                                    var teams =
+                                                                            config
+                                                                                    .teamsWithBeacons();
+                                                                    if (teams.isEmpty()) {
+                                                                        c.getSource()
+                                                                                .getSender()
+                                                                                .sendMessage(
+                                                                                        I18n.tr(
+                                                                                                        "warfare.beacon.none_configured")
+                                                                                                .color(
+                                                                                                        NamedTextColor
+                                                                                                                .GRAY));
+                                                                        return;
+                                                                    }
+                                                                    for (TeamColor team : teams) {
+                                                                        var location =
+                                                                                config.getBeacon(
+                                                                                        team);
+                                                                        c.getSource()
+                                                                                .getSender()
+                                                                                .sendMessage(
+                                                                                        Component
+                                                                                                .text()
+                                                                                                .append(
+                                                                                                        team
+                                                                                                                .displayNameComponent())
+                                                                                                .append(
+                                                                                                        Component
+                                                                                                                .text(
+                                                                                                                        ": "
+                                                                                                                                + location.getWorld()
+                                                                                                                                        .getName()
+                                                                                                                                + " "
+                                                                                                                                + location
+                                                                                                                                        .getBlockX()
+                                                                                                                                + " "
+                                                                                                                                + location
+                                                                                                                                        .getBlockY()
+                                                                                                                                + " "
+                                                                                                                                + location
+                                                                                                                                        .getBlockZ(),
+                                                                                                                        NamedTextColor
+                                                                                                                                .GRAY))
+                                                                                                .build());
+                                                                    }
+                                                                }))));
 
-        root.then(Commands.literal("kit")
-                .requires(source -> source.getSender().hasPermission(GameCommands.ADMIN_PERMISSION))
-                .then(Commands.literal("save")
-                        .executes(ctx -> run(ctx, c -> {
-                            Player player = requirePlayer(c);
-                            config.saveGameInventory(player.getInventory().getContents());
-                            c.getSource().getSender().sendMessage(
-                                    I18n.tr("warfare.kit.saved").color(NamedTextColor.GREEN));
-                        })))
-                .then(Commands.literal("load")
-                        .executes(ctx -> run(ctx, c -> {
-                            Player player = requirePlayer(c);
-                            var kit = config.gameInventory();
-                            if (kit == null) {
-                                throw new CommandFailure(I18n.tr("warfare.kit.missing"));
-                            }
-                            var contents = kit.clone();
-                            for (int i = 0; i < contents.length; i++) {
-                                if (contents[i] != null) {
-                                    contents[i] = I18n.item(contents[i].clone(), player);
-                                }
-                            }
-                            player.getInventory().setContents(contents);
-                            c.getSource().getSender().sendMessage(
-                                    I18n.tr("warfare.kit.loaded").color(NamedTextColor.GREEN));
-                        }))));
+        root.then(
+                Commands.literal("kit")
+                        .requires(
+                                source ->
+                                        source.getSender()
+                                                .hasPermission(GameCommands.ADMIN_PERMISSION))
+                        .then(
+                                Commands.literal("save")
+                                        .executes(
+                                                ctx ->
+                                                        run(
+                                                                ctx,
+                                                                c -> {
+                                                                    Player player =
+                                                                            requirePlayer(c);
+                                                                    config.saveGameInventory(
+                                                                            player.getInventory()
+                                                                                    .getContents());
+                                                                    c.getSource()
+                                                                            .getSender()
+                                                                            .sendMessage(
+                                                                                    I18n.tr(
+                                                                                                    "warfare.kit.saved")
+                                                                                            .color(
+                                                                                                    NamedTextColor
+                                                                                                            .GREEN));
+                                                                })))
+                        .then(
+                                Commands.literal("load")
+                                        .executes(
+                                                ctx ->
+                                                        run(
+                                                                ctx,
+                                                                c -> {
+                                                                    Player player =
+                                                                            requirePlayer(c);
+                                                                    var kit =
+                                                                            config.gameInventory();
+                                                                    if (kit == null) {
+                                                                        throw new CommandFailure(
+                                                                                I18n.tr(
+                                                                                        "warfare.kit.missing"));
+                                                                    }
+                                                                    var contents = kit.clone();
+                                                                    for (int i = 0;
+                                                                            i < contents.length;
+                                                                            i++) {
+                                                                        if (contents[i] != null) {
+                                                                            contents[i] =
+                                                                                    I18n.item(
+                                                                                            contents[
+                                                                                                    i]
+                                                                                                    .clone(),
+                                                                                            player);
+                                                                        }
+                                                                    }
+                                                                    player.getInventory()
+                                                                            .setContents(contents);
+                                                                    c.getSource()
+                                                                            .getSender()
+                                                                            .sendMessage(
+                                                                                    I18n.tr(
+                                                                                                    "warfare.kit.loaded")
+                                                                                            .color(
+                                                                                                    NamedTextColor
+                                                                                                            .GREEN));
+                                                                }))));
     }
 
     /**
@@ -273,7 +544,10 @@ public final class WarfareGame implements Minigame {
      * stands in; null outside every map, where beacons and the center are the map-less settings.
      */
     private WarfareMap mapAt(Player player) {
-        return config.maps().stream().filter(map -> map.isWorldOf(player.getWorld())).findFirst().orElse(null);
+        return config.maps().stream()
+                .filter(map -> map.isWorldOf(player.getWorld()))
+                .findFirst()
+                .orElse(null);
     }
 
     /** With maps, beacons belong to one: the player must stand in it. Null without maps. */
@@ -283,7 +557,8 @@ public final class WarfareGame implements Minigame {
         }
         WarfareMap map = mapAt(player);
         if (map == null) {
-            throw new CommandFailure(I18n.tr("warfare.map.stand_in_map", String.join(", ", mapNames())));
+            throw new CommandFailure(
+                    I18n.tr("warfare.map.stand_in_map", String.join(", ", mapNames())));
         }
         return map;
     }
@@ -295,34 +570,51 @@ public final class WarfareGame implements Minigame {
     private WarfareMap requireMap(String name) throws CommandFailure {
         WarfareMap map = config.map(name);
         if (map == null) {
-            throw new CommandFailure(I18n.tr("warfare.map.unknown", name, String.join(", ", mapNames())));
+            throw new CommandFailure(
+                    I18n.tr("warfare.map.unknown", name, String.join(", ", mapNames())));
         }
         return map;
     }
 
-    /** Centered on the player, in the slime template they stand in; keeps beacons when it replaces a map. */
-    private void addMap(CommandContext<CommandSourceStack> ctx, Integer radius) throws CommandFailure {
+    /**
+     * Centered on the player, in the slime template they stand in; keeps beacons when it replaces a
+     * map.
+     */
+    private void addMap(CommandContext<CommandSourceStack> ctx, Integer radius)
+            throws CommandFailure {
         Player player = requirePlayer(ctx);
         String name = ctx.getArgument("name", String.class);
         WarfareMap existing = config.map(name);
-        String template = existing != null && existing.isWorldOf(player.getWorld()) ? existing.template()
-                : player.getWorld().getName();
+        String template =
+                existing != null && existing.isWorldOf(player.getWorld())
+                        ? existing.template()
+                        : player.getWorld().getName();
         if (player.getWorld().equals(org.bukkit.Bukkit.getWorlds().getFirst())) {
             throw new CommandFailure(I18n.tr("warfare.map.stand_in_template"));
         }
         Location location = player.getLocation();
-        int chosenRadius = radius != null ? radius : existing != null ? existing.radius() : config.gameRadius.get();
-        config.saveMap(existing != null ? existing.name() : name, template,
-                new Vector(location.getBlockX(), location.getBlockY(), location.getBlockZ()), chosenRadius);
-        ctx.getSource().getSender().sendMessage(I18n.tr("warfare.map.saved", name, template, chosenRadius)
-                .color(NamedTextColor.GREEN));
+        int chosenRadius =
+                radius != null
+                        ? radius
+                        : existing != null ? existing.radius() : config.gameRadius.get();
+        config.saveMap(
+                existing != null ? existing.name() : name,
+                template,
+                new Vector(location.getBlockX(), location.getBlockY(), location.getBlockZ()),
+                chosenRadius);
+        ctx.getSource()
+                .getSender()
+                .sendMessage(
+                        I18n.tr("warfare.map.saved", name, template, chosenRadius)
+                                .color(NamedTextColor.GREEN));
     }
 
     private void listMaps(CommandContext<CommandSourceStack> ctx) {
         var sender = ctx.getSource().getSender();
         List<WarfareMap> maps = config.maps();
         if (maps.isEmpty()) {
-            sender.sendMessage(I18n.tr("warfare.map.none", config.gameWorld.get()).color(NamedTextColor.GRAY));
+            sender.sendMessage(
+                    I18n.tr("warfare.map.none", config.gameWorld.get()).color(NamedTextColor.GRAY));
             return;
         }
         for (WarfareMap map : maps) {
@@ -338,9 +630,17 @@ public final class WarfareGame implements Minigame {
                     teamNames.append(Component.text(", ", NamedTextColor.GRAY));
                 }
             }
-            sender.sendMessage(I18n.tr("warfare.map.info",
-                    Component.text(map.name(), NamedTextColor.WHITE), map.template(), center.getBlockX(),
-                    center.getBlockY(), center.getBlockZ(), map.radius(), teamNames.build()).color(NamedTextColor.GRAY));
+            sender.sendMessage(
+                    I18n.tr(
+                                    "warfare.map.info",
+                                    Component.text(map.name(), NamedTextColor.WHITE),
+                                    map.template(),
+                                    center.getBlockX(),
+                                    center.getBlockY(),
+                                    center.getBlockZ(),
+                                    map.radius(),
+                                    teamNames.build())
+                            .color(NamedTextColor.GRAY));
         }
     }
 

@@ -68,40 +68,45 @@ final class PvpKitMenu {
                         default -> kit.primaryWeapon();
                     };
             ItemStack icon = new ItemStack(material);
-            icon.editMeta(meta -> {
-                meta.displayName(kit.title.color(NamedTextColor.GOLD));
-                meta.lore(
-                        List.of(
-                                kit.description.color(NamedTextColor.GRAY),
-                                kit.passiveDescription().color(NamedTextColor.AQUA),
-                                I18n.tr(
-                                                "party.duels.pvp.ability_details",
-                                                kit.ability,
-                                                kit.abilityDescription(),
-                                                kit.cooldown)
-                                        .color(NamedTextColor.YELLOW),
-                                I18n.tr("party.duels.pvp.choice.click")
-                                        .color(NamedTextColor.GREEN)));
-                meta.setEnchantmentGlintOverride(kit == selected);
-            });
+            icon.editMeta(
+                    meta -> {
+                        meta.displayName(kit.title.color(NamedTextColor.GOLD));
+                        meta.lore(
+                                List.of(
+                                        kit.description.color(NamedTextColor.GRAY),
+                                        kit.passiveDescription().color(NamedTextColor.AQUA),
+                                        I18n.tr(
+                                                        "party.duels.pvp.ability_details",
+                                                        kit.ability,
+                                                        kit.abilityDescription(),
+                                                        kit.cooldown)
+                                                .color(NamedTextColor.YELLOW),
+                                        I18n.tr("party.duels.pvp.choice.click")
+                                                .color(NamedTextColor.GREEN)));
+                        meta.setEnchantmentGlintOverride(kit == selected);
+                    });
             holder.choices.put(slot, kit);
             holder.inventory.setItem(slot, I18n.item(icon, player));
         }
         ItemStack help = new ItemStack(Material.BOOK);
-        help.editMeta(meta -> {
-            meta.displayName(I18n.tr("party.duels.pvp.choice.title"));
-            meta.lore(List.of(I18n.tr("party.duels.pvp.choice.help", PvpKitChoices.SECONDS)));
-        });
+        help.editMeta(
+                meta -> {
+                    meta.displayName(I18n.tr("party.duels.pvp.choice.title"));
+                    meta.lore(
+                            List.of(I18n.tr("party.duels.pvp.choice.help", PvpKitChoices.SECONDS)));
+                });
         holder.inventory.setItem(40, I18n.item(help, player));
         player.openInventory(holder.inventory);
     }
 
     ItemStack opener(Player viewer) {
         ItemStack item = new ItemStack(Material.NETHER_STAR);
-        item.editMeta(meta -> {
-            meta.displayName(I18n.tr("party.duels.pvp.choice.title").color(NamedTextColor.GOLD));
-            meta.lore(List.of(I18n.tr("party.duels.pvp.choice.reopen")));
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(
+                            I18n.tr("party.duels.pvp.choice.title").color(NamedTextColor.GOLD));
+                    meta.lore(List.of(I18n.tr("party.duels.pvp.choice.reopen")));
+                });
         return I18n.item(item, viewer);
     }
 

@@ -38,12 +38,16 @@ public final class FinalsGame implements Minigame {
     public FinalsGame(JavaPlugin plugin, ConfigRegistry configs) {
         config = new FinalsConfig(configs);
         maps = new FinalsMaps(plugin);
-        plugin.getServer().getPluginManager().registerEvents(new Listener() {
-            @EventHandler
-            public void onDisable(PluginDisableEvent event) {
-                if (event.getPlugin() == plugin) maps.close();
-            }
-        }, plugin);
+        plugin.getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new Listener() {
+                            @EventHandler
+                            public void onDisable(PluginDisableEvent event) {
+                                if (event.getPlugin() == plugin) maps.close();
+                            }
+                        },
+                        plugin);
         previews = new FinalsMapPreview(plugin, maps);
         loadouts =
                 new FinalsLoadouts(
@@ -77,7 +81,8 @@ public final class FinalsGame implements Minigame {
         new FinalsMapCommands(maps, previews).register(root);
     }
 
-    public void configureTutorials(me.petr1furious.potatominigames.core.session.SessionManager sessions,
+    public void configureTutorials(
+            me.petr1furious.potatominigames.core.session.SessionManager sessions,
             me.petr1furious.potatominigames.core.queue.QueueService queues) {
         tutorials.configure(sessions, queues);
     }

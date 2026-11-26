@@ -1,5 +1,15 @@
 package me.petr1furious.potatominigames.games.pillars;
 
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.plugin.Plugin;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -15,21 +25,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-import org.bukkit.World;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.plugin.Plugin;
-
 /** Owns only this match's recordings; the optional recorder API is never shaded. */
 public final class PillarsReplays implements Listener, AutoCloseable {
-    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("uuuuMMdd-HHmmss")
-            .withZone(ZoneOffset.UTC);
+    private static final DateTimeFormatter STAMP =
+            DateTimeFormatter.ofPattern("uuuuMMdd-HHmmss").withZone(ZoneOffset.UTC);
     private static final Set<CompletableFuture<Path>> SAVES = ConcurrentHashMap.newKeySet();
+
     private record Capture(Player player, Path output) {}
 
     private final Plugin owner;
@@ -45,13 +46,20 @@ public final class PillarsReplays implements Listener, AutoCloseable {
     static PillarsReplays open(Plugin owner, World world, String modeId) {
         Plugin recorder = owner.getServer().getPluginManager().getPlugin("FlashbackServer");
         if (recorder == null || !recorder.isEnabled()) {
-            owner.getLogger().warning("Pillars replay recording unavailable: install FlashbackServer for this Minecraft version.");
+            owner.getLogger()
+                    .warning(
+                            "Pillars replay recording unavailable: install FlashbackServer for this"
+                                    + " Minecraft version.");
             return null;
         }
         try {
             return new PillarsReplays(owner, recorder, world, modeId);
         } catch (ReflectiveOperationException | java.io.IOException | RuntimeException exception) {
-            owner.getLogger().log(Level.SEVERE, "Cannot initialize Pillars replay recording", cause(exception));
+            owner.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            "Cannot initialize Pillars replay recording",
+                            cause(exception));
             return null;
         }
     }
@@ -69,25 +77,38 @@ public final class PillarsReplays implements Listener, AutoCloseable {
         Path root = recorder.getDataFolder().toPath().toAbsolutePath().resolve("replays/pillars");
         Files.createDirectories(root);
         // Preset names are user input; neither names nor repeated matches may overwrite a replay.
-        directory = Files.createTempDirectory(root, STAMP.format(Instant.now()) + "-"
-                + modeId.replaceAll("[^a-zA-Z0-9_-]", "_") + "-");
+        directory =
+                Files.createTempDirectory(
+                        root,
+                        STAMP.format(Instant.now())
+                                + "-"
+                                + modeId.replaceAll("[^a-zA-Z0-9_-]", "_")
+                                + "-");
         owner.getServer().getPluginManager().registerEvents(this, owner);
         owner.getLogger().info("Pillars replays: " + directory);
     }
 
     void start(Player player) {
         UUID id = player.getUniqueId();
-        if (closed || !player.isOnline() || !player.getWorld().equals(world) || active.containsKey(id)) return;
+        if (closed
+                || !player.isOnline()
+                || !player.getWorld().equals(world)
+                || active.containsKey(id)) return;
         try {
             if (!Boolean.TRUE.equals(start.invoke(recording, player))) {
-                owner.getLogger().warning("Cannot record Pillars POV for " + player.getName()
-                        + ": another recording already owns this player");
+                owner.getLogger()
+                        .warning(
+                                "Cannot record Pillars POV for "
+                                        + player.getName()
+                                        + ": another recording already owns this player");
                 return;
             }
             int part = parts.merge(id, 1, Integer::sum);
-            active.put(id, new Capture(player, directory.resolve(id + "-part" + part + ".flashback")));
+            active.put(
+                    id, new Capture(player, directory.resolve(id + "-part" + part + ".flashback")));
         } catch (ReflectiveOperationException | RuntimeException exception) {
-            owner.getLogger().log(Level.SEVERE, "Cannot start Pillars replay for " + id, cause(exception));
+            owner.getLogger()
+                    .log(Level.SEVERE, "Cannot start Pillars replay for " + id, cause(exception));
         }
     }
 
@@ -99,19 +120,33 @@ public final class PillarsReplays implements Listener, AutoCloseable {
     private void save(Capture capture) {
         try {
             @SuppressWarnings("unchecked")
-            CompletableFuture<Path> saved = (CompletableFuture<Path>) stop.invoke(recording, capture.player(), capture.output());
+            CompletableFuture<Path> saved =
+                    (CompletableFuture<Path>)
+                            stop.invoke(recording, capture.player(), capture.output());
             SAVES.add(saved);
             // Completion is off-thread: no Bukkit world/player access here.
-            saved.whenComplete((path, error) -> {
-                SAVES.remove(saved);
-                if (error != null) owner.getLogger().log(Level.SEVERE,
-                        "Cannot save Pillars replay " + capture.output(), error);
-                else if (path == null) owner.getLogger().severe("Pillars replay was stopped outside the match: "
-                        + capture.output());
-                else owner.getLogger().info("Saved Pillars replay: " + path);
-            });
+            saved.whenComplete(
+                    (path, error) -> {
+                        SAVES.remove(saved);
+                        if (error != null)
+                            owner.getLogger()
+                                    .log(
+                                            Level.SEVERE,
+                                            "Cannot save Pillars replay " + capture.output(),
+                                            error);
+                        else if (path == null)
+                            owner.getLogger()
+                                    .severe(
+                                            "Pillars replay was stopped outside the match: "
+                                                    + capture.output());
+                        else owner.getLogger().info("Saved Pillars replay: " + path);
+                    });
         } catch (ReflectiveOperationException | RuntimeException exception) {
-            owner.getLogger().log(Level.SEVERE, "Cannot stop Pillars replay " + capture.output(), cause(exception));
+            owner.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            "Cannot stop Pillars replay " + capture.output(),
+                            cause(exception));
         }
     }
 
@@ -123,7 +158,8 @@ public final class PillarsReplays implements Listener, AutoCloseable {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) {
-        if (event.getTo() != null && !world.equals(event.getTo().getWorld())) stop(event.getPlayer());
+        if (event.getTo() != null && !world.equals(event.getTo().getWorld()))
+            stop(event.getPlayer());
     }
 
     @Override
@@ -138,11 +174,13 @@ public final class PillarsReplays implements Listener, AutoCloseable {
     /** Called after sessions stop, before the recorder plugin and its scheduler are disabled. */
     public static void awaitSaves() {
         CompletableFuture.allOf(SAVES.toArray(CompletableFuture[]::new))
-                .exceptionally(error -> null).join(); // Individual save failures are logged above.
+                .exceptionally(error -> null)
+                .join(); // Individual save failures are logged above.
     }
 
     private static Throwable cause(Exception exception) {
         return exception instanceof InvocationTargetException wrapped && wrapped.getCause() != null
-                ? wrapped.getCause() : exception;
+                ? wrapped.getCause()
+                : exception;
     }
 }

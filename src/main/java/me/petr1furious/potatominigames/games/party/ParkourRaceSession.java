@@ -199,16 +199,18 @@ final class ParkourRaceSession extends PartySurvivalSession {
             else p.getInventory().setItem(slot++, item);
         }
         ItemStack clock = new ItemStack(Material.CLOCK);
-        clock.editMeta(meta -> {
-            meta.displayName(
-                    I18n.tr("party.rounds.parkour_race.clock.name").color(NamedTextColor.GOLD));
-            meta.lore(
-                    List.of(
-                            I18n.tr("party.rounds.parkour_race.clock.lore")
-                                    .color(NamedTextColor.GRAY),
-                            I18n.tr("party.rounds.parkour_race.clock.help_lore")
-                                    .color(NamedTextColor.GRAY)));
-        });
+        clock.editMeta(
+                meta -> {
+                    meta.displayName(
+                            I18n.tr("party.rounds.parkour_race.clock.name")
+                                    .color(NamedTextColor.GOLD));
+                    meta.lore(
+                            List.of(
+                                    I18n.tr("party.rounds.parkour_race.clock.lore")
+                                            .color(NamedTextColor.GRAY),
+                                    I18n.tr("party.rounds.parkour_race.clock.help_lore")
+                                            .color(NamedTextColor.GRAY)));
+                });
         p.getInventory().setItem(8, I18n.item(clock, p));
         p.getInventory().setHeldItemSlot(0);
         arena.refillChest(p.getUniqueId(), race.checkpoint(p.getUniqueId()));

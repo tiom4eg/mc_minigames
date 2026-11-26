@@ -1,12 +1,6 @@
 package me.petr1furious.potatominigames.games.pillars;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
+import me.petr1furious.potatominigames.i18n.I18n;
 
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
@@ -16,8 +10,8 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.LingeringPotion;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -40,10 +34,18 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
-import me.petr1furious.potatominigames.i18n.I18n;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 final class PillarsBots implements Listener, AutoCloseable {
-    private static final BlockFace[] DIRECTIONS = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
+    private static final BlockFace[] DIRECTIONS = {
+        BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
+    };
     private static final int INVENTORY_SIZE = 18;
     private static final int[] UPHILL = {1, 0, -1};
     private static final int[] LEVEL = {0, -1, 1};
@@ -62,8 +64,9 @@ final class PillarsBots implements Listener, AutoCloseable {
         }
     }
 
-    private record Shot(Entity entity, Bot bot, boolean harmful, long until) { }
-    private record Step(Block feet, boolean build, boolean jump, double score) { }
+    private record Shot(Entity entity, Bot bot, boolean harmful, long until) {}
+
+    private record Step(Block feet, boolean build, boolean jump, double score) {}
 
     private final PillarsPerks perks;
     private final PillarsSession session;
@@ -73,7 +76,12 @@ final class PillarsBots implements Listener, AutoCloseable {
     private final Map<UUID, Shot> shots = new HashMap<>();
     private long tick;
 
-    PillarsBots(PillarsPerks perks, PillarsSession session, Plugin plugin, World world, PerkTerrain terrain) {
+    PillarsBots(
+            PillarsPerks perks,
+            PillarsSession session,
+            Plugin plugin,
+            World world,
+            PerkTerrain terrain) {
         this.perks = perks;
         this.session = session;
         this.world = world;
@@ -82,22 +90,28 @@ final class PillarsBots implements Listener, AutoCloseable {
     }
 
     boolean summon(Player owner) {
-        if (bots.values().stream().anyMatch(bot -> bot.owner.equals(owner) && bot.body.isValid())) return false;
+        if (bots.values().stream().anyMatch(bot -> bot.owner.equals(owner) && bot.body.isValid()))
+            return false;
         Location at = owner.getLocation();
         at.setY(session.pillarTop() + 1);
-        Location spawn = terrain.pillarSpot(at, session.pillarMaterial(), ThreadLocalRandom.current());
+        Location spawn =
+                terrain.pillarSpot(at, session.pillarMaterial(), ThreadLocalRandom.current());
         if (spawn == null) return false;
-        Mannequin body = world.spawn(spawn, Mannequin.class, npc -> {
-            npc.customName(I18n.tr("pillars.effects.agi.name", owner.name()));
-            npc.setCustomNameVisible(true);
-            npc.setDescription(null);
-            npc.setImmovable(false);
-            npc.setGravity(true);
-            npc.setCanPickupItems(false);
-            npc.setPersistent(false);
-            npc.setRemoveWhenFarAway(false);
-            npc.getCollidableExemptions().add(owner.getUniqueId());
-        });
+        Mannequin body =
+                world.spawn(
+                        spawn,
+                        Mannequin.class,
+                        npc -> {
+                            npc.customName(I18n.tr("pillars.effects.agi.name", owner.name()));
+                            npc.setCustomNameVisible(true);
+                            npc.setDescription(null);
+                            npc.setImmovable(false);
+                            npc.setGravity(true);
+                            npc.setCanPickupItems(false);
+                            npc.setPersistent(false);
+                            npc.setRemoveWhenFarAway(false);
+                            npc.getCollidableExemptions().add(owner.getUniqueId());
+                        });
         if (!body.isValid()) return false;
         Bot bot = new Bot(owner, body);
         bots.put(body.getUniqueId(), bot);
@@ -128,13 +142,17 @@ final class PillarsBots implements Listener, AutoCloseable {
 
     void tick(long now) {
         tick = now;
-        shots.values().removeIf(shot -> {
-            if (tick < shot.until() && shot.entity().isValid()) return false;
-            shot.entity().remove();
-            return true;
-        });
+        shots.values()
+                .removeIf(
+                        shot -> {
+                            if (tick < shot.until() && shot.entity().isValid()) return false;
+                            shot.entity().remove();
+                            return true;
+                        });
         for (Bot bot : List.copyOf(bots.values())) {
-            if (!bot.body.isValid() || bot.body.getY() < session.deathHeight() || !perks.alive(bot.owner)) {
+            if (!bot.body.isValid()
+                    || bot.body.getY() < session.deathHeight()
+                    || !perks.alive(bot.owner)) {
                 remove(bot);
                 continue;
             }
@@ -149,9 +167,14 @@ final class PillarsBots implements Listener, AutoCloseable {
     private void think(Bot bot) {
         Mannequin body = bot.body;
         Location from = body.getLocation();
-        Player target = session.perkPlayers().stream().filter(perks::active)
-                .filter(player -> !bot.owner.equals(player))
-                .min(Comparator.comparingDouble(player -> from.distanceSquared(player.getLocation()))).orElse(null);
+        Player target =
+                session.perkPlayers().stream()
+                        .filter(perks::active)
+                        .filter(player -> !bot.owner.equals(player))
+                        .min(
+                                Comparator.comparingDouble(
+                                        player -> from.distanceSquared(player.getLocation())))
+                        .orElse(null);
         if (target == null) return;
         Location to = target.getLocation();
         Vector aim = target.getEyeLocation().toVector().subtract(body.getEyeLocation().toVector());
@@ -178,35 +201,50 @@ final class PillarsBots implements Listener, AutoCloseable {
         Location eye = body.getEyeLocation();
         double distance = eye.distanceSquared(target.getEyeLocation());
         boolean hurt = body.getHealth() <= body.getAttribute(Attribute.MAX_HEALTH).getValue() - 4;
-        boolean safeShot = visible && distance > 3 * 3 && distance < 12 * 12
-                && bot.owner.getLocation().distanceSquared(target.getLocation()) > 6 * 6;
+        boolean safeShot =
+                visible
+                        && distance > 3 * 3
+                        && distance < 12 * 12
+                        && bot.owner.getLocation().distanceSquared(target.getLocation()) > 6 * 6;
         for (int slot = 0; slot < bot.items.size(); slot++) {
             ItemStack item = bot.items.get(slot);
             PerkType perk = PerkItems.type(item);
             boolean used = false;
             if (perk != null) {
-                used = switch (perk) {
-                    case FIREBALL -> safeShot && shootFireball(bot, target, eye);
-                    case BLESSING -> hurt && PillarsPerks.blessing(body);
-                    case SUPER_APPLE -> hurt && PillarsPerks.superApple(body);
-                    case INVULNERABILITY -> {
-                        if (!visible || distance > 5 * 5 || bot.shieldUntil > tick) yield false;
-                        body.setInvulnerable(true);
-                        bot.shieldUntil = tick + 100;
-                        yield true;
-                    }
-                    default -> false;
-                };
-            } else if (item.getItemMeta() instanceof PotionMeta potion && potion.getBasePotionType() != null) {
+                used =
+                        switch (perk) {
+                            case FIREBALL -> safeShot && shootFireball(bot, target, eye);
+                            case BLESSING -> hurt && PillarsPerks.blessing(body);
+                            case SUPER_APPLE -> hurt && PillarsPerks.superApple(body);
+                            case INVULNERABILITY -> {
+                                if (!visible || distance > 5 * 5 || bot.shieldUntil > tick)
+                                    yield false;
+                                body.setInvulnerable(true);
+                                bot.shieldUntil = tick + 100;
+                                yield true;
+                            }
+                            default -> false;
+                        };
+            } else if (item.getItemMeta() instanceof PotionMeta potion
+                    && potion.getBasePotionType() != null) {
                 List<PotionEffect> effects = potion.getBasePotionType().getPotionEffects();
-                boolean harmful = effects.stream().anyMatch(effect -> effect.getType().getEffectCategory() == PotionEffectType.Category.HARMFUL);
-                if (item.getType() == Material.SPLASH_POTION || item.getType() == Material.LINGERING_POTION) {
+                boolean harmful =
+                        effects.stream()
+                                .anyMatch(
+                                        effect ->
+                                                effect.getType().getEffectCategory()
+                                                        == PotionEffectType.Category.HARMFUL);
+                if (item.getType() == Material.SPLASH_POTION
+                        || item.getType() == Material.LINGERING_POTION) {
                     if (harmful && safeShot && distance <= 9 * 9) {
                         used = throwPotion(bot, item, target.getLocation().add(0, .5, 0), true);
                     } else if (!harmful && hurt && !effects.isEmpty()) {
                         used = throwPotion(bot, item, body.getLocation(), false);
                     }
-                } else if (item.getType() == Material.POTION && !harmful && hurt && !effects.isEmpty()) {
+                } else if (item.getType() == Material.POTION
+                        && !harmful
+                        && hurt
+                        && !effects.isEmpty()) {
                     body.addPotionEffects(effects);
                     used = true;
                 }
@@ -222,10 +260,16 @@ final class PillarsBots implements Listener, AutoCloseable {
 
     private boolean shootFireball(Bot bot, Player target, Location eye) {
         Vector direction = target.getEyeLocation().toVector().subtract(eye.toVector()).normalize();
-        if (world.rayTraceEntities(eye, direction, eye.distance(target.getEyeLocation()), .35,
-                entity -> entity.equals(bot.owner)) != null) return false;
+        if (world.rayTraceEntities(
+                        eye,
+                        direction,
+                        eye.distance(target.getEyeLocation()),
+                        .35,
+                        entity -> entity.equals(bot.owner))
+                != null) return false;
         Location at = eye.clone().add(direction.clone().multiply(.8));
-        if (world.rayTraceBlocks(eye, direction, .8, FluidCollisionMode.NEVER, true) != null) return false;
+        if (world.rayTraceBlocks(eye, direction, .8, FluidCollisionMode.NEVER, true) != null)
+            return false;
         return track(PerkOrdnance.fireball(at, bot.body, direction), bot, true, 120);
     }
 
@@ -235,8 +279,12 @@ final class PillarsBots implements Listener, AutoCloseable {
         aim.setY(aim.getY() + horizontal * .25);
         if (aim.lengthSquared() < 1e-6) return false;
         Vector velocity = aim.normalize().multiply(.75);
-        Class<? extends ThrownPotion> type = item.getType() == Material.LINGERING_POTION ? LingeringPotion.class : SplashPotion.class;
-        ThrownPotion potion = bot.body.launchProjectile(type, velocity, p -> p.setItem(item.asOne()));
+        Class<? extends ThrownPotion> type =
+                item.getType() == Material.LINGERING_POTION
+                        ? LingeringPotion.class
+                        : SplashPotion.class;
+        ThrownPotion potion =
+                bot.body.launchProjectile(type, velocity, p -> p.setItem(item.asOne()));
         return track(potion, bot, harmful, 120);
     }
 
@@ -253,8 +301,11 @@ final class PillarsBots implements Listener, AutoCloseable {
         for (int i = 0; i < bot.items.size(); i++) {
             ItemStack item = bot.items.get(i);
             Material material = item.getType();
-            if (PerkItems.type(item) == null && material.isBlock() && material.isOccluding()
-                    && !material.hasGravity() && material != Material.TNT) {
+            if (PerkItems.type(item) == null
+                    && material.isBlock()
+                    && material.isOccluding()
+                    && !material.hasGravity()
+                    && material != Material.TNT) {
                 supply = i;
                 break;
             }
@@ -265,13 +316,23 @@ final class PillarsBots implements Listener, AutoCloseable {
             boolean uphill = target.getBlockY() > start.getY();
             for (int dy : uphill ? UPHILL : LEVEL) {
                 Block feet = side.getRelative(0, dy, 0);
-                Block head = feet.getRelative(BlockFace.UP), floor = feet.getRelative(BlockFace.DOWN);
-                if (feet.getY() < session.deathHeight() || !terrain.inside(head) || !standableSpace(feet) || !standableSpace(head)) continue;
+                Block head = feet.getRelative(BlockFace.UP),
+                        floor = feet.getRelative(BlockFace.DOWN);
+                if (feet.getY() < session.deathHeight()
+                        || !terrain.inside(head)
+                        || !standableSpace(feet)
+                        || !standableSpace(head)) continue;
                 if (dy > 0 && !standableSpace(start.getRelative(0, 2, 0))) continue;
                 boolean build = !floor.getType().isOccluding();
-                if (build && (supply < 0 || !PerkTerrain.air(floor) || terrain.leased(floor) || (dy > 0 && !uphill))) continue;
-                double score = feet.getLocation().add(.5, 0, .5).distanceSquared(target) + (build ? 2 : 0);
-                if (best == null || score < best.score()) best = new Step(feet, build, dy > 0, score);
+                if (build
+                        && (supply < 0
+                                || !PerkTerrain.air(floor)
+                                || terrain.leased(floor)
+                                || (dy > 0 && !uphill))) continue;
+                double score =
+                        feet.getLocation().add(.5, 0, .5).distanceSquared(target) + (build ? 2 : 0);
+                if (best == null || score < best.score())
+                    best = new Step(feet, build, dy > 0, score);
             }
         }
         if (best == null || best.score() > from.distanceSquared(target) + 1) return;
@@ -284,7 +345,8 @@ final class PillarsBots implements Listener, AutoCloseable {
             spend(bot, supply);
         }
         Vector motion = destination.toVector().subtract(from.toVector()).setY(0);
-        if (motion.lengthSquared() > .001) bot.body.setVelocity(motion.normalize().multiply(.23).setY(best.jump() ? .42 : 0));
+        if (motion.lengthSquared() > .001)
+            bot.body.setVelocity(motion.normalize().multiply(.23).setY(best.jump() ? .42 : 0));
     }
 
     private static boolean standableSpace(Block block) {
@@ -307,7 +369,8 @@ final class PillarsBots implements Listener, AutoCloseable {
         if (entity == null) return null;
         Shot shot = shots.get(entity.getUniqueId());
         if (shot != null) return shot.bot();
-        if (entity instanceof Projectile projectile && projectile.getShooter() instanceof Entity shooter) entity = shooter;
+        if (entity instanceof Projectile projectile
+                && projectile.getShooter() instanceof Entity shooter) entity = shooter;
         return bots.get(entity.getUniqueId());
     }
 
@@ -328,7 +391,9 @@ final class PillarsBots implements Listener, AutoCloseable {
         Bot defending = bots.get(victim.getUniqueId());
         Entity cause = event.getDamageSource().getCausingEntity();
         if ((attacking != null && allied(attacking, victim))
-                || (defending != null && (allied(defending, event.getDamager()) || cause != null && allied(defending, cause)))) {
+                || (defending != null
+                        && (allied(defending, event.getDamager())
+                                || cause != null && allied(defending, cause)))) {
             event.setCancelled(true);
         }
     }
@@ -354,14 +419,18 @@ final class PillarsBots implements Listener, AutoCloseable {
         Shot shot = shots.get(event.getEntity().getUniqueId());
         if (shot != null) {
             var cloud = event.getAreaEffectCloud();
-            shots.put(cloud.getUniqueId(), new Shot(cloud, shot.bot(), shot.harmful(), tick + cloud.getDuration() + 20));
+            shots.put(
+                    cloud.getUniqueId(),
+                    new Shot(cloud, shot.bot(), shot.harmful(), tick + cloud.getDuration() + 20));
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void cloud(AreaEffectCloudApplyEvent event) {
         Shot shot = shots.get(event.getEntity().getUniqueId());
-        if (shot != null) event.getAffectedEntities().removeIf(entity -> !eligible(shot.bot(), entity, shot.harmful()));
+        if (shot != null)
+            event.getAffectedEntities()
+                    .removeIf(entity -> !eligible(shot.bot(), entity, shot.harmful()));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -383,11 +452,13 @@ final class PillarsBots implements Listener, AutoCloseable {
     private void remove(Bot bot) {
         bots.remove(bot.body.getUniqueId());
         bot.body.remove();
-        shots.values().removeIf(shot -> {
-            if (shot.bot() != bot) return false;
-            shot.entity().remove();
-            return true;
-        });
+        shots.values()
+                .removeIf(
+                        shot -> {
+                            if (shot.bot() != bot) return false;
+                            shot.entity().remove();
+                            return true;
+                        });
     }
 
     @Override

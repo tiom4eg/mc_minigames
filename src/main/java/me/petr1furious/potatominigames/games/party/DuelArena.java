@@ -40,6 +40,7 @@ abstract class DuelArena {
     boolean isOut(Location location) {
         return false;
     }
+
     static Location circleSpawn(Location center, double radius, int index, int count) {
         if (count < 1 || count > 16 || index < 0 || index >= count)
             throw new IllegalArgumentException("Invalid group spawn");
@@ -48,5 +49,4 @@ abstract class DuelArena {
         at.setDirection(center.toVector().subtract(at.toVector()));
         return at;
     }
-
 }

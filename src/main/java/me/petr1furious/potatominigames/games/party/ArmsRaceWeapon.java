@@ -1,6 +1,7 @@
 package me.petr1furious.potatominigames.games.party;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -29,7 +30,9 @@ enum ArmsRaceWeapon {
     ArmsRaceWeapon(Material material) {
         this.material = material;
         // These vanilla item weapons must also initialize without a running server registry.
-        this.title = Component.translatable("item.minecraft." + material.name().toLowerCase(java.util.Locale.ROOT));
+        this.title =
+                Component.translatable(
+                        "item.minecraft." + material.name().toLowerCase(java.util.Locale.ROOT));
     }
 
     boolean ranged() {
@@ -42,8 +45,7 @@ enum ArmsRaceWeapon {
 
     static java.util.List<ArmsRaceWeapon> progression(boolean embedded) {
         return embedded
-                ? java.util.List.of(
-                        DIAMOND_SWORD, IRON_AXE, WOODEN_SWORD, GOLDEN_SHOVEL, BOW)
+                ? java.util.List.of(DIAMOND_SWORD, IRON_AXE, WOODEN_SWORD, GOLDEN_SHOVEL, BOW)
                 : java.util.List.of(values());
     }
 

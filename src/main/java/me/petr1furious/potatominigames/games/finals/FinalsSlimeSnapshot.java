@@ -160,13 +160,14 @@ final class FinalsSlimeSnapshot {
                 SlimeWorld snapshot = new CapturedWorld(empty, Map.copyOf(chunks));
                 chunks.clear();
                 writing =
-                        CompletableFuture.runAsync(() -> {
-                            try {
-                                if (!loader.cancelled()) asp.saveWorld(snapshot);
-                            } catch (IOException failure) {
-                                throw new CompletionException(failure);
-                            }
-                        });
+                        CompletableFuture.runAsync(
+                                () -> {
+                                    try {
+                                        if (!loader.cancelled()) asp.saveWorld(snapshot);
+                                    } catch (IOException failure) {
+                                        throw new CompletionException(failure);
+                                    }
+                                });
             }
             return false;
         }
@@ -361,8 +362,13 @@ final class FinalsSlimeSnapshot {
         }
         List<CompoundBinaryTag> tiles =
                 source.getTileEntities().stream()
-                        .filter(tag ->
-                                contains(bounds, tag.getInt("x"), tag.getInt("y"), tag.getInt("z")))
+                        .filter(
+                                tag ->
+                                        contains(
+                                                bounds,
+                                                tag.getInt("x"),
+                                                tag.getInt("y"),
+                                                tag.getInt("z")))
                         .toList();
         // ASP recomputes absent heightmaps while materializing boundary chunks.
         return new SavedChunk(

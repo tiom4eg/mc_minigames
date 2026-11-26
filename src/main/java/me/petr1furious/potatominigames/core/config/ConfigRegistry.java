@@ -1,15 +1,15 @@
 package me.petr1furious.potatominigames.core.config;
 
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 
 /** Binds {@link PropertyBag}s to YAML files; saves when a property is set by command. */
 public final class ConfigRegistry {
@@ -20,8 +20,8 @@ public final class ConfigRegistry {
     }
 
     /** Command-editing rules for one file. */
-    record FileSpec(List<String> hidden, Map<String, Property<?>> keys, List<Runnable> reloadHooks) {
-    }
+    record FileSpec(
+            List<String> hidden, Map<String, Property<?>> keys, List<Runnable> reloadHooks) {}
 
     private final JavaPlugin plugin;
     private final Map<String, Binding> bindings = new LinkedHashMap<>();
@@ -125,7 +125,8 @@ public final class ConfigRegistry {
             target.getParentFile().mkdirs();
             config.save(target);
         } catch (IOException exception) {
-            plugin.getLogger().warning("Failed to save " + fileName + ": " + exception.getMessage());
+            plugin.getLogger()
+                    .warning("Failed to save " + fileName + ": " + exception.getMessage());
         }
     }
 
@@ -149,7 +150,9 @@ public final class ConfigRegistry {
         return result;
     }
 
-    /** Sets a declared property live and writes it; @throws IllegalArgumentException on a bad value */
+    /**
+     * Sets a declared property live and writes it; @throws IllegalArgumentException on a bad value
+     */
     void setDeclared(String fileName, String key, String raw) {
         Binding binding = bindingOf(fileName, key);
         Property<?> property = propertyOf(binding, key);
@@ -187,12 +190,16 @@ public final class ConfigRegistry {
     }
 
     private static Property<?> propertyOf(Binding binding, String key) {
-        String name = binding.sectionPath().isEmpty() ? key : key.substring(binding.sectionPath().length() + 1);
+        String name =
+                binding.sectionPath().isEmpty()
+                        ? key
+                        : key.substring(binding.sectionPath().length() + 1);
         return binding.bag().property(name);
     }
 
     private FileSpec spec(String fileName) {
-        return specs.computeIfAbsent(fileName,
+        return specs.computeIfAbsent(
+                fileName,
                 name -> new FileSpec(new ArrayList<>(), new LinkedHashMap<>(), new ArrayList<>()));
     }
 
@@ -216,8 +223,10 @@ public final class ConfigRegistry {
 
     private ConfigurationSection section(Binding binding) {
         YamlConfiguration config = file(binding.fileName());
-        ConfigurationSection section = binding.sectionPath().isEmpty() ? config
-                : config.getConfigurationSection(binding.sectionPath());
+        ConfigurationSection section =
+                binding.sectionPath().isEmpty()
+                        ? config
+                        : config.getConfigurationSection(binding.sectionPath());
         return section != null ? section : config.createSection(binding.sectionPath());
     }
 

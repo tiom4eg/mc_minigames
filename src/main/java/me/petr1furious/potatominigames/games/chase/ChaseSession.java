@@ -1,17 +1,22 @@
 package me.petr1furious.potatominigames.games.chase;
 
+import me.petr1furious.potatominigames.core.command.CommandFailure;
+import me.petr1furious.potatominigames.core.game.EndReason;
+import me.petr1furious.potatominigames.core.game.GameSession;
+import me.petr1furious.potatominigames.core.game.SessionServices;
+import me.petr1furious.potatominigames.core.text.Summary;
+import me.petr1furious.potatominigames.core.text.TimeFormat;
+import me.petr1furious.potatominigames.core.world.ArenaBiomes;
+import me.petr1furious.potatominigames.gadgets.Gadget;
+import me.petr1furious.potatominigames.gadgets.GadgetRegistry;
+import me.petr1furious.potatominigames.gadgets.TrackerCompassGadget;
 import me.petr1furious.potatominigames.i18n.I18n;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
 
 import org.bukkit.GameMode;
 import org.bukkit.GameRules;
@@ -32,22 +37,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import net.kyori.adventure.bossbar.BossBar;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.JoinConfiguration;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.title.Title;
-
-import me.petr1furious.potatominigames.core.command.CommandFailure;
-import me.petr1furious.potatominigames.core.game.EndReason;
-import me.petr1furious.potatominigames.core.game.GameSession;
-import me.petr1furious.potatominigames.core.game.SessionServices;
-import me.petr1furious.potatominigames.core.text.TimeFormat;
-import me.petr1furious.potatominigames.core.text.Summary;
-import me.petr1furious.potatominigames.core.world.ArenaBiomes;
-import me.petr1furious.potatominigames.gadgets.Gadget;
-import me.petr1furious.potatominigames.gadgets.GadgetRegistry;
-import me.petr1furious.potatominigames.gadgets.TrackerCompassGadget;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 /** Formerly Ultimate Tag. One round per possible hunter set. */
 final class ChaseSession implements GameSession {
@@ -55,15 +54,22 @@ final class ChaseSession implements GameSession {
     private static final int ARENA_SPREAD = 5000;
     private static final int CORNER_INSET = 3;
     private static final int GROUND_SAMPLE_STEP = 4;
+
     /** Samples either side considered, so ground beside a cliff counts both levels. */
     private static final int GROUND_NEIGHBOURHOOD = 2;
+
     /** Taller than any generated tree. */
     private static final int MAX_TREE_HEIGHT = 40;
+
     private static final int ARENA_ATTEMPTS = 20;
     private static final int DRY_SEARCH_RADIUS = 12;
 
     private enum RoundPhase {
-        NONE, FREEZE, HUNTING, INTERMISSION, WAITING_FOR_PLAYERS
+        NONE,
+        FREEZE,
+        HUNTING,
+        INTERMISSION,
+        WAITING_FOR_PLAYERS
     }
 
     private final SessionServices services;
@@ -127,8 +133,12 @@ final class ChaseSession implements GameSession {
             scores.put(player.getUniqueId(), 0);
         }
 
-        timerBar = services.bossBars().create(I18n.tr("chase.name").color(NamedTextColor.AQUA),
-                BossBar.Color.BLUE, BossBar.Overlay.PROGRESS);
+        timerBar =
+                services.bossBars()
+                        .create(
+                                I18n.tr("chase.name").color(NamedTextColor.AQUA),
+                                BossBar.Color.BLUE,
+                                BossBar.Overlay.PROGRESS);
         for (Player player : roster) {
             player.showBossBar(timerBar);
         }
@@ -171,7 +181,8 @@ final class ChaseSession implements GameSession {
         switch (phase) {
             case FREEZE -> {
                 phaseSecondsLeft--;
-                updateTimerBar(I18n.tr("chase.starting", phaseSecondsLeft).color(NamedTextColor.YELLOW),
+                updateTimerBar(
+                        I18n.tr("chase.starting", phaseSecondsLeft).color(NamedTextColor.YELLOW),
                         (float) phaseSecondsLeft / Math.max(1, config.freezeSeconds.get()));
                 if (phaseSecondsLeft <= 0) {
                     beginHunting();
@@ -179,8 +190,15 @@ final class ChaseSession implements GameSession {
             }
             case HUNTING -> {
                 phaseSecondsLeft--;
-                updateTimerBar(I18n.tr("chase.round_timer", roundIndex + 1, hunterSets.size(),
-                        Component.text(TimeFormat.clock(phaseSecondsLeft), NamedTextColor.WHITE)).color(NamedTextColor.AQUA),
+                updateTimerBar(
+                        I18n.tr(
+                                        "chase.round_timer",
+                                        roundIndex + 1,
+                                        hunterSets.size(),
+                                        Component.text(
+                                                TimeFormat.clock(phaseSecondsLeft),
+                                                NamedTextColor.WHITE))
+                                .color(NamedTextColor.AQUA),
                         (float) phaseSecondsLeft / Math.max(1, roundLengthSeconds));
                 enforceAltitude();
                 if (phaseSecondsLeft <= 0) {
@@ -189,7 +207,9 @@ final class ChaseSession implements GameSession {
             }
             case INTERMISSION -> {
                 phaseSecondsLeft--;
-                updateTimerBar(I18n.tr("chase.next_round", phaseSecondsLeft).color(NamedTextColor.GRAY), 1.0f);
+                updateTimerBar(
+                        I18n.tr("chase.next_round", phaseSecondsLeft).color(NamedTextColor.GRAY),
+                        1.0f);
                 if (phaseSecondsLeft <= 0) {
                     phase = RoundPhase.WAITING_FOR_PLAYERS;
                 }
@@ -203,8 +223,7 @@ final class ChaseSession implements GameSession {
                     updateTimerBar(I18n.tr("chase.waiting").color(NamedTextColor.GRAY), 1.0f);
                 }
             }
-            case NONE -> {
-            }
+            case NONE -> {}
         }
         updateSidebar();
     }
@@ -257,29 +276,39 @@ final class ChaseSession implements GameSession {
             player.teleport(hunter ? hunterSpawn : runnerSpawn);
             if (hunter) {
                 giveHunterKit(player);
-                player.showTitle(Title.title(
-                        I18n.tr("chase.round", roundIndex + 1).color(NamedTextColor.AQUA),
-                        I18n.tr("chase.hunter").color(NamedTextColor.RED)));
+                player.showTitle(
+                        Title.title(
+                                I18n.tr("chase.round", roundIndex + 1).color(NamedTextColor.AQUA),
+                                I18n.tr("chase.hunter").color(NamedTextColor.RED)));
             } else {
                 giveRunnerKit(player, runnerTools);
-                player.showTitle(Title.title(
-                        I18n.tr("chase.round", roundIndex + 1).color(NamedTextColor.AQUA),
-                        I18n.tr("chase.runner").color(NamedTextColor.GREEN)));
+                player.showTitle(
+                        Title.title(
+                                I18n.tr("chase.round", roundIndex + 1).color(NamedTextColor.AQUA),
+                                I18n.tr("chase.runner").color(NamedTextColor.GREEN)));
             }
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, hunter ? 0.7f : 1.4f);
+            player.playSound(
+                    player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, hunter ? 0.7f : 1.4f);
         }
 
-        broadcast(I18n.tr("chase.round_started", roundIndex + 1, hunterSets.size()).color(NamedTextColor.GOLD));
-        broadcast(I18n.tr(hunters.size() == 1 ? "chase.hunter_announcement" : "chase.hunters_announcement",
-                hunterNames()).color(NamedTextColor.GOLD));
+        broadcast(
+                I18n.tr("chase.round_started", roundIndex + 1, hunterSets.size())
+                        .color(NamedTextColor.GOLD));
+        broadcast(
+                I18n.tr(
+                                hunters.size() == 1
+                                        ? "chase.hunter_announcement"
+                                        : "chase.hunters_announcement",
+                                hunterNames())
+                        .color(NamedTextColor.GOLD));
 
         phase = RoundPhase.FREEZE;
         phaseSecondsLeft = Math.max(1, config.freezeSeconds.get());
     }
 
     /**
-     * New terrain each round. Corners are checked separately from the centre (biome
-     * first, then blocks), since a coastal centre can put a corner at sea.
+     * New terrain each round. Corners are checked separately from the centre (biome first, then
+     * blocks), since a coastal centre can put a corner at sea.
      */
     private void placeArena() {
         int border = Math.max(16, config.borderSize.get());
@@ -294,7 +323,9 @@ final class ChaseSession implements GameSession {
             centerX = center.getBlockX();
             centerZ = center.getBlockZ();
             boolean last = attempt == ARENA_ATTEMPTS;
-            if (!last && !(suitableAt(centerX - half, centerZ - half) && suitableAt(centerX + half, centerZ + half))) {
+            if (!last
+                    && !(suitableAt(centerX - half, centerZ - half)
+                            && suitableAt(centerX + half, centerZ + half))) {
                 continue;
             }
             hunterSpawn = cornerSpawn(centerX - half, centerZ - half, centerX, centerZ, border);
@@ -303,18 +334,33 @@ final class ChaseSession implements GameSession {
                 break;
             }
             if (last) {
-                services.plugin().getLogger().warning("No dry chase arena in " + ARENA_ATTEMPTS
-                        + " tries; spawning at " + centerX + "," + centerZ + " anyway");
+                services.plugin()
+                        .getLogger()
+                        .warning(
+                                "No dry chase arena in "
+                                        + ARENA_ATTEMPTS
+                                        + " tries; spawning at "
+                                        + centerX
+                                        + ","
+                                        + centerZ
+                                        + " anyway");
                 if (hunterSpawn == null) {
-                    hunterSpawn = world.getHighestBlockAt(centerX - half, centerZ - half).getLocation().add(0.5, 2, 0.5);
+                    hunterSpawn =
+                            world.getHighestBlockAt(centerX - half, centerZ - half)
+                                    .getLocation()
+                                    .add(0.5, 2, 0.5);
                 }
                 if (runnerSpawn == null) {
-                    runnerSpawn = world.getHighestBlockAt(centerX + half, centerZ + half).getLocation().add(0.5, 2, 0.5);
+                    runnerSpawn =
+                            world.getHighestBlockAt(centerX + half, centerZ + half)
+                                    .getLocation()
+                                    .add(0.5, 2, 0.5);
                 }
             }
         }
 
-        services.arena().applyBorder(world, new Location(world, centerX, 0, centerZ), border, border, 0);
+        services.arena()
+                .applyBorder(world, new Location(world, centerX, 0, centerZ), border, border, 0);
 
         sampleGround(centerX, centerZ, border);
         outOfBounds.clear();
@@ -364,18 +410,36 @@ final class ChaseSession implements GameSession {
         int highest = Integer.MIN_VALUE;
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                int y = terrainY(groundOriginX + i * GROUND_SAMPLE_STEP, groundOriginZ + j * GROUND_SAMPLE_STEP);
+                int y =
+                        terrainY(
+                                groundOriginX + i * GROUND_SAMPLE_STEP,
+                                groundOriginZ + j * GROUND_SAMPLE_STEP);
                 groundSamples[i][j] = y;
                 lowest = Math.min(lowest, y);
                 highest = Math.max(highest, y);
             }
         }
-        services.plugin().getLogger().info("Chase arena at " + centerX + "," + centerZ + " sampled "
-                + (size * size) + " ground points (y " + lowest + ".." + highest + ") in "
-                + (System.currentTimeMillis() - startedAt) + "ms");
+        services.plugin()
+                .getLogger()
+                .info(
+                        "Chase arena at "
+                                + centerX
+                                + ","
+                                + centerZ
+                                + " sampled "
+                                + (size * size)
+                                + " ground points (y "
+                                + lowest
+                                + ".."
+                                + highest
+                                + ") in "
+                                + (System.currentTimeMillis() - startedAt)
+                                + "ms");
     }
 
-    /** Surface height ignoring trees; a canopy would otherwise lift the band off the forest floor. */
+    /**
+     * Surface height ignoring trees; a canopy would otherwise lift the band off the forest floor.
+     */
     private int terrainY(int x, int z) {
         int y = world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING_NO_LEAVES);
         int stop = Math.max(world.getMinHeight(), y - MAX_TREE_HEIGHT);
@@ -400,36 +464,56 @@ final class ChaseSession implements GameSession {
     /** Min/max over neighbouring samples; a single sample misjudges cliffs and ravines. */
     private int[] groundRangeAt(int x, int z) {
         if (groundSamples == null) {
-            return new int[] { world.getSeaLevel(), world.getSeaLevel() };
+            return new int[] {world.getSeaLevel(), world.getSeaLevel()};
         }
         int last = groundSamples.length - 1;
-        int ci = Math.max(0, Math.min(last, Math.round((x - groundOriginX) / (float) GROUND_SAMPLE_STEP)));
-        int cj = Math.max(0, Math.min(last, Math.round((z - groundOriginZ) / (float) GROUND_SAMPLE_STEP)));
+        int ci =
+                Math.max(
+                        0,
+                        Math.min(
+                                last,
+                                Math.round((x - groundOriginX) / (float) GROUND_SAMPLE_STEP)));
+        int cj =
+                Math.max(
+                        0,
+                        Math.min(
+                                last,
+                                Math.round((z - groundOriginZ) / (float) GROUND_SAMPLE_STEP)));
         int low = Integer.MAX_VALUE;
         int high = Integer.MIN_VALUE;
-        for (int i = Math.max(0, ci - GROUND_NEIGHBOURHOOD); i <= Math.min(last, ci + GROUND_NEIGHBOURHOOD); i++) {
-            for (int j = Math.max(0, cj - GROUND_NEIGHBOURHOOD); j <= Math.min(last, cj + GROUND_NEIGHBOURHOOD); j++) {
+        for (int i = Math.max(0, ci - GROUND_NEIGHBOURHOOD);
+                i <= Math.min(last, ci + GROUND_NEIGHBOURHOOD);
+                i++) {
+            for (int j = Math.max(0, cj - GROUND_NEIGHBOURHOOD);
+                    j <= Math.min(last, cj + GROUND_NEIGHBOURHOOD);
+                    j++) {
                 low = Math.min(low, groundSamples[i][j]);
                 high = Math.max(high, groundSamples[i][j]);
             }
         }
-        return new int[] { low, high };
+        return new int[] {low, high};
     }
 
     private void beginHunting() {
         phase = RoundPhase.HUNTING;
         phaseSecondsLeft = roundLengthSeconds;
         broadcast(I18n.tr("chase.hunt_started").color(NamedTextColor.RED));
-        services.messages().playSound(services.participants().onlinePlayers(),
-                Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.4f);
+        services.messages()
+                .playSound(
+                        services.participants().onlinePlayers(),
+                        Sound.ENTITY_ENDER_DRAGON_GROWL,
+                        0.6f,
+                        1.4f);
     }
 
     private List<ItemStack> rollRunnerTools() {
-        List<ItemStack> pool = new ArrayList<>(List.of(
-                unbreaking(new ItemStack(Material.WOODEN_PICKAXE)),
-                unbreaking(new ItemStack(Material.WOODEN_AXE)),
-                unbreaking(new ItemStack(Material.STONE_SHOVEL)),
-                new ItemStack(Material.COBBLESTONE, 16)));
+        List<ItemStack> pool =
+                new ArrayList<>(
+                        List.of(
+                                unbreaking(new ItemStack(Material.WOODEN_PICKAXE)),
+                                unbreaking(new ItemStack(Material.WOODEN_AXE)),
+                                unbreaking(new ItemStack(Material.STONE_SHOVEL)),
+                                new ItemStack(Material.COBBLESTONE, 16)));
         Collections.shuffle(pool, random);
         return List.of(pool.get(0), pool.get(1));
     }
@@ -477,8 +561,12 @@ final class ChaseSession implements GameSession {
         }
         services.playerState().makeSpectator(player, 0);
         broadcast(reason);
-        services.messages().playSound(services.participants().onlinePlayers(),
-                Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.9f, 0.6f);
+        services.messages()
+                .playSound(
+                        services.participants().onlinePlayers(),
+                        Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
+                        0.9f,
+                        0.6f);
         checkRoundEnd();
     }
 
@@ -509,8 +597,10 @@ final class ChaseSession implements GameSession {
             return;
         }
         // A test game may have only one side; its rounds then run out the clock.
-        boolean over = services.isTest() ? aliveRunners().isEmpty() && aliveHunters().isEmpty()
-                : aliveRunners().isEmpty() || aliveHunters().isEmpty();
+        boolean over =
+                services.isTest()
+                        ? aliveRunners().isEmpty() && aliveHunters().isEmpty()
+                        : aliveRunners().isEmpty() || aliveHunters().isEmpty();
         if (over) {
             endRound();
         }
@@ -538,8 +628,12 @@ final class ChaseSession implements GameSession {
         earned.forEach((id, gained) -> scores.merge(id, gained, Integer::sum));
 
         int survivors = aliveRunners().size();
-        broadcast(I18n.tr("chase.round_over", roundIndex + 1,
-                Component.text(survivors, NamedTextColor.GREEN)).color(NamedTextColor.GOLD));
+        broadcast(
+                I18n.tr(
+                                "chase.round_over",
+                                roundIndex + 1,
+                                Component.text(survivors, NamedTextColor.GREEN))
+                        .color(NamedTextColor.GOLD));
         announceStandings(I18n.tr("chase.current_scores"));
 
         phase = RoundPhase.INTERMISSION;
@@ -585,8 +679,11 @@ final class ChaseSession implements GameSession {
         lines.add(I18n.tr("chase.scores").color(NamedTextColor.GRAY));
         int place = 1;
         for (Map.Entry<UUID, Integer> entry : sortedScores()) {
-            lines.add(Summary.rank(place++, Component.text(nameOf(entry.getKey()), NamedTextColor.GRAY),
-                    Component.text(entry.getValue(), NamedTextColor.GOLD)));
+            lines.add(
+                    Summary.rank(
+                            place++,
+                            Component.text(nameOf(entry.getKey()), NamedTextColor.GRAY),
+                            Component.text(entry.getValue(), NamedTextColor.GOLD)));
         }
         return lines;
     }
@@ -603,10 +700,17 @@ final class ChaseSession implements GameSession {
         sorted.sort(Map.Entry.<UUID, Integer>comparingByValue().reversed());
         int place = 1;
         for (Map.Entry<UUID, Integer> entry : sorted) {
-            broadcast(Component.text(place + ". ", NamedTextColor.GOLD)
-                    .append(Component.text(nameOf(entry.getKey()),
-                            hunters.contains(entry.getKey()) ? NamedTextColor.RED : NamedTextColor.AQUA))
-                    .append(Component.text(" — " + entry.getValue(), NamedTextColor.GREEN)));
+            broadcast(
+                    Component.text(place + ". ", NamedTextColor.GOLD)
+                            .append(
+                                    Component.text(
+                                            nameOf(entry.getKey()),
+                                            hunters.contains(entry.getKey())
+                                                    ? NamedTextColor.RED
+                                                    : NamedTextColor.AQUA))
+                            .append(
+                                    Component.text(
+                                            " — " + entry.getValue(), NamedTextColor.GREEN)));
             place++;
         }
     }
@@ -633,10 +737,15 @@ final class ChaseSession implements GameSession {
         if (!(event.getEntity() instanceof Player victim)) {
             return;
         }
-        Player attacker = event.getDamager() instanceof Player player ? player
-                : event.getDamager() instanceof Projectile projectile
-                        && projectile.getShooter() instanceof Player shooter ? shooter : null;
-        if (attacker == null || !services.participants().isParticipant(attacker)
+        Player attacker =
+                event.getDamager() instanceof Player player
+                        ? player
+                        : event.getDamager() instanceof Projectile projectile
+                                        && projectile.getShooter() instanceof Player shooter
+                                ? shooter
+                                : null;
+        if (attacker == null
+                || !services.participants().isParticipant(attacker)
                 || !services.participants().isParticipant(victim)) {
             return;
         }
@@ -650,8 +759,13 @@ final class ChaseSession implements GameSession {
         if (!attackerHunter) {
             return;
         }
-        catchPlayer(victim, I18n.tr("chase.tagged", Component.text(attacker.getName(), NamedTextColor.RED),
-                Component.text(victim.getName(), NamedTextColor.AQUA)).color(NamedTextColor.GOLD));
+        catchPlayer(
+                victim,
+                I18n.tr(
+                                "chase.tagged",
+                                Component.text(attacker.getName(), NamedTextColor.RED),
+                                Component.text(victim.getName(), NamedTextColor.AQUA))
+                        .color(NamedTextColor.GOLD));
     }
 
     /** Death counts as caught, for both sides. */
@@ -666,13 +780,22 @@ final class ChaseSession implements GameSession {
         if (phase != RoundPhase.HUNTING && phase != RoundPhase.FREEZE) {
             return;
         }
-        catchPlayer(player, I18n.tr("chase.died", Component.text(player.getName(),
-                hunters.contains(player.getUniqueId()) ? NamedTextColor.RED : NamedTextColor.AQUA)).color(NamedTextColor.GOLD));
+        catchPlayer(
+                player,
+                I18n.tr(
+                                "chase.died",
+                                Component.text(
+                                        player.getName(),
+                                        hunters.contains(player.getUniqueId())
+                                                ? NamedTextColor.RED
+                                                : NamedTextColor.AQUA))
+                        .color(NamedTextColor.GOLD));
     }
 
     @Override
     public void onPlayerMove(PlayerMoveEvent event) {
-        if (phase != RoundPhase.FREEZE || !services.participants().isParticipant(event.getPlayer())) {
+        if (phase != RoundPhase.FREEZE
+                || !services.participants().isParticipant(event.getPlayer())) {
             return;
         }
         Location from = event.getFrom();
@@ -682,7 +805,10 @@ final class ChaseSession implements GameSession {
         }
     }
 
-    /** Out of band: warn, then glow, then damage. Blocks are never refused, so nobody gets sealed in. */
+    /**
+     * Out of band: warn, then glow, then damage. Blocks are never refused, so nobody gets sealed
+     * in.
+     */
     private void enforceAltitude() {
         int glowAfter = Math.max(1, config.glowAfterSeconds.get());
         int damageAfter = Math.max(glowAfter, config.damageAfterSeconds.get());
@@ -704,16 +830,24 @@ final class ChaseSession implements GameSession {
 
             int seconds = outOfBounds.merge(id, 1, Integer::sum);
             if (seconds >= glowAfter) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 60, 0, false, false));
+                player.addPotionEffect(
+                        new PotionEffect(PotionEffectType.GLOWING, 60, 0, false, false));
             }
             if (seconds >= damageAfter) {
                 player.damage(2.0);
-                player.sendActionBar(I18n.tr(tooLow ? "chase.low.return" : "chase.high.return").color(NamedTextColor.RED));
+                player.sendActionBar(
+                        I18n.tr(tooLow ? "chase.low.return" : "chase.high.return")
+                                .color(NamedTextColor.RED));
             } else if (seconds >= glowAfter) {
-                player.sendActionBar(I18n.tr(tooLow ? "chase.low.glowing" : "chase.high.glowing").color(NamedTextColor.RED));
+                player.sendActionBar(
+                        I18n.tr(tooLow ? "chase.low.glowing" : "chase.high.glowing")
+                                .color(NamedTextColor.RED));
             } else {
-                player.sendActionBar(I18n.tr(tooLow ? "chase.low.warning" : "chase.high.warning",
-                        glowAfter - seconds).color(NamedTextColor.YELLOW));
+                player.sendActionBar(
+                        I18n.tr(
+                                        tooLow ? "chase.low.warning" : "chase.high.warning",
+                                        glowAfter - seconds)
+                                .color(NamedTextColor.YELLOW));
             }
         }
     }
@@ -762,24 +896,35 @@ final class ChaseSession implements GameSession {
         List<Map.Entry<UUID, Integer>> sorted = new ArrayList<>(scores.entrySet());
         sorted.sort(Map.Entry.<UUID, Integer>comparingByValue().reversed());
         List<Component> lines = new ArrayList<>();
-        lines.add(I18n.tr("chase.hud.round", Math.min(roundIndex + 1, hunterSets.size()),
-                hunterSets.size()).color(NamedTextColor.GOLD));
-        lines.add(I18n.tr("chase.hud.runners",
-                Component.text(aliveRunners().size(), NamedTextColor.GREEN)).color(NamedTextColor.GOLD));
+        lines.add(
+                I18n.tr(
+                                "chase.hud.round",
+                                Math.min(roundIndex + 1, hunterSets.size()),
+                                hunterSets.size())
+                        .color(NamedTextColor.GOLD));
+        lines.add(
+                I18n.tr(
+                                "chase.hud.runners",
+                                Component.text(aliveRunners().size(), NamedTextColor.GREEN))
+                        .color(NamedTextColor.GOLD));
         lines.add(Component.text(" "));
         for (Map.Entry<UUID, Integer> entry : sorted) {
             if (lines.size() >= 15) {
                 break;
             }
             boolean isHunter = hunters.contains(entry.getKey());
-            lines.add(Component.text()
-                    .append(Component.text(nameOf(entry.getKey()),
-                            isHunter ? NamedTextColor.RED : NamedTextColor.AQUA))
-                    .append(Component.text(": " + entry.getValue(), NamedTextColor.WHITE))
-                    .build());
+            lines.add(
+                    Component.text()
+                            .append(
+                                    Component.text(
+                                            nameOf(entry.getKey()),
+                                            isHunter ? NamedTextColor.RED : NamedTextColor.AQUA))
+                            .append(Component.text(": " + entry.getValue(), NamedTextColor.WHITE))
+                            .build());
         }
         for (Player player : services.participants().onlinePlayers()) {
-            services.sidebar().update(player, I18n.tr("chase.name").color(NamedTextColor.AQUA), lines);
+            services.sidebar()
+                    .update(player, I18n.tr("chase.name").color(NamedTextColor.AQUA), lines);
         }
     }
 

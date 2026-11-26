@@ -158,10 +158,14 @@ final class HoleWallLayoutCheck {
                         }
                     }
                     if (flow.active().stream()
-                            .anyMatch(w ->
-                                    w.pattern.gates().stream()
-                                            .allMatch(g ->
-                                                    g.start() >= 5 || g.start() + g.width() <= -4)))
+                            .anyMatch(
+                                    w ->
+                                            w.pattern.gates().stream()
+                                                    .allMatch(
+                                                            g ->
+                                                                    g.start() >= 5
+                                                                            || g.start() + g.width()
+                                                                                    <= -4)))
                         check(flow.active().size() == 1, "Island jumps never overlap another wall");
                 }
                 check(
@@ -174,13 +178,14 @@ final class HoleWallLayoutCheck {
                     var full =
                             p.cells().stream()
                                     .map(c -> c.block().material())
-                                    .filter(m ->
-                                            Set.of(
-                                                            Material.STONE_BRICKS,
-                                                            Material.DARK_PRISMARINE,
-                                                            Material.PRISMARINE_BRICKS,
-                                                            Material.PURPUR_BLOCK)
-                                                    .contains(m))
+                                    .filter(
+                                            m ->
+                                                    Set.of(
+                                                                    Material.STONE_BRICKS,
+                                                                    Material.DARK_PRISMARINE,
+                                                                    Material.PRISMARINE_BRICKS,
+                                                                    Material.PURPUR_BLOCK)
+                                                            .contains(m))
                                     .findFirst();
                     for (var cell : p.cells())
                         if (cell.block().shape() == HoleWallBlock.Shape.UPPER_SLAB

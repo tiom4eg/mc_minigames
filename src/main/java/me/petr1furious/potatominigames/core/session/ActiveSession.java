@@ -43,8 +43,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * One running game: RUNNING → ENDING → IDLE, then discarded. Sessions run side by side,
- * so HUDs, borders and {@link Messages} are scoped to this game's audience.
+ * One running game: RUNNING → ENDING → IDLE, then discarded. Sessions run side by side, so HUDs,
+ * borders and {@link Messages} are scoped to this game's audience.
  */
 public final class ActiveSession {
     /** Start option of {@code /<game> test}; see {@link #isTest}. */
@@ -73,11 +73,19 @@ public final class ActiveSession {
     private BukkitTask endingTask;
     private long elapsedSeconds;
     private boolean test;
+
     /** Set when the game ends; sent once everyone is back. */
     private List<Component> summaryLines;
 
-    ActiveSession(JavaPlugin plugin, SessionManager manager, Minigame game, String mode,
-            Map<String, String> options, PlayerStateService playerState, LobbyService lobby, TeamService teams,
+    ActiveSession(
+            JavaPlugin plugin,
+            SessionManager manager,
+            Minigame game,
+            String mode,
+            Map<String, String> options,
+            PlayerStateService playerState,
+            LobbyService lobby,
+            TeamService teams,
             SessionWorlds worlds) {
         this.plugin = plugin;
         this.manager = manager;
@@ -185,8 +193,11 @@ public final class ActiveSession {
             return result;
         }
         for (Player player : participants.onlinePlayers()) {
-            if (player != viewer && !player.isDead() && player.getGameMode() != GameMode.SPECTATOR
-                    && session.isInGame(player) && worlds.owns(player.getWorld())) {
+            if (player != viewer
+                    && !player.isDead()
+                    && player.getGameMode() != GameMode.SPECTATOR
+                    && session.isInGame(player)
+                    && worlds.owns(player.getWorld())) {
                 result.add(player);
             }
         }
@@ -200,7 +211,8 @@ public final class ActiveSession {
         return Audience.audience(members);
     }
 
-    void start(List<Player> roster, Map<UUID, TeamColor> teamPicks, boolean queued) throws CommandFailure {
+    void start(List<Player> roster, Map<UUID, TeamColor> teamPicks, boolean queued)
+            throws CommandFailure {
         // RUNNING from the start so a failure below gets cleaned up.
         phase = GamePhase.RUNNING;
         elapsedSeconds = 0;
@@ -208,8 +220,22 @@ public final class ActiveSession {
         try {
             teams.configureStart(teamPicks, !queued, game.teamColors(mode));
             teams.attach(participants);
-            session = game.createSession(new SessionServices(plugin, this, participants, playerState, teams,
-                    sidebar, bossBars, arena, worlds, manager.spawnFinder(), messages, manager.points()), mode);
+            session =
+                    game.createSession(
+                            new SessionServices(
+                                    plugin,
+                                    this,
+                                    participants,
+                                    playerState,
+                                    teams,
+                                    sidebar,
+                                    bossBars,
+                                    arena,
+                                    worlds,
+                                    manager.spawnFinder(),
+                                    messages,
+                                    manager.points()),
+                            mode);
 
             for (Player player : roster) {
                 Participant participant = participants.add(player);
@@ -226,16 +252,28 @@ public final class ActiveSession {
             if (failure instanceof CommandFailure commandFailure) {
                 throw commandFailure;
             }
-            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Could not start " + game.id(), failure);
+            plugin.getLogger()
+                    .log(java.util.logging.Level.SEVERE, "Could not start " + game.id(), failure);
             throw new CommandFailure(I18n.tr("core.session.start_failed", I18n.message(failure)));
         }
 
-        ticker = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
-            elapsedSeconds++;
-            session.onSecondTick(elapsedSeconds);
-        }, 20L, 20L);
-        messages.broadcastGlobal(I18n.tr(test ? "core.session.started_test" : "core.session.started",
-                displayName(), participants.size()).color(NamedTextColor.GREEN));
+        ticker =
+                plugin.getServer()
+                        .getScheduler()
+                        .runTaskTimer(
+                                plugin,
+                                () -> {
+                                    elapsedSeconds++;
+                                    session.onSecondTick(elapsedSeconds);
+                                },
+                                20L,
+                                20L);
+        messages.broadcastGlobal(
+                I18n.tr(
+                                test ? "core.session.started_test" : "core.session.started",
+                                displayName(),
+                                participants.size())
+                        .color(NamedTextColor.GREEN));
         messages.playSound(participants.onlinePlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
     }
 
@@ -246,7 +284,8 @@ public final class ActiveSession {
         }
         boolean returning = participants.isParticipant(player);
         if (returning && session.isInGame(player)) {
-            throw new CommandFailure(I18n.tr("core.session.player_already_joined", player.getName()));
+            throw new CommandFailure(
+                    I18n.tr("core.session.player_already_joined", player.getName()));
         }
         if (!session.allowLateJoin()) {
             throw new CommandFailure(I18n.tr("core.session.late_join_denied", player.getName()));
@@ -254,7 +293,8 @@ public final class ActiveSession {
         if (isSpectator(player)) {
             stopSpectating(player, false);
         }
-        // A returning player already has a pre-game snapshot; a new one would capture spectator state.
+        // A returning player already has a pre-game snapshot; a new one would capture spectator
+        // state.
         if (!returning) {
             Participant participant = participants.add(player);
             if (game.usesTeams()) {
@@ -264,8 +304,11 @@ public final class ActiveSession {
             manager.index(player, this);
         }
         session.onParticipantJoin(player);
-        messages.broadcast(I18n.tr("core.session.joined", Component.text(player.getName(), NamedTextColor.AQUA))
-                .color(NamedTextColor.GREEN));
+        messages.broadcast(
+                I18n.tr(
+                                "core.session.joined",
+                                Component.text(player.getName(), NamedTextColor.AQUA))
+                        .color(NamedTextColor.GREEN));
     }
 
     public void leave(Player player) throws CommandFailure {
@@ -285,8 +328,9 @@ public final class ActiveSession {
         manager.unindex(player.getUniqueId(), this);
         session.onParticipantLeave(player);
         lobby.returnPlayer(player);
-        messages.broadcast(I18n.tr("core.session.left", Component.text(player.getName(), NamedTextColor.AQUA))
-                .color(NamedTextColor.YELLOW));
+        messages.broadcast(
+                I18n.tr("core.session.left", Component.text(player.getName(), NamedTextColor.AQUA))
+                        .color(NamedTextColor.YELLOW));
         if (phase == GamePhase.RUNNING && participants.isEmpty()) {
             endGame(EndReason.ALL_PLAYERS_LEFT);
         }
@@ -307,9 +351,16 @@ public final class ActiveSession {
         player.setGameMode(GameMode.SPECTATOR);
         player.teleport(spectatorLocation(player));
         bossBars.sync(player);
-        messages.send(player, I18n.tr("core.session.spectating", displayName(),
-                button(I18n.tr("core.button.leave"), "/play leave", I18n.tr("core.button.stop_spectating")))
-                .color(NamedTextColor.GRAY));
+        messages.send(
+                player,
+                I18n.tr(
+                                "core.session.spectating",
+                                displayName(),
+                                button(
+                                        I18n.tr("core.button.leave"),
+                                        "/play leave",
+                                        I18n.tr("core.button.stop_spectating")))
+                        .color(NamedTextColor.GRAY));
     }
 
     /** Stops spectating without teleporting. */
@@ -318,7 +369,8 @@ public final class ActiveSession {
         // Admins skip the lobby state, which would reset spectator mode.
         if (player.getGameMode() == GameMode.SPECTATOR && LobbyService.isExempt(player)) {
             GameMode before = playerState.snapshotGameMode(player.getUniqueId());
-            player.setGameMode(before != null && before != GameMode.SPECTATOR ? before : GameMode.SURVIVAL);
+            player.setGameMode(
+                    before != null && before != GameMode.SPECTATOR ? before : GameMode.SURVIVAL);
         }
     }
 
@@ -339,11 +391,14 @@ public final class ActiveSession {
         if (preferred != null) {
             return preferred;
         }
-        List<Player> playing = participants.onlinePlayers().stream()
-                .filter(player -> player.getGameMode() != GameMode.SPECTATOR)
-                .toList();
+        List<Player> playing =
+                participants.onlinePlayers().stream()
+                        .filter(player -> player.getGameMode() != GameMode.SPECTATOR)
+                        .toList();
         if (!playing.isEmpty()) {
-            return playing.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(playing.size()))
+            return playing.get(
+                            java.util.concurrent.ThreadLocalRandom.current()
+                                    .nextInt(playing.size()))
                     .getLocation();
         }
         for (Player participant : participants.onlinePlayers()) {
@@ -384,11 +439,15 @@ public final class ActiveSession {
         cleanup(false, false);
     }
 
-    /** Everyone outside the game gets one line; the game's own audience gets the summary instead. */
+    /**
+     * Everyone outside the game gets one line; the game's own audience gets the summary instead.
+     */
     private void announceResult() {
         Component result = session.globalResult();
-        Component line = result != null ? result
-                : I18n.tr("core.session.ended", displayName()).color(NamedTextColor.GRAY);
+        Component line =
+                result != null
+                        ? result
+                        : I18n.tr("core.session.ended", displayName()).color(NamedTextColor.GRAY);
         List<Player> audience = audiencePlayers();
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (!audience.contains(player)) {
@@ -398,7 +457,9 @@ public final class ActiveSession {
         Bukkit.getConsoleSender().sendMessage(line);
     }
 
-    /** @param seeds of the session's generated worlds; shown even when the game was stopped early */
+    /**
+     * @param seeds of the session's generated worlds; shown even when the game was stopped early
+     */
     private void sendSummary(List<Player> players, boolean offerReplay, List<Long> seeds) {
         if (summaryLines == null && seeds.isEmpty()) {
             return;
@@ -421,16 +482,28 @@ public final class ActiveSession {
             }
             List<Component> buttons = new ArrayList<>();
             if (offerReplay) {
-                buttons.add(button(I18n.tr("core.button.play_again"), command, Component.text(command)));
+                buttons.add(
+                        button(
+                                I18n.tr("core.button.play_again"),
+                                command,
+                                Component.text(command)));
             }
             if (lobby.world() != null && !lobby.isLobby(player.getWorld())) {
-                buttons.add(I18n.tr("core.button.lobby").color(NamedTextColor.GRAY)
-                        .clickEvent(ClickEvent.runCommand("/lobby"))
-                        .hoverEvent(HoverEvent.showText(Component.text("/lobby", NamedTextColor.GRAY))));
+                buttons.add(
+                        I18n.tr("core.button.lobby")
+                                .color(NamedTextColor.GRAY)
+                                .clickEvent(ClickEvent.runCommand("/lobby"))
+                                .hoverEvent(
+                                        HoverEvent.showText(
+                                                Component.text("/lobby", NamedTextColor.GRAY))));
             }
-            Component footer = buttons.isEmpty() ? null
-                    : Component.join(net.kyori.adventure.text.JoinConfiguration.separator(Component.text("  ")),
-                            buttons);
+            Component footer =
+                    buttons.isEmpty()
+                            ? null
+                            : Component.join(
+                                    net.kyori.adventure.text.JoinConfiguration.separator(
+                                            Component.text("  ")),
+                                    buttons);
             player.sendMessage(Summary.frame(displayName(), body, footer));
         }
     }
@@ -440,12 +513,21 @@ public final class ActiveSession {
         List<Component> values = new ArrayList<>();
         for (long seed : seeds) {
             String text = Long.toString(seed);
-            values.add(Component.text(text, NamedTextColor.WHITE)
-                    .clickEvent(ClickEvent.copyToClipboard(text))
-                    .hoverEvent(HoverEvent.showText(I18n.tr("core.button.copy").color(NamedTextColor.GRAY))));
+            values.add(
+                    Component.text(text, NamedTextColor.WHITE)
+                            .clickEvent(ClickEvent.copyToClipboard(text))
+                            .hoverEvent(
+                                    HoverEvent.showText(
+                                            I18n.tr("core.button.copy")
+                                                    .color(NamedTextColor.GRAY))));
         }
-        return I18n.tr(seeds.size() == 1 ? "core.session.seed" : "core.session.seeds",
-                Component.join(net.kyori.adventure.text.JoinConfiguration.separator(Component.text(", ")), values)).color(NamedTextColor.GRAY);
+        return I18n.tr(
+                        seeds.size() == 1 ? "core.session.seed" : "core.session.seeds",
+                        Component.join(
+                                net.kyori.adventure.text.JoinConfiguration.separator(
+                                        Component.text(", ")),
+                                values))
+                .color(NamedTextColor.GRAY);
     }
 
     private void cleanup(boolean offerReplay, boolean backToQueue) {
@@ -511,14 +593,18 @@ public final class ActiveSession {
         if (!participants.isParticipant(player)) {
             return;
         }
-        participants.find(player.getUniqueId()).ifPresent(participant -> participant.setOnline(false));
+        participants
+                .find(player.getUniqueId())
+                .ifPresent(participant -> participant.setOnline(false));
         if (phase != GamePhase.IDLE) {
             session.onParticipantQuit(player);
         }
     }
 
     void handleRejoin(Player player) {
-        participants.find(player.getUniqueId()).ifPresent(participant -> participant.setOnline(true));
+        participants
+                .find(player.getUniqueId())
+                .ifPresent(participant -> participant.setOnline(true));
         session.onParticipantRejoin(player);
     }
 
@@ -530,7 +616,8 @@ public final class ActiveSession {
     }
 
     static Component button(Component label, String command, Component hover) {
-        return I18n.tr("core.button.bracket", label).color(NamedTextColor.AQUA)
+        return I18n.tr("core.button.bracket", label)
+                .color(NamedTextColor.AQUA)
                 .clickEvent(ClickEvent.runCommand(command))
                 .hoverEvent(HoverEvent.showText(hover.color(NamedTextColor.GRAY)));
     }

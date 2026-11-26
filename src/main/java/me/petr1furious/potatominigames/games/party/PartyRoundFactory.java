@@ -2,6 +2,7 @@ package me.petr1furious.potatominigames.games.party;
 
 import me.petr1furious.potatominigames.core.game.SessionServices;
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 
 final class PartyRoundFactory {
@@ -34,9 +35,29 @@ final class PartyRoundFactory {
 
     static Component title(String mode) {
         return switch (mode) {
-            case FurryQuestSession.ID, "gartic_phone", "hole_in_the_wall", "pvp", "sumo", "arms_race", "one_shot", "tnt_run", "mob_count",
-                    "rhino", "miners", "magic_battle", "color_floor", "anvils", "build_memory", "tool_race", "parkour_race",
-                    "hot_potato", "jump_rope", "drop_tower", "chicken_shooter", "less_is_better", "wait_for_it" ->
+            case FurryQuestSession.ID,
+                    "gartic_phone",
+                    "hole_in_the_wall",
+                    "pvp",
+                    "sumo",
+                    "arms_race",
+                    "one_shot",
+                    "tnt_run",
+                    "mob_count",
+                    "rhino",
+                    "miners",
+                    "magic_battle",
+                    "color_floor",
+                    "anvils",
+                    "build_memory",
+                    "tool_race",
+                    "parkour_race",
+                    "hot_potato",
+                    "jump_rope",
+                    "drop_tower",
+                    "chicken_shooter",
+                    "less_is_better",
+                    "wait_for_it" ->
                     I18n.tr("party.rounds.mode." + mode);
             default -> Component.text(mode);
         };

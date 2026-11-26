@@ -113,8 +113,13 @@ final class FinalsLoadouts implements Listener {
         return practiceChoices.getOrDefault(id, choices.getOrDefault(id, Choice.defaults()));
     }
 
-    void beginPractice(UUID id) { practiceChoices.put(id, Choice.defaults()); }
-    void endPractice(UUID id) { practiceChoices.remove(id); }
+    void beginPractice(UUID id) {
+        practiceChoices.put(id, Choice.defaults());
+    }
+
+    void endPractice(UUID id) {
+        practiceChoices.remove(id);
+    }
 
     static Choice readChoice(YamlConfiguration yaml, String key) {
         FinalsClass type = FinalsClass.parse(yaml.getString(key + ".class"));
@@ -199,67 +204,85 @@ final class FinalsLoadouts implements Listener {
     void register(LiteralArgumentBuilder<CommandSourceStack> root) {
         root.then(
                 Commands.literal("loadout")
-                        .executes(ctx ->
-                                GameCommands.run(ctx, c -> open(GameCommands.requirePlayer(c)))));
+                        .executes(
+                                ctx ->
+                                        GameCommands.run(
+                                                ctx, c -> open(GameCommands.requirePlayer(c)))));
         root.then(
                 Commands.literal("class")
                         .then(
                                 Commands.argument("class", StringArgumentType.word())
                                         .suggests(
-                                                Suggest.dynamic(() ->
-                                                        List.of(
-                                                                "S", "M", "L", "light", "medium",
-                                                                "heavy")))
-                                        .executes(ctx ->
-                                                GameCommands.run(
-                                                        ctx,
-                                                        c -> {
-                                                            Player player =
-                                                                    GameCommands.requirePlayer(c);
-                                                            FinalsClass type =
-                                                                    FinalsClass.parse(
-                                                                            StringArgumentType
-                                                                                    .getString(
-                                                                                            c,
-                                                                                            "class"));
-                                                            if (type == null)
-                                                                throw new CommandFailure(
-                                                                        I18n.tr(
-                                                                                "finals.loadout.unknown_class"));
-                                                            Choice current =
-                                                                    choice(player.getUniqueId());
-                                                            choose(player, current.withClass(type));
-                                                        }))));
+                                                Suggest.dynamic(
+                                                        () ->
+                                                                List.of(
+                                                                        "S", "M", "L", "light",
+                                                                        "medium", "heavy")))
+                                        .executes(
+                                                ctx ->
+                                                        GameCommands.run(
+                                                                ctx,
+                                                                c -> {
+                                                                    Player player =
+                                                                            GameCommands
+                                                                                    .requirePlayer(
+                                                                                            c);
+                                                                    FinalsClass type =
+                                                                            FinalsClass.parse(
+                                                                                    StringArgumentType
+                                                                                            .getString(
+                                                                                                    c,
+                                                                                                    "class"));
+                                                                    if (type == null)
+                                                                        throw new CommandFailure(
+                                                                                I18n.tr(
+                                                                                        "finals.loadout.unknown_class"));
+                                                                    Choice current =
+                                                                            choice(
+                                                                                    player
+                                                                                            .getUniqueId());
+                                                                    choose(
+                                                                            player,
+                                                                            current.withClass(
+                                                                                    type));
+                                                                }))));
         root.then(
                 Commands.literal("weapon")
                         .then(
                                 Commands.argument("weapon", StringArgumentType.word())
                                         .suggests(
-                                                Suggest.dynamic(() ->
-                                                        Arrays.stream(FinalsWeapon.values())
-                                                                .map(FinalsWeapon::id)
-                                                                .toList()))
-                                        .executes(ctx ->
-                                                GameCommands.run(
-                                                        ctx,
-                                                        c -> {
-                                                            Player player =
-                                                                    GameCommands.requirePlayer(c);
-                                                            FinalsWeapon weapon =
-                                                                    FinalsWeapon.parse(
-                                                                            StringArgumentType
-                                                                                    .getString(
-                                                                                            c,
-                                                                                            "weapon"));
-                                                            if (weapon == null)
-                                                                throw new CommandFailure(
-                                                                        I18n.tr(
-                                                                                "finals.loadout.unknown_weapon"));
-                                                            choose(
-                                                                    player,
-                                                                    choice(player.getUniqueId())
-                                                                            .withWeapon(weapon));
-                                                        }))));
+                                                Suggest.dynamic(
+                                                        () ->
+                                                                Arrays.stream(FinalsWeapon.values())
+                                                                        .map(FinalsWeapon::id)
+                                                                        .toList()))
+                                        .executes(
+                                                ctx ->
+                                                        GameCommands.run(
+                                                                ctx,
+                                                                c -> {
+                                                                    Player player =
+                                                                            GameCommands
+                                                                                    .requirePlayer(
+                                                                                            c);
+                                                                    FinalsWeapon weapon =
+                                                                            FinalsWeapon.parse(
+                                                                                    StringArgumentType
+                                                                                            .getString(
+                                                                                                    c,
+                                                                                                    "weapon"));
+                                                                    if (weapon == null)
+                                                                        throw new CommandFailure(
+                                                                                I18n.tr(
+                                                                                        "finals.loadout.unknown_weapon"));
+                                                                    choose(
+                                                                            player,
+                                                                            choice(
+                                                                                            player
+                                                                                                    .getUniqueId())
+                                                                                    .withWeapon(
+                                                                                            weapon));
+                                                                }))));
     }
 
     private static final class Menu implements InventoryHolder {
@@ -393,8 +416,10 @@ final class FinalsLoadouts implements Listener {
                         I18n.tr("finals.loadout.controls"),
                         List.of(
                                 I18n.tr("finals.loadout.help"),
-                                I18n.tr(practiceChoices.containsKey(player.getUniqueId())
-                                        ? "finals.tutorial.practice_loadout" : "finals.loadout.next_spawn")),
+                                I18n.tr(
+                                        practiceChoices.containsKey(player.getUniqueId())
+                                                ? "finals.tutorial.practice_loadout"
+                                                : "finals.loadout.next_spawn")),
                         false));
         inventory.setItem(
                 49,
@@ -445,13 +470,15 @@ final class FinalsLoadouts implements Listener {
             List<Component> lore,
             boolean selected) {
         ItemStack item = new ItemStack(material);
-        item.editMeta(meta -> {
-            meta.displayName(
-                    name.colorIfAbsent(selected ? NamedTextColor.GREEN : NamedTextColor.GOLD));
-            meta.lore(lore);
-            meta.setEnchantmentGlintOverride(selected);
-            meta.setUnbreakable(true);
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(
+                            name.colorIfAbsent(
+                                    selected ? NamedTextColor.GREEN : NamedTextColor.GOLD));
+                    meta.lore(lore);
+                    meta.setEnchantmentGlintOverride(selected);
+                    meta.setUnbreakable(true);
+                });
         return I18n.item(item, player);
     }
 

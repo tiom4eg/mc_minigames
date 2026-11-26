@@ -44,11 +44,13 @@ final class HotPotatoArena {
             step.setFacing(side);
             stairs.put(side, step);
         }
-        new HotPotatoArena((x, y, z, material, facing) -> {
-            var block = world.getBlockAt(x, FLOOR + y, z);
-            if (facing == null) block.setType(material, false);
-            else block.setBlockData(stairs.get(facing), false);
-        }).build();
+        new HotPotatoArena(
+                        (x, y, z, material, facing) -> {
+                            var block = world.getBlockAt(x, FLOOR + y, z);
+                            if (facing == null) block.setType(material, false);
+                            else block.setBlockData(stairs.get(facing), false);
+                        })
+                .build();
     }
 
     void build() {
@@ -64,7 +66,8 @@ final class HotPotatoArena {
                     continue;
                 }
 
-                // The ring and its east-west chord share a deck. The north-south crossing stays open below.
+                // The ring and its east-west chord share a deck. The north-south crossing stays
+                // open below.
                 if (radius <= 8 && diagonal <= 13 && (radius > 5 || diagonal > 8 || b <= 1)) {
                     Material deck = Material.SPRUCE_PLANKS;
                     if (radius == 8 || diagonal == 13) deck = TEAL;
@@ -72,8 +75,8 @@ final class HotPotatoArena {
                     if ((radius == 7 && Math.min(a, b) == 0) || (a == 5 && b == 5)) deck = LIGHT;
                     if (x == 0 && z == 0) deck = Material.WAXED_CHISELED_COPPER;
                     put(x, GALLERY, z, deck);
-                    if ((a == 5 && b == 6) || (a == 6 && b == 5)
-                            || (a == 3 && b == 1)) put(x, 3, z, IRON);
+                    if ((a == 5 && b == 6) || (a == 6 && b == 5) || (a == 3 && b == 1))
+                        put(x, 3, z, IRON);
                 }
                 if ((a == 4 || a == 5) && (b == 4 || b == 5) && diagonal >= 9) {
                     put(x, 1, z, IRON);
@@ -93,17 +96,18 @@ final class HotPotatoArena {
     }
 
     private void foundation() {
-        for (int x = -23; x <= 23; x++) for (int z = -23; z <= 23; z++) {
-            int radius = Math.max(Math.abs(x), Math.abs(z));
-            int diagonal = Math.abs(x) + Math.abs(z);
-            if (diagonal > 33 || (radius < EDGE && diagonal < 25)) continue;
-            put(x, -1, z, Material.DEEPSLATE_TILES);
-            if (radius == 23 || diagonal == 33) {
-                put(x, -2, z, PATINA);
-                put(x, -3, z, BRICK);
-                put(x, -4, z, RIM);
+        for (int x = -23; x <= 23; x++)
+            for (int z = -23; z <= 23; z++) {
+                int radius = Math.max(Math.abs(x), Math.abs(z));
+                int diagonal = Math.abs(x) + Math.abs(z);
+                if (diagonal > 33 || (radius < EDGE && diagonal < 25)) continue;
+                put(x, -1, z, Material.DEEPSLATE_TILES);
+                if (radius == 23 || diagonal == 33) {
+                    put(x, -2, z, PATINA);
+                    put(x, -3, z, BRICK);
+                    put(x, -4, z, RIM);
+                }
             }
-        }
     }
 
     static Location spawn(World world, int index, int count) {
@@ -139,7 +143,8 @@ final class HotPotatoArena {
         put(x, 2, z, post ? Material.CHISELED_TUFF_BRICKS : GRATE);
         put(x, 3, z, post ? COPPER : Material.CYAN_TERRACOTTA);
         put(x, 4, z, post ? LIGHT : PATINA);
-        // A runner can sprint-jump from a landing; the glazed clerestory clears the highest deck by two blocks.
+        // A runner can sprint-jump from a landing; the glazed clerestory clears the highest deck by
+        // two blocks.
         put(x, 5, z, post ? IRON : Material.LIGHT_GRAY_STAINED_GLASS);
         put(x, 6, z, post ? COPPER : GRATE);
     }
@@ -160,10 +165,11 @@ final class HotPotatoArena {
     // A runner halfway up the east or west flight can turn onto a loading dock, then
     // descend around the corner. The solid plinth keeps the low underside out of play.
     private void loadingDock(int sign) {
-        for (int x = 10; x <= 12; x++) for (int z = 2; z <= 6; z++) {
-            put(sign * x, 1, sign * z, z == 4 && x != 11 ? LIGHT : BRICK);
-            put(sign * x, 2, sign * z, x == 11 ? Material.DARK_OAK_PLANKS : PATINA);
-        }
+        for (int x = 10; x <= 12; x++)
+            for (int z = 2; z <= 6; z++) {
+                put(sign * x, 1, sign * z, z == 4 && x != 11 ? LIGHT : BRICK);
+                put(sign * x, 2, sign * z, x == 11 ? Material.DARK_OAK_PLANKS : PATINA);
+            }
         BlockFace uphill = sign == 1 ? BlockFace.NORTH : BlockFace.SOUTH;
         for (int x = 10; x <= 12; x++) {
             put(sign * x, 1, sign * 7, BRICK);
@@ -186,7 +192,10 @@ final class HotPotatoArena {
             }
         }
         // The dial and pendulum sit one block proud of the tower masonry.
-        relief(face, 16, 1,
+        relief(
+                face,
+                16,
+                1,
                 "   CCCCC   ",
                 "  CIIVIIC  ",
                 " CIDIIIIDC ",
@@ -206,8 +215,12 @@ final class HotPotatoArena {
             int depthHalf = Math.max(1, 4 - tier);
             for (int u = -half; u <= half; u++)
                 for (int r = 20 - depthHalf; r <= 20 + depthHalf; r++)
-                    at(face, u, 16 + tier, r, tier == 0 ? RIM
-                            : Math.abs(u) == half ? TEAL : PATINA);
+                    at(
+                            face,
+                            u,
+                            16 + tier,
+                            r,
+                            tier == 0 ? RIM : Math.abs(u) == half ? TEAL : PATINA);
         }
         for (int dx : new int[] {-5, 5}) {
             for (int y = 8; y <= 13; y++) {
@@ -231,7 +244,10 @@ final class HotPotatoArena {
             }
         // Gaps between the spokes frame the sky. The second rim gives the casting depth.
         for (int r = 16; r <= 17; r++)
-            relief(face, r, 2,
+            relief(
+                    face,
+                    r,
+                    2,
                     "     CCC     ",
                     "  CCCVVVCCC  ",
                     " CC   V   CC ",
@@ -257,23 +273,27 @@ final class HotPotatoArena {
                         at(face, u, y, r, Math.abs(u) % 5 == 3 ? IRON : Material.MUD_BRICKS);
                 int roof = 8 + 3 - Math.abs(r - 20);
                 at(face, u, roof, r, r == 20 || Math.abs(u) % 5 == 3 ? PATINA : TEAL);
-                if (Math.abs(u) == 8)
-                    for (int y = 8; y < roof; y++) at(face, u, y, r, PATINA);
+                if (Math.abs(u) == 8) for (int y = 8; y < roof; y++) at(face, u, y, r, PATINA);
             }
         }
-        for (int depth : new int[] {16, 24}) relief(face, depth, 2,
-                "CCCCCCCCCCCCCCCCC",
-                " BCCCB CCC BCCCB ",
-                " CLLLC CLC CLLLC ",
-                " CLDLC LDL CLDLC ",
-                " CLDLC LDL CLDLC ",
-                " BBBBB BBB BBBBB ");
+        for (int depth : new int[] {16, 24})
+            relief(
+                    face,
+                    depth,
+                    2,
+                    "CCCCCCCCCCCCCCCCC",
+                    " BCCCB CCC BCCCB ",
+                    " CLLLC CLC CLLLC ",
+                    " CLDLC LDL CLDLC ",
+                    " CLDLC LDL CLDLC ",
+                    " BBBBB BBB BBBBB ");
         for (int u : new int[] {-5, 5}) {
-            for (int z = 19; z <= 21; z++) for (int x = u - 1; x <= u + 1; x++) {
-                at(face, x, 11, z, RIM);
-                at(face, x, 12, z, x == u ? LIGHT : PATINA);
-                at(face, x, 13, z, TEAL);
-            }
+            for (int z = 19; z <= 21; z++)
+                for (int x = u - 1; x <= u + 1; x++) {
+                    at(face, x, 11, z, RIM);
+                    at(face, x, 12, z, x == u ? LIGHT : PATINA);
+                    at(face, x, 13, z, TEAL);
+                }
         }
     }
 
@@ -284,10 +304,12 @@ final class HotPotatoArena {
                 if (r == 16 || r == 22 || Math.abs(u) == 8) {
                     for (int y = -1; y <= 4; y++) at(face, u, y, r, y == 4 ? COPPER : BRICK);
                 }
-        for (int u = -8; u <= 8; u++)
-            for (int r = 16; r <= 22; r++) at(face, u, 5, r, IRON);
+        for (int u = -8; u <= 8; u++) for (int r = 16; r <= 22; r++) at(face, u, 5, r, IRON);
         for (int r : new int[] {16, 22}) {
-            relief(face, r, 1,
+            relief(
+                    face,
+                    r,
+                    1,
                     "CCCCCCCCCCCCCCCCC",
                     "BVVVBCVVVVVCBVVVB",
                     "BLDLBCLDLDLCBLDLB",
@@ -312,26 +334,28 @@ final class HotPotatoArena {
     }
 
     private void cornerLanterns() {
-        for (int sx : new int[] {-1, 1}) for (int sz : new int[] {-1, 1}) {
-            for (int x = -2; x <= 2; x++) for (int z = -2; z <= 2; z++) {
-                int distance = Math.abs(x) + Math.abs(z);
-                if (distance > 3) continue;
-                int px = sx * (14 + x), pz = sz * (14 + z);
-                for (int y = 0; y <= 3; y++) put(px, y, pz, y == 2 ? IRON : BRICK);
-                put(px, 4, pz, RIM);
-                if (distance <= 2) {
-                    put(px, 5, pz, COPPER);
-                    if (distance < 2 || x == 0 || z == 0) {
-                        put(px, 6, pz, distance == 2 ? RIM : LIGHT);
-                        put(px, 7, pz, distance == 2 ? RIM : LIGHT);
+        for (int sx : new int[] {-1, 1})
+            for (int sz : new int[] {-1, 1}) {
+                for (int x = -2; x <= 2; x++)
+                    for (int z = -2; z <= 2; z++) {
+                        int distance = Math.abs(x) + Math.abs(z);
+                        if (distance > 3) continue;
+                        int px = sx * (14 + x), pz = sz * (14 + z);
+                        for (int y = 0; y <= 3; y++) put(px, y, pz, y == 2 ? IRON : BRICK);
+                        put(px, 4, pz, RIM);
+                        if (distance <= 2) {
+                            put(px, 5, pz, COPPER);
+                            if (distance < 2 || x == 0 || z == 0) {
+                                put(px, 6, pz, distance == 2 ? RIM : LIGHT);
+                                put(px, 7, pz, distance == 2 ? RIM : LIGHT);
+                            }
+                        }
+                        put(px, 8, pz, TEAL);
+                        if (distance <= 1) put(px, 9, pz, PATINA);
                     }
-                }
-                put(px, 8, pz, TEAL);
-                if (distance <= 1) put(px, 9, pz, PATINA);
+                put(sx * 14, 10, sz * 14, BRASS);
+                put(sx * 14, 11, sz * 14, Material.LIGHTNING_ROD);
             }
-            put(sx * 14, 10, sz * 14, BRASS);
-            put(sx * 14, 11, sz * 14, Material.LIGHTNING_ROD);
-        }
     }
 
     // Each row is a horizontal course of masonry, listed from the roof down.
@@ -341,24 +365,35 @@ final class HotPotatoArena {
             for (int column = 0; column < line.length(); column++) {
                 char glyph = line.charAt(column);
                 if (glyph == ' ') continue;
-                Material material = switch (glyph) {
-                    case 'B' -> BRICK;
-                    case 'C' -> COPPER;
-                    case 'D' -> RIM;
-                    case 'G' -> BRASS;
-                    case 'I' -> Material.SMOOTH_QUARTZ;
-                    case 'L' -> LIGHT;
-                    case 'V' -> PATINA;
-                    default -> throw new IllegalArgumentException("Unknown relief tile " + glyph);
-                };
-                at(face, column - line.length() / 2, bottom + rows.length - 1 - row, depth, material);
+                Material material =
+                        switch (glyph) {
+                            case 'B' -> BRICK;
+                            case 'C' -> COPPER;
+                            case 'D' -> RIM;
+                            case 'G' -> BRASS;
+                            case 'I' -> Material.SMOOTH_QUARTZ;
+                            case 'L' -> LIGHT;
+                            case 'V' -> PATINA;
+                            default ->
+                                    throw new IllegalArgumentException(
+                                            "Unknown relief tile " + glyph);
+                        };
+                at(
+                        face,
+                        column - line.length() / 2,
+                        bottom + rows.length - 1 - row,
+                        depth,
+                        material);
             }
         }
     }
 
     private void at(BlockFace face, int across, int y, int depth, Material material) {
-        put(face.getModX() * depth - face.getModZ() * across, y,
-                face.getModZ() * depth + face.getModX() * across, material);
+        put(
+                face.getModX() * depth - face.getModZ() * across,
+                y,
+                face.getModZ() * depth + face.getModX() * across,
+                material);
     }
 
     private void put(int x, int y, int z, Material material) {

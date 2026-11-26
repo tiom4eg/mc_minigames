@@ -63,7 +63,9 @@ final class WaitForItArena {
     private record Button(Cell post, BlockFace facing, Material type) {}
 
     private record Setup(
-            WaitForItRound.Task task, List<Plant> plants, List<Button> buttons,
+            WaitForItRound.Task task,
+            List<Plant> plants,
+            List<Button> buttons,
             WaitForItLayout layout) {}
 
     void build() {
@@ -261,7 +263,9 @@ final class WaitForItArena {
 
     boolean isBarrel(int bay, Block block) {
         Setup setup = current[bay];
-        return setup != null && setup.task() == TREASURE && owns(bay, block)
+        return setup != null
+                && setup.task() == TREASURE
+                && owns(bay, block)
                 && block.getType() == Material.BARREL;
     }
 

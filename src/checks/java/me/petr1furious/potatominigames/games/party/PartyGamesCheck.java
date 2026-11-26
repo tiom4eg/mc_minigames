@@ -11,13 +11,23 @@ public final class PartyGamesCheck {
         var game = new PartyGame((PartyConfig) null);
         check(!game.ballots("party_games").isEmpty(), "Tournament length is selectable");
         check(game.ballots("pvp").isEmpty(), "Standalone games have no tournament length vote");
-        check(PartyGamesSession.roundCount("small", 12, 15) == 4, "Small overrides configured length with four rounds");
+        check(
+                PartyGamesSession.roundCount("small", 12, 15) == 4,
+                "Small overrides configured length with four rounds");
         check(PartyGamesSession.roundCount("medium", 12, 15) == 6, "Medium has six rounds");
         check(PartyGamesSession.roundCount("large", 4, 15) == 9, "Large has nine rounds");
-        check(PartyGamesSession.roundCount("marathon", 6, 20) == 20, "Marathon plays every eligible game");
-        check(PartyGamesSession.roundCount("marathon", 6, 7) == 7, "Marathon follows the configured pool");
-        check(PartyGamesSession.roundCount("large", 6, 3) == 3, "Short pools never repeat games to fill a length");
-        check(PartyGamesSession.roundCount(null, 11, 15) == 11, "Direct starts without a length preserve admin configuration");
+        check(
+                PartyGamesSession.roundCount("marathon", 6, 20) == 20,
+                "Marathon plays every eligible game");
+        check(
+                PartyGamesSession.roundCount("marathon", 6, 7) == 7,
+                "Marathon follows the configured pool");
+        check(
+                PartyGamesSession.roundCount("large", 6, 3) == 3,
+                "Short pools never repeat games to fill a length");
+        check(
+                PartyGamesSession.roundCount(null, 11, 15) == 11,
+                "Direct starts without a length preserve admin configuration");
         try {
             PartyGamesSession.roundCount("unknown", 6, 15);
             throw new AssertionError("Unknown match length accepted");
@@ -29,64 +39,120 @@ public final class PartyGamesCheck {
                 s.schedule().size() == PartyGamesState.MODES.size()
                         && new HashSet<>(s.schedule()).equals(new HashSet<>(PartyGamesState.MODES)),
                 "Every eligible game is scheduled exactly once");
-        var newModes = List.of(
-                "hot_potato", "jump_rope", "drop_tower", "chicken_shooter", "less_is_better", "wait_for_it", "furry_quest");
+        var newModes =
+                List.of(
+                        "hot_potato",
+                        "jump_rope",
+                        "drop_tower",
+                        "chicken_shooter",
+                        "less_is_better",
+                        "wait_for_it",
+                        "furry_quest");
         for (String mode : newModes) {
-            check(game.modes().contains(mode) && game.maxPlayers(mode) == 12,
+            check(
+                    game.modes().contains(mode) && game.maxPlayers(mode) == 12,
                     "Quick round is available as a public queue: " + mode);
             var standalone = game.createSession(null, mode);
-            check(standalone instanceof PartySurvivalSession quick
-                            && quick.id.equals(mode) && !quick.context.embedded(),
+            check(
+                    standalone instanceof PartySurvivalSession quick
+                            && quick.id.equals(mode)
+                            && !quick.context.embedded(),
                     "Direct play starts the standalone quick round: " + mode);
             var rules = ((PartySurvivalSession) standalone).instructions();
             String english = I18n.plain(rules, Locale.ENGLISH);
             String russian = I18n.plain(rules, Locale.forLanguageTag("ru"));
-            check(!english.isBlank() && !russian.isBlank() && !english.equals(russian),
+            check(
+                    !english.isBlank() && !russian.isBlank() && !english.equals(russian),
                     "First-play instructions resolve in English and Russian: " + mode);
-            var context = new PartyRoundContext(null, List.of(), PartyRoundOptions.party(), (reason, result) -> {});
-            check(PartyRoundFactory.create(mode, null, null, context) instanceof PartySurvivalSession quick
-                            && quick.id.equals(mode) && quick.context == context,
-                    "The tournament creates the same quick round inside its round context: " + mode);
+            var context =
+                    new PartyRoundContext(
+                            null, List.of(), PartyRoundOptions.party(), (reason, result) -> {});
+            check(
+                    PartyRoundFactory.create(mode, null, null, context)
+                                    instanceof PartySurvivalSession quick
+                            && quick.id.equals(mode)
+                            && quick.context == context,
+                    "The tournament creates the same quick round inside its round context: "
+                            + mode);
         }
-        check(I18n.has("party.tag_and_timing.hot_potato.dummy"), "Solo practice dummy has a localized label");
-        var previousDefault = List.of(
-                "pvp", "sumo", "arms_race", "one_shot", "tnt_run", "mob_count", "rhino", "miners",
-                "color_floor", "anvils", "build_memory", "tool_race", "hole_in_the_wall", "parkour_race");
+        check(
+                I18n.has("party.tag_and_timing.hot_potato.dummy"),
+                "Solo practice dummy has a localized label");
+        var previousDefault =
+                List.of(
+                        "pvp",
+                        "sumo",
+                        "arms_race",
+                        "one_shot",
+                        "tnt_run",
+                        "mob_count",
+                        "rhino",
+                        "miners",
+                        "color_floor",
+                        "anvils",
+                        "build_memory",
+                        "tool_race",
+                        "hole_in_the_wall",
+                        "parkour_race");
         var oldPool = new ArrayList<>(previousDefault);
         oldPool.add(oldPool.indexOf("parkour_race"), "magic_battle");
         var migrated = new PartyGamesState(List.of(a, b), oldPool, new Random(2));
-        check(migrated.schedule().size() == PartyGamesState.MODES.size()
-                        && new HashSet<>(migrated.schedule()).equals(new HashSet<>(PartyGamesState.MODES))
+        check(
+                migrated.schedule().size() == PartyGamesState.MODES.size()
+                        && new HashSet<>(migrated.schedule())
+                                .equals(new HashSet<>(PartyGamesState.MODES))
                         && migrated.schedule().containsAll(newModes)
                         && !migrated.schedule().contains("magic_battle"),
                 "The previous bundled pool picks up the new rounds and still skips Magic Battle");
-        var curated = new PartyGamesState(List.of(a, b), List.of("sumo", "jump_rope"), new Random(2));
-        check(new HashSet<>(curated.schedule()).equals(Set.of("sumo", "jump_rope")),
+        var curated =
+                new PartyGamesState(List.of(a, b), List.of("sumo", "jump_rope"), new Random(2));
+        check(
+                new HashSet<>(curated.schedule()).equals(Set.of("sumo", "jump_rope")),
                 "Customized pools keep their selected rounds");
-        var reordered = new PartyGamesState(List.of(a, b), previousDefault.reversed(), new Random(2));
-        check(reordered.schedule().size() == previousDefault.size(),
-                "A reordered pool is a custom pool even if it has the same modes as the previous default");
+        var reordered =
+                new PartyGamesState(List.of(a, b), previousDefault.reversed(), new Random(2));
+        check(
+                reordered.schedule().size() == previousDefault.size(),
+                "A reordered pool is a custom pool even if it has the same modes as the previous"
+                        + " default");
 
         var chosen = new ArrayList<>(List.of("jump_rope", "sumo", "jump_rope"));
         var fixed = PartyGamesState.sequenced(List.of(a, b), chosen);
         chosen.clear();
-        check(fixed.schedule().equals(List.of("jump_rope", "sumo", "jump_rope")),
+        check(
+                fixed.schedule().equals(List.of("jump_rope", "sumo", "jump_rope")),
                 "A custom sequence snapshots the chosen order and retains repeated rounds");
         for (int round = 0; round < fixed.schedule().size(); round++) {
             fixed.beginRound(round);
-            check(fixed.acceptResult(round, new PartyRoundResult(List.of(List.of(a)))),
+            check(
+                    fixed.acceptResult(round, new PartyRoundResult(List.of(List.of(a)))),
                     "Each occurrence earns its own score");
         }
         check(fixed.score().points(a) == 9, "Repeated rounds count as separate rounds");
-        check(PartyGamesState.sequenced(List.of(a, b), previousDefault).schedule().equals(previousDefault),
+        check(
+                PartyGamesState.sequenced(List.of(a, b), previousDefault)
+                        .schedule()
+                        .equals(previousDefault),
                 "Custom schedules do not migrate legacy pools");
-        check(PartyGamesState.checkedSequence(Collections.nCopies(PartyGamesState.MAX_CUSTOM_ROUNDS, "sumo"))
-                        .size() == PartyGamesState.MAX_CUSTOM_ROUNDS,
+        check(
+                PartyGamesState.checkedSequence(
+                                        Collections.nCopies(
+                                                PartyGamesState.MAX_CUSTOM_ROUNDS, "sumo"))
+                                .size()
+                        == PartyGamesState.MAX_CUSTOM_ROUNDS,
                 "The custom sequence limit accepts repeated rounds up to its bound");
-        for (List<?> rounds : List.of(
-                List.of(), Collections.nCopies(PartyGamesState.MAX_CUSTOM_ROUNDS + 1, "sumo"),
-                List.of(1), List.of("party_games"), List.of("unknown"), List.of("magic_battle"),
-                List.of("gartic_phone"), List.of("pvp_ffa"), List.of("pvp_select"), List.of("sumo_ffa"))) {
+        for (List<?> rounds :
+                List.of(
+                        List.of(),
+                        Collections.nCopies(PartyGamesState.MAX_CUSTOM_ROUNDS + 1, "sumo"),
+                        List.of(1),
+                        List.of("party_games"),
+                        List.of("unknown"),
+                        List.of("magic_battle"),
+                        List.of("gartic_phone"),
+                        List.of("pvp_ffa"),
+                        List.of("pvp_select"),
+                        List.of("sumo_ffa"))) {
             try {
                 PartyGamesState.checkedSequence(rounds);
                 throw new AssertionError("Invalid custom sequence accepted: " + rounds);

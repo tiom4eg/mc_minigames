@@ -55,7 +55,12 @@ final class CsItems {
         if (info == null) return tr("kill", killerName, victimName);
         if (info.weapon() != null)
             return info.headshot()
-                    ? tr("kill.weapon.headshot", killerName, victimName, source, tr("kill.headshot"))
+                    ? tr(
+                            "kill.weapon.headshot",
+                            killerName,
+                            victimName,
+                            source,
+                            tr("kill.headshot"))
                     : tr("kill.weapon", killerName, victimName, source);
         return tr("kill.cause", killerName, victimName, source);
     }
@@ -63,25 +68,27 @@ final class CsItems {
     static ItemStack item(
             Material material, String kind, Component title, List<Component> lore, Player viewer) {
         ItemStack item = new ItemStack(material);
-        item.editMeta(meta -> {
-            meta.displayName(title.color(NamedTextColor.GOLD));
-            meta.lore(lore);
-            meta.setUnbreakable(true);
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
-            meta.getPersistentDataContainer().set(KEY, PersistentDataType.STRING, kind);
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(title.color(NamedTextColor.GOLD));
+                    meta.lore(lore);
+                    meta.setUnbreakable(true);
+                    meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
+                    meta.getPersistentDataContainer().set(KEY, PersistentDataType.STRING, kind);
+                });
         return viewer == null ? item : I18n.item(item, viewer);
     }
 
     // Distinct payloads must never merge as vanilla dropped stacks.
     static ItemStack physical(ItemStack template) {
         ItemStack item = template.clone();
-        item.editMeta(meta ->
-                meta.getPersistentDataContainer()
-                        .set(
-                                new NamespacedKey("potatominigames", "cs_instance"),
-                                PersistentDataType.STRING,
-                                UUID.randomUUID().toString()));
+        item.editMeta(
+                meta ->
+                        meta.getPersistentDataContainer()
+                                .set(
+                                        new NamespacedKey("potatominigames", "cs_instance"),
+                                        PersistentDataType.STRING,
+                                        UUID.randomUUID().toString()));
         return item;
     }
 
@@ -192,11 +199,12 @@ final class CsItems {
     private static ItemStack cosmeticArmour(
             Material material, Component title, Color color, Player viewer) {
         ItemStack stack = item(material, "uniform", title, List.of(), viewer);
-        stack.editMeta(meta -> {
-            if (meta instanceof org.bukkit.inventory.meta.LeatherArmorMeta leather)
-                leather.setColor(color);
-            meta.setAttributeModifiers(com.google.common.collect.ImmutableMultimap.of());
-        });
+        stack.editMeta(
+                meta -> {
+                    if (meta instanceof org.bukkit.inventory.meta.LeatherArmorMeta leather)
+                        leather.setColor(color);
+                    meta.setAttributeModifiers(com.google.common.collect.ImmutableMultimap.of());
+                });
         return stack;
     }
 
@@ -253,8 +261,10 @@ final class CsItems {
                                 List.of(tr(match.deathmatch ? "dm.radar_hint" : "controls.buy")),
                                 p));
         ItemStack chart = p.getInventory().getItem(8);
-        chart.editMeta(meta -> {
-            if (meta instanceof org.bukkit.inventory.meta.MapMeta map) map.setMapView(radar);
-        });
+        chart.editMeta(
+                meta -> {
+                    if (meta instanceof org.bukkit.inventory.meta.MapMeta map)
+                        map.setMapView(radar);
+                });
     }
 }

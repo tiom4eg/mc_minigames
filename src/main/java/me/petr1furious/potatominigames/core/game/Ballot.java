@@ -1,11 +1,13 @@
 package me.petr1furious.potatominigames.core.game;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
-import java.util.List;
-import java.util.function.Supplier;
 
 import org.bukkit.Material;
+
+import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Something queued players vote on, e.g. the bingo difficulty or the warfare map. The winner
@@ -17,7 +19,11 @@ import org.bukkit.Material;
  * @param fallback wins with no votes and breaks ties; null picks at random among the tied
  * @param icons spread over the choices, first to last
  */
-public record Ballot(String key, String title, Supplier<List<String>> choices, Supplier<String> fallback,
+public record Ballot(
+        String key,
+        String title,
+        Supplier<List<String>> choices,
+        Supplier<String> fallback,
         List<Material> icons) {
 
     /** {@code /play <key> any} drops the vote. */
@@ -29,7 +35,10 @@ public record Ballot(String key, String title, Supplier<List<String>> choices, S
             case "difficulty" -> I18n.tr("core.ballot.difficulty");
             case "map" -> I18n.tr("core.ballot.map");
             case "length" -> I18n.tr("core.ballot.length");
-            default -> I18n.has("core.ballot." + key) ? I18n.tr("core.ballot." + key) : Component.text(title);
+            default ->
+                    I18n.has("core.ballot." + key)
+                            ? I18n.tr("core.ballot." + key)
+                            : Component.text(title);
         };
     }
 
@@ -40,13 +49,15 @@ public record Ballot(String key, String title, Supplier<List<String>> choices, S
         }
         if (key.equals("difficulty")) {
             return switch (choice) {
-                case "baby", "easy", "medium", "hard", "insane" -> I18n.tr("core.ballot.choice." + choice);
+                case "baby", "easy", "medium", "hard", "insane" ->
+                        I18n.tr("core.ballot.choice." + choice);
                 default -> Component.text(choice);
             };
         }
         if (key.equals("length")) {
             return switch (choice) {
-                case "small", "medium", "large", "marathon" -> I18n.tr("core.ballot.length." + choice);
+                case "small", "medium", "large", "marathon" ->
+                        I18n.tr("core.ballot.length." + choice);
                 default -> Component.text(choice);
             };
         }
@@ -55,12 +66,22 @@ public record Ballot(String key, String title, Supplier<List<String>> choices, S
     }
 
     /** Spread over the levels, easiest first. */
-    private static final List<Material> DIFFICULTY_ICONS = List.of(Material.LIME_CONCRETE, Material.YELLOW_CONCRETE,
-            Material.ORANGE_CONCRETE, Material.RED_CONCRETE, Material.BLACK_CONCRETE);
+    private static final List<Material> DIFFICULTY_ICONS =
+            List.of(
+                    Material.LIME_CONCRETE,
+                    Material.YELLOW_CONCRETE,
+                    Material.ORANGE_CONCRETE,
+                    Material.RED_CONCRETE,
+                    Material.BLACK_CONCRETE);
 
     /** The game's {@link Minigame#difficulties}, passed as option "difficulty". */
     public static Ballot difficulty(Minigame game) {
-        return new Ballot("difficulty", "difficulty", game::difficulties, game::defaultDifficulty, DIFFICULTY_ICONS);
+        return new Ballot(
+                "difficulty",
+                "difficulty",
+                game::difficulties,
+                game::defaultDifficulty,
+                DIFFICULTY_ICONS);
     }
 
     public Material icon(int index, int count) {

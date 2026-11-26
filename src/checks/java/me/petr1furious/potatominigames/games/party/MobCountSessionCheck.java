@@ -50,12 +50,17 @@ final class MobCountSessionCheck {
     private static void checkDaylightProtection() {
         for (Class<?> type : List.of(Zombie.class, Skeleton.class, WitherSkeleton.class)) {
             boolean[] burns = {true};
-            Entity mob = (Entity) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type},
-                    (proxy, method, args) -> {
-                        if (!method.getName().equals("setShouldBurnInDay")) throw new AssertionError(method);
-                        burns[0] = (boolean) args[0];
-                        return null;
-                    });
+            Entity mob =
+                    (Entity)
+                            Proxy.newProxyInstance(
+                                    type.getClassLoader(),
+                                    new Class<?>[] {type},
+                                    (proxy, method, args) -> {
+                                        if (!method.getName().equals("setShouldBurnInDay"))
+                                            throw new AssertionError(method);
+                                        burns[0] = (boolean) args[0];
+                                        return null;
+                                    });
             MobCountSession.preventDaylightBurn(mob);
             check(!burns[0], "Counting " + type.getSimpleName() + " cannot ignite in daylight");
         }
@@ -163,7 +168,9 @@ final class MobCountSessionCheck {
         check(mobFire.isCancelled(), "The counting mob is protected from ignition");
         var playerFire = new EntityCombustEvent(first.player, 5f);
         session.preventMobCombustion(playerFire);
-        check(!playerFire.isCancelled(), "Counting mob protection is scoped to the counted entities");
+        check(
+                !playerFire.isCancelled(),
+                "Counting mob protection is scoped to the counted entities");
         advance(session, 100);
         check(removed[0] == 1, "Mobs disappear before the pause");
         check(
@@ -174,7 +181,10 @@ final class MobCountSessionCheck {
                 blocks.block(0, 80, 0).getType() == Material.BLACK_CONCRETE,
                 "Floor stays intact during the freeze");
         Location anchor = first.location.clone();
-        check(MobCountArena.sectorAt(anchor.getBlockX(), anchor.getBlockZ(), round.sectors().size()) == MobCountArena.SEPARATOR,
+        check(
+                MobCountArena.sectorAt(
+                                anchor.getBlockX(), anchor.getBlockZ(), round.sectors().size())
+                        == MobCountArena.SEPARATOR,
                 "Players reset to neutral ground before choosing a sector");
         var move = new PlayerMoveEvent(first.player, anchor.clone(), anchor.clone().add(3, 1, 2));
         move.getTo().setYaw(90);
@@ -231,7 +241,8 @@ final class MobCountSessionCheck {
         check(
                 blocks.block(safe.getBlockX(), 80, safe.getBlockZ()).getType() != Material.AIR,
                 "Correct answer retains its floor");
-        check(blocks.block(0, 80, 0).getType() == Material.AIR,
+        check(
+                blocks.block(0, 80, 0).getType() == Material.AIR,
                 "The neutral hub drops with the separators and wrong sectors");
         check(session.outHeight() < MobCountArena.FLOOR, "Elimination plane lies below the floor");
         if (embedded) {

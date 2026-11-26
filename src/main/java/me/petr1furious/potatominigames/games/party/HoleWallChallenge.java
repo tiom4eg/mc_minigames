@@ -17,18 +17,21 @@ final class HoleWallChallenge {
             boolean requireJump) {
         if (difficulty == HoleWallDifficulty.EASY || !requireJump && kind == 22) return gates;
         return gates.stream()
-                .map(g -> {
-                    if (g.bottom() != 0) return g;
-                    if (requireJump)
-                        return new HoleWallPattern.Gate(
-                                g.start(),
-                                g.width(),
-                                1,
-                                g.height() < 1.8 || g.width() < 1 ? 1.5 : Math.min(3, g.height()));
-                    return g.height() >= 1.8
-                            ? new HoleWallPattern.Gate(g.start(), g.width(), 0, 1.5)
-                            : g;
-                })
+                .map(
+                        g -> {
+                            if (g.bottom() != 0) return g;
+                            if (requireJump)
+                                return new HoleWallPattern.Gate(
+                                        g.start(),
+                                        g.width(),
+                                        1,
+                                        g.height() < 1.8 || g.width() < 1
+                                                ? 1.5
+                                                : Math.min(3, g.height()));
+                            return g.height() >= 1.8
+                                    ? new HoleWallPattern.Gate(g.start(), g.width(), 0, 1.5)
+                                    : g;
+                        })
                 .toList();
     }
 

@@ -738,7 +738,9 @@ public final class ParkourRaceCheck {
         var swim = extras.island(0).obstacleStart();
         int center = (int) swim.centerX();
         check(
-                !extras.blocks().containsKey(new ParkourCourse.Pos(center, swim.y() + 1, swim.z() + 8))
+                !extras.blocks()
+                                .containsKey(
+                                        new ParkourCourse.Pos(center, swim.y() + 1, swim.z() + 8))
                         && extras.blocks()
                                         .get(
                                                 new ParkourCourse.Pos(
@@ -777,10 +779,11 @@ public final class ParkourRaceCheck {
                     "The dry swim task grants one full water bucket");
             check(
                     course.blocks().entrySet().stream()
-                            .noneMatch(entry ->
-                                    entry.getValue() == Material.WATER
-                                            && entry.getKey().z() >= from.z() + 4
-                                            && entry.getKey().z() <= end),
+                            .noneMatch(
+                                    entry ->
+                                            entry.getValue() == Material.WATER
+                                                    && entry.getKey().z() >= from.z() + 4
+                                                    && entry.getKey().z() <= end),
                     "Both the entrance and the full tunnel start without generated water");
             var pending = new java.util.ArrayDeque<ParkourCourse.Pos>();
             var seen = new java.util.HashSet<ParkourCourse.Pos>();

@@ -1,8 +1,10 @@
 package me.petr1furious.potatominigames.games.finals;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -94,8 +96,7 @@ final class FinalsMapData {
                     || sx > Integer.MAX_VALUE
                     || sy > Integer.MAX_VALUE
                     || sz > Integer.MAX_VALUE
-                    || sx > Long.MAX_VALUE / sy / sz)
-                throw FinalsMaps.failure("bounds");
+                    || sx > Long.MAX_VALUE / sy / sz) throw FinalsMaps.failure("bounds");
         }
 
         static Bounds between(Point first, Point second) {
@@ -124,9 +125,7 @@ final class FinalsMapData {
         }
 
         long volume() {
-            return ((long) maxX - minX + 1)
-                    * ((long) maxY - minY + 1)
-                    * ((long) maxZ - minZ + 1);
+            return ((long) maxX - minX + 1) * ((long) maxY - minY + 1) * ((long) maxZ - minZ + 1);
         }
 
         BlockVector size() {
@@ -265,9 +264,10 @@ final class FinalsMapData {
             draft.imported = section.getBoolean("imported");
             if (section.contains("time-of-day")) {
                 Object time = section.get("time-of-day");
-                if (!(time instanceof Number number) || number.doubleValue() != number.intValue()
-                        || number.intValue() < 0 || number.intValue() > 23999)
-                    throw FinalsMaps.failure("time_invalid");
+                if (!(time instanceof Number number)
+                        || number.doubleValue() != number.intValue()
+                        || number.intValue() < 0
+                        || number.intValue() > 23999) throw FinalsMaps.failure("time_invalid");
                 draft.timeOfDay = number.intValue();
             }
             if (section.contains("death-height")) {
@@ -279,12 +279,16 @@ final class FinalsMapData {
             draft.first = Point.read(section, "pos1");
             draft.second = Point.read(section, "pos2");
             ConfigurationSection pads = section.getConfigurationSection("jump-pads");
-            if (pads != null) for (int i = 0; i < pads.getKeys(false).size(); i++) {
-                ConfigurationSection entry = pads.getConfigurationSection("" + i);
-                if (entry == null) throw FinalsMaps.failure("invalid_position");
-                draft.jumpPads.add(new JumpPad(Point.read(entry, "origin"),
-                        entry.getBoolean("targeted"), Point.read(entry, "target")));
-            }
+            if (pads != null)
+                for (int i = 0; i < pads.getKeys(false).size(); i++) {
+                    ConfigurationSection entry = pads.getConfigurationSection("" + i);
+                    if (entry == null) throw FinalsMaps.failure("invalid_position");
+                    draft.jumpPads.add(
+                            new JumpPad(
+                                    Point.read(entry, "origin"),
+                                    entry.getBoolean("targeted"),
+                                    Point.read(entry, "target")));
+                }
             if (section.contains("vaults")) {
                 ConfigurationSection candidates = section.getConfigurationSection("vaults");
                 if (candidates == null) throw FinalsMaps.failure("invalid_position");
@@ -335,21 +339,44 @@ final class FinalsMapData {
             Double deathHeight,
             Integer timeOfDay,
             String template) {
-        Saved(Bounds bounds, List<Point> red, List<Point> blue, List<Point> vaults,
-                List<Point> cashouts, List<JumpPad> jumpPads, Double deathHeight, String template) {
+        Saved(
+                Bounds bounds,
+                List<Point> red,
+                List<Point> blue,
+                List<Point> vaults,
+                List<Point> cashouts,
+                List<JumpPad> jumpPads,
+                Double deathHeight,
+                String template) {
             this(bounds, red, blue, vaults, cashouts, jumpPads, deathHeight, null, template);
         }
-        Saved(Bounds bounds, List<Point> red, List<Point> blue, List<Point> vaults,
-                List<Point> cashouts, List<JumpPad> jumpPads, String template) {
+
+        Saved(
+                Bounds bounds,
+                List<Point> red,
+                List<Point> blue,
+                List<Point> vaults,
+                List<Point> cashouts,
+                List<JumpPad> jumpPads,
+                String template) {
             this(bounds, red, blue, vaults, cashouts, jumpPads, null, template);
         }
-        Saved(Bounds bounds, List<Point> red, List<Point> blue, List<Point> vaults,
-                List<Point> cashouts, String template) {
+
+        Saved(
+                Bounds bounds,
+                List<Point> red,
+                List<Point> blue,
+                List<Point> vaults,
+                List<Point> cashouts,
+                String template) {
             this(bounds, red, blue, vaults, cashouts, List.of(), template);
         }
+
         Saved {
-            if (timeOfDay != null && (timeOfDay < 0 || timeOfDay > 23999)) throw FinalsMaps.failure("time_invalid");
-            if (deathHeight != null && !Double.isFinite(deathHeight)) throw FinalsMaps.failure("death_height_invalid");
+            if (timeOfDay != null && (timeOfDay < 0 || timeOfDay > 23999))
+                throw FinalsMaps.failure("time_invalid");
+            if (deathHeight != null && !Double.isFinite(deathHeight))
+                throw FinalsMaps.failure("death_height_invalid");
             red = List.copyOf(red);
             blue = List.copyOf(blue);
             vaults = List.copyOf(vaults);
@@ -377,12 +404,21 @@ final class FinalsMapData {
             invalidPoints(bounds, stations, "cashout", invalid);
             for (int i = 0; i < draft.jumpPads.size(); i++) {
                 JumpPad pad = draft.jumpPads.get(i);
-                if (pad.targeted() && pad.target() == null) throw FinalsMaps.failure("pad_target_missing", i + 1);
+                if (pad.targeted() && pad.target() == null)
+                    throw FinalsMaps.failure("pad_target_missing", i + 1);
                 for (int j = 0; j < i; j++)
-                    if (pad.origin().sameBlock(draft.jumpPads.get(j).origin())) throw FinalsMaps.failure("pad_duplicate");
+                    if (pad.origin().sameBlock(draft.jumpPads.get(j).origin()))
+                        throw FinalsMaps.failure("pad_duplicate");
             }
-            invalidPoints(bounds, draft.jumpPads.stream().map(JumpPad::origin).toList(), "pad", invalid);
-            invalidPoints(bounds, draft.jumpPads.stream().map(p -> p.target() == null ? p.origin() : p.target()).toList(), "pad_target", invalid);
+            invalidPoints(
+                    bounds, draft.jumpPads.stream().map(JumpPad::origin).toList(), "pad", invalid);
+            invalidPoints(
+                    bounds,
+                    draft.jumpPads.stream()
+                            .map(p -> p.target() == null ? p.origin() : p.target())
+                            .toList(),
+                    "pad_target",
+                    invalid);
             if (!invalid.isEmpty())
                 throw FinalsMaps.failure(
                         "outside",
@@ -411,7 +447,16 @@ final class FinalsMapData {
                 for (Point blue : draft.blue) {
                     if (red.distanceSquared(blue) < 16) throw FinalsMaps.failure("teams_close");
                 }
-            return new Saved(bounds, draft.red, draft.blue, draft.vaults, draft.cashouts, draft.jumpPads, draft.deathHeight, draft.timeOfDay, template);
+            return new Saved(
+                    bounds,
+                    draft.red,
+                    draft.blue,
+                    draft.vaults,
+                    draft.cashouts,
+                    draft.jumpPads,
+                    draft.deathHeight,
+                    draft.timeOfDay,
+                    template);
         }
 
         private static void invalidPoints(

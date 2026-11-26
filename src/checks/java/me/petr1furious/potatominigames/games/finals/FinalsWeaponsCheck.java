@@ -11,14 +11,27 @@ public final class FinalsWeaponsCheck {
     private static int checks;
 
     public static void main(String[] args) throws Exception {
-        var precision = FinalsWeapons.class.getDeclaredMethod("precisionBlock", Vector.class, Vector.class);
+        var precision =
+                FinalsWeapons.class.getDeclaredMethod("precisionBlock", Vector.class, Vector.class);
         precision.setAccessible(true);
-        for (double angle : new double[]{-14.01, -14, 0, 14, 14.01, 65, 180}) {
+        for (double angle : new double[] {-14.01, -14, 0, 14, 14.01, 65, 180}) {
             double radians = Math.toRadians(angle);
             boolean expected = Math.abs(angle) <= 14;
-            check((boolean) precision.invoke(null, new Vector(0, 0, 1), new Vector(Math.sin(radians), 0, Math.cos(radians))) == expected,
+            check(
+                    (boolean)
+                                    precision.invoke(
+                                            null,
+                                            new Vector(0, 0, 1),
+                                            new Vector(Math.sin(radians), 0, Math.cos(radians)))
+                            == expected,
                     "Dual Blades use the inclusive 14-degree horizontal block cone");
-            check((boolean) precision.invoke(null, new Vector(0, 0, 1), new Vector(0, Math.sin(radians), Math.cos(radians))) == expected,
+            check(
+                    (boolean)
+                                    precision.invoke(
+                                            null,
+                                            new Vector(0, 0, 1),
+                                            new Vector(0, Math.sin(radians), Math.cos(radians)))
+                            == expected,
                     "Dual Blades also require precise vertical aim");
         }
         classAndWeaponRoster();
@@ -46,7 +59,9 @@ public final class FinalsWeaponsCheck {
                 FinalsClass.LIGHT.walkSpeed() > FinalsClass.MEDIUM.walkSpeed()
                         && FinalsClass.MEDIUM.walkSpeed() > FinalsClass.HEAVY.walkSpeed(),
                 "class speed trades off health");
-        check(FinalsClass.LIGHT.scale() == .8 && FinalsClass.MEDIUM.scale() == 1
+        check(
+                FinalsClass.LIGHT.scale() == .8
+                        && FinalsClass.MEDIUM.scale() == 1
                         && FinalsClass.HEAVY.scale() == 1.25,
                 "Light, Medium and Heavy use distinct small, normal and large body scales");
         check(FinalsWeapon.values().length == 15, "exactly fifteen approved weapons");
@@ -178,33 +193,92 @@ public final class FinalsWeaponsCheck {
     }
 
     private static void gunDamageIncrease() {
-        Map<FinalsWeapon, Double> previous = Map.of(
-                FinalsWeapon.M11, 1.15, FinalsWeapon.XP54, 1.75, FinalsWeapon.SR84, 10d,
-                FinalsWeapon.AKM, 2.1, FinalsWeapon.FCAR, 2.65, FinalsWeapon.MODEL_1887, 1.35,
-                FinalsWeapon.M60, 1.8, FinalsWeapon.LEWIS_GUN, 2.25, FinalsWeapon.SA1216, 1.05);
-        Map<FinalsWeapon, Double> headshots = Map.of(
-                FinalsWeapon.M11, 1.35, FinalsWeapon.XP54, 1.4, FinalsWeapon.SR84, 1.8,
-                FinalsWeapon.AKM, 1.4, FinalsWeapon.FCAR, 1.4, FinalsWeapon.MODEL_1887, 1d,
-                FinalsWeapon.M60, 1.35, FinalsWeapon.LEWIS_GUN, 1.35, FinalsWeapon.SA1216, 1d);
+        Map<FinalsWeapon, Double> previous =
+                Map.of(
+                        FinalsWeapon.M11,
+                        1.15,
+                        FinalsWeapon.XP54,
+                        1.75,
+                        FinalsWeapon.SR84,
+                        10d,
+                        FinalsWeapon.AKM,
+                        2.1,
+                        FinalsWeapon.FCAR,
+                        2.65,
+                        FinalsWeapon.MODEL_1887,
+                        1.35,
+                        FinalsWeapon.M60,
+                        1.8,
+                        FinalsWeapon.LEWIS_GUN,
+                        2.25,
+                        FinalsWeapon.SA1216,
+                        1.05);
+        Map<FinalsWeapon, Double> headshots =
+                Map.of(
+                        FinalsWeapon.M11,
+                        1.35,
+                        FinalsWeapon.XP54,
+                        1.4,
+                        FinalsWeapon.SR84,
+                        1.8,
+                        FinalsWeapon.AKM,
+                        1.4,
+                        FinalsWeapon.FCAR,
+                        1.4,
+                        FinalsWeapon.MODEL_1887,
+                        1d,
+                        FinalsWeapon.M60,
+                        1.35,
+                        FinalsWeapon.LEWIS_GUN,
+                        1.35,
+                        FinalsWeapon.SA1216,
+                        1d);
         for (var entry : previous.entrySet()) {
             FinalsWeapon weapon = entry.getKey();
             double expected = entry.getValue() * 4d / 3d;
-            check(close(weapon.damage(), expected), weapon.id() + " gun damage increases by exactly one third");
-            check(close(weapon.damageAt(1, false), expected), weapon.id() + " close body hits use increased damage");
-            check(close(weapon.damageAt(weapon.range(), false), expected * .56),
+            check(
+                    close(weapon.damage(), expected),
+                    weapon.id() + " gun damage increases by exactly one third");
+            check(
+                    close(weapon.damageAt(1, false), expected),
+                    weapon.id() + " close body hits use increased damage");
+            check(
+                    close(weapon.damageAt(weapon.range(), false), expected * .56),
                     weapon.id() + " maximum-range hits preserve the existing falloff ratio");
-            check(close(weapon.damageAt(1, true), expected * headshots.get(weapon)),
+            check(
+                    close(weapon.damageAt(1, true), expected * headshots.get(weapon)),
                     weapon.id() + " close headshots preserve their existing multiplier");
-            check(close(weapon.damageAt(weapon.range(), true), expected * .56 * headshots.get(weapon)),
-                    weapon.id() + " far headshots combine the unchanged ratios with increased base damage");
+            check(
+                    close(
+                            weapon.damageAt(weapon.range(), true),
+                            expected * .56 * headshots.get(weapon)),
+                    weapon.id()
+                            + " far headshots combine the unchanged ratios with increased base"
+                            + " damage");
         }
-        for (var entry : Map.of(FinalsWeapon.SWORD, 4.6, FinalsWeapon.DAGGER, 4d,
-                FinalsWeapon.RIOT_SHIELD, 4.3, FinalsWeapon.DUAL_BLADES, 3.8,
-                FinalsWeapon.SLEDGEHAMMER, 9d, FinalsWeapon.SPEAR, 5.8).entrySet())
-            check(close(entry.getKey().damage(), entry.getValue()), entry.getKey().id() + " melee damage remains unchanged");
+        for (var entry :
+                Map.of(
+                                FinalsWeapon.SWORD,
+                                4.6,
+                                FinalsWeapon.DAGGER,
+                                4d,
+                                FinalsWeapon.RIOT_SHIELD,
+                                4.3,
+                                FinalsWeapon.DUAL_BLADES,
+                                3.8,
+                                FinalsWeapon.SLEDGEHAMMER,
+                                9d,
+                                FinalsWeapon.SPEAR,
+                                5.8)
+                        .entrySet())
+            check(
+                    close(entry.getKey().damage(), entry.getValue()),
+                    entry.getKey().id() + " melee damage remains unchanged");
     }
 
-    private static boolean close(double actual, double expected) { return Math.abs(actual - expected) < 1e-9; }
+    private static boolean close(double actual, double expected) {
+        return Math.abs(actual - expected) < 1e-9;
+    }
 
     private static void check(boolean condition, String message) {
         checks++;

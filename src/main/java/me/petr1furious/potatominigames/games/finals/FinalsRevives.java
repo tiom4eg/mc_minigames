@@ -44,9 +44,13 @@ final class FinalsRevives implements Listener {
 
         Location fallback(UUID target);
 
-        default Location recovery(UUID target) { return fallback(target); }
+        default Location recovery(UUID target) {
+            return fallback(target);
+        }
 
-        default boolean safeRecovery(Location point) { return point != null && inside(point); }
+        default boolean safeRecovery(Location point) {
+            return point != null && inside(point);
+        }
 
         void begin(Player player);
 
@@ -121,12 +125,14 @@ final class FinalsRevives implements Listener {
 
     private ItemStack trophy(Statue statue, Player viewer) {
         ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
-        stack.editMeta(meta -> {
-            meta.displayName(
-                    I18n.tr("finals.revive.statue", statue.name).color(NamedTextColor.GOLD));
-            meta.getPersistentDataContainer()
-                    .set(TROPHY, PersistentDataType.STRING, statue.target.toString());
-        });
+        stack.editMeta(
+                meta -> {
+                    meta.displayName(
+                            I18n.tr("finals.revive.statue", statue.name)
+                                    .color(NamedTextColor.GOLD));
+                    meta.getPersistentDataContainer()
+                            .set(TROPHY, PersistentDataType.STRING, statue.target.toString());
+                });
         return viewer == null ? stack : I18n.item(stack, viewer);
     }
 
@@ -356,11 +362,17 @@ final class FinalsRevives implements Listener {
         if (safe == null) safe = statue.point.clone();
         releaseHand(statue);
         statue.point = safe;
-        spawn(statue, thrown && !recovered ? direction.multiply(1.25).add(new Vector(0, .12, 0)) : new Vector());
+        spawn(
+                statue,
+                thrown && !recovered
+                        ? direction.multiply(1.25).add(new Vector(0, .12, 0))
+                        : new Vector());
     }
 
     private boolean validPoint(Location point) {
-        return point != null && context.world().equals(point.getWorld()) && context.inside(point)
+        return point != null
+                && context.world().equals(point.getWorld())
+                && context.inside(point)
                 && point.getY() >= context.world().getMinHeight();
     }
 
@@ -373,7 +385,8 @@ final class FinalsRevives implements Listener {
     private Location safePoint(UUID target, Location point) {
         if (validPoint(point)) return point.clone();
         Location recovery = context.recovery(target);
-        if (validPoint(recovery) && context.safeRecovery(recovery)) return recovery.clone().add(0, .25, 0);
+        if (validPoint(recovery) && context.safeRecovery(recovery))
+            return recovery.clone().add(0, .25, 0);
         Location fallback = context.fallback(target);
         return fallback != null
                         && context.world().equals(fallback.getWorld())

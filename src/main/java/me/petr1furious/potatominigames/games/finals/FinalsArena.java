@@ -193,7 +193,8 @@ public final class FinalsArena implements FinalsMapArena {
     @Override
     public List<Location> spawnLocations(int team) {
         return java.util.stream.IntStream.range(0, 8)
-                .mapToObj(index -> spawn(team, index)).toList();
+                .mapToObj(index -> spawn(team, index))
+                .toList();
     }
 
     public Location vault() {
@@ -227,7 +228,8 @@ public final class FinalsArena implements FinalsMapArena {
     }
 
     public void moveStation(int station, Location position) {
-        if (station < 0 || station > 1) throw new IllegalArgumentException("Station must be 0 or 1");
+        if (station < 0 || station > 1)
+            throw new IllegalArgumentException("Station must be 0 or 1");
         stationPositions[station] = position.clone();
     }
 
@@ -274,7 +276,8 @@ public final class FinalsArena implements FinalsMapArena {
         if (block == null || !world.equals(block.getWorld()) || activeCashouts == null) return -1;
         for (int slot = 0; slot < 2; slot++) {
             Location point = station(slot);
-            if (block.getX() == point.getBlockX() && block.getY() == point.getBlockY()
+            if (block.getX() == point.getBlockX()
+                    && block.getY() == point.getBlockY()
                     && block.getZ() == point.getBlockZ()) return slot;
         }
         return -1;

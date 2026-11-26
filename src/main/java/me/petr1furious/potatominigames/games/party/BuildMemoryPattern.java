@@ -461,21 +461,24 @@ record BuildMemoryPattern(Component title, Map<Cell, MemoryBlock> blocks, int si
     static boolean sameBlocks(Map<Cell, MemoryBlock> expected, Map<Cell, MemoryBlock> actual) {
         return expected.size() == actual.size()
                 && expected.entrySet().stream()
-                        .allMatch(e ->
-                                MemoryBlock.sameForBuild(e.getValue(), actual.get(e.getKey())));
+                        .allMatch(
+                                e ->
+                                        MemoryBlock.sameForBuild(
+                                                e.getValue(), actual.get(e.getKey())));
     }
 
     BuildMemoryPattern rotate(int turns) {
         Map<Cell, MemoryBlock> rotated = new HashMap<>();
-        blocks.forEach((c, block) -> {
-            int x = c.x, z = c.z;
-            for (int i = 0; i < Math.floorMod(turns, 4); i++) {
-                int next = size() - 1 - z;
-                z = x;
-                x = next;
-            }
-            rotated.put(new Cell(x, c.y, z), block.rotate(turns));
-        });
+        blocks.forEach(
+                (c, block) -> {
+                    int x = c.x, z = c.z;
+                    for (int i = 0; i < Math.floorMod(turns, 4); i++) {
+                        int next = size() - 1 - z;
+                        z = x;
+                        x = next;
+                    }
+                    rotated.put(new Cell(x, c.y, z), block.rotate(turns));
+                });
         return new BuildMemoryPattern(title, rotated, size);
     }
 

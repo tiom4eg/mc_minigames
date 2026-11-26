@@ -45,38 +45,47 @@ final class FinalsEventCommands implements Listener {
     void register(LiteralArgumentBuilder<CommandSourceStack> root) {
         root.then(
                 Commands.literal("events")
-                        .executes(ctx ->
-                                GameCommands.run(ctx, c -> open(GameCommands.requirePlayer(c)))));
+                        .executes(
+                                ctx ->
+                                        GameCommands.run(
+                                                ctx, c -> open(GameCommands.requirePlayer(c)))));
         root.then(
                 Commands.literal("event")
-                        .executes(ctx ->
-                                GameCommands.run(ctx, c -> open(GameCommands.requirePlayer(c))))
+                        .executes(
+                                ctx ->
+                                        GameCommands.run(
+                                                ctx, c -> open(GameCommands.requirePlayer(c))))
                         .then(
                                 Commands.argument("event", StringArgumentType.word())
                                         .suggests(
-                                                Suggest.dynamic(() ->
-                                                        Stream.concat(
-                                                                        Arrays.stream(
-                                                                                        FinalsGameEvents
-                                                                                                .Kind
-                                                                                                .values())
-                                                                                .map(
-                                                                                        FinalsGameEvents
+                                                Suggest.dynamic(
+                                                        () ->
+                                                                Stream.concat(
+                                                                                Arrays.stream(
+                                                                                                FinalsGameEvents
                                                                                                         .Kind
-                                                                                                ::id),
-                                                                        Stream.of("stop", "status"))
-                                                                .toList()))
-                                        .executes(ctx ->
-                                                GameCommands.run(
-                                                        ctx,
-                                                        c ->
-                                                                execute(
-                                                                        GameCommands.requirePlayer(
-                                                                                c),
-                                                                        StringArgumentType
-                                                                                .getString(
-                                                                                        c,
-                                                                                        "event"))))));
+                                                                                                        .values())
+                                                                                        .map(
+                                                                                                FinalsGameEvents
+                                                                                                                .Kind
+                                                                                                        ::id),
+                                                                                Stream.of(
+                                                                                        "stop",
+                                                                                        "status"))
+                                                                        .toList()))
+                                        .executes(
+                                                ctx ->
+                                                        GameCommands.run(
+                                                                ctx,
+                                                                c ->
+                                                                        execute(
+                                                                                GameCommands
+                                                                                        .requirePlayer(
+                                                                                                c),
+                                                                                StringArgumentType
+                                                                                        .getString(
+                                                                                                c,
+                                                                                                "event"))))));
     }
 
     private FinalsSession requireMaster(Player player) throws CommandFailure {
@@ -177,10 +186,11 @@ final class FinalsEventCommands implements Listener {
     private static ItemStack item(
             Player player, Material material, Component name, List<Component> lore) {
         ItemStack item = new ItemStack(material);
-        item.editMeta(meta -> {
-            meta.displayName(name.colorIfAbsent(NamedTextColor.GOLD));
-            meta.lore(lore);
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(name.colorIfAbsent(NamedTextColor.GOLD));
+                    meta.lore(lore);
+                });
         return I18n.item(item, player);
     }
 

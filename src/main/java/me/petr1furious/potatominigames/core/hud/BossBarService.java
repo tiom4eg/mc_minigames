@@ -1,16 +1,16 @@
 package me.petr1furious.potatominigames.core.hud;
 
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-
-import net.kyori.adventure.bossbar.BossBar;
-import net.kyori.adventure.text.Component;
 
 /** One session's boss bars, shown to its audience and hidden when it ends. */
 public final class BossBarService {

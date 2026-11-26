@@ -1,10 +1,5 @@
 package me.petr1furious.potatominigames.core.player;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.List;
-
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
@@ -12,6 +7,11 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
+
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.List;
 
 public record PlayerSnapshot(
         Location location,
@@ -44,8 +44,19 @@ public record PlayerSnapshot(
     }
 
     public PlayerSnapshot withLocation(Location newLocation) {
-        return new PlayerSnapshot(newLocation.clone(), gameMode, inventoryContents, health, foodLevel, saturation,
-                fireTicks, expLevel, expProgress, allowFlight, flying, effects);
+        return new PlayerSnapshot(
+                newLocation.clone(),
+                gameMode,
+                inventoryContents,
+                health,
+                foodLevel,
+                saturation,
+                fireTicks,
+                expLevel,
+                expProgress,
+                allowFlight,
+                flying,
+                effects);
     }
 
     public void apply(Player player) {
@@ -65,7 +76,8 @@ public record PlayerSnapshot(
         player.setFireTicks(fireTicks);
         player.setLevel(expLevel);
         player.setExp(expProgress);
-        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+        player.getActivePotionEffects()
+                .forEach(effect -> player.removePotionEffect(effect.getType()));
         player.addPotionEffects(effects);
         player.setAllowFlight(allowFlight);
         player.setFlying(allowFlight && flying);
@@ -76,8 +88,11 @@ public record PlayerSnapshot(
         section.set("location", location);
         section.set("gameMode", gameMode.name());
         // Item bytes carry their data version.
-        section.set("inventory", Base64.getEncoder().encodeToString(ItemStack.serializeItemsAsBytes(
-                replaceNulls(inventoryContents))));
+        section.set(
+                "inventory",
+                Base64.getEncoder()
+                        .encodeToString(
+                                ItemStack.serializeItemsAsBytes(replaceNulls(inventoryContents))));
         section.set("inventorySize", inventoryContents.length);
         section.set("health", health);
         section.set("foodLevel", foodLevel);
@@ -96,8 +111,9 @@ public record PlayerSnapshot(
         if (location == null || location.getWorld() == null) {
             return null;
         }
-        ItemStack[] items = ItemStack.deserializeItemsFromBytes(
-                Base64.getDecoder().decode(section.getString("inventory", "")));
+        ItemStack[] items =
+                ItemStack.deserializeItemsFromBytes(
+                        Base64.getDecoder().decode(section.getString("inventory", "")));
         ItemStack[] contents = new ItemStack[section.getInt("inventorySize", items.length)];
         for (int i = 0; i < contents.length && i < items.length; i++) {
             contents[i] = items[i] == null || items[i].isEmpty() ? null : items[i];

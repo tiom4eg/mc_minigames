@@ -53,11 +53,7 @@ final class WaitForItRound {
     }
 
     enum Task {
-        FLOWER(
-                "flower",
-                Family.GATHER,
-                Action.BREAK,
-                Map.of(POPPY, 1, CORNFLOWER, 1, ALLIUM, 1)),
+        FLOWER("flower", Family.GATHER, Action.BREAK, Map.of(POPPY, 1, CORNFLOWER, 1, ALLIUM, 1)),
         CRAFT("craft", Family.MAKE, Action.CRAFT, Map.of(PICKAXE, 1)),
         CROP("crop", Family.GATHER, Action.BREAK, Map.of(WHEAT, 3, CARROT, 3)),
         BUTTON("button", Family.SEARCH, Action.USE, Map.of(BUTTON_LEFT, 1, BUTTON_RIGHT, 1)),
@@ -201,7 +197,9 @@ final class WaitForItRound {
 
     boolean canRecord(UUID player, Goal goal, long tick) {
         Task task = task(player);
-        if (goal == null || task == null || !running(tick)
+        if (goal == null
+                || task == null
+                || !running(tick)
                 || count(player, goal) >= task.required(goal)) return false;
         return !task.ordered()
                 || switch (goal) {

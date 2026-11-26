@@ -1,20 +1,20 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import me.petr1furious.potatominigames.core.game.GameSession;
+import me.petr1furious.potatominigames.core.lobby.LobbyService;
+import me.petr1furious.potatominigames.core.session.ActiveSession;
+import me.petr1furious.potatominigames.core.session.GamePhase;
+import me.petr1furious.potatominigames.core.session.SessionManager;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
-import me.petr1furious.potatominigames.core.game.GameSession;
-import me.petr1furious.potatominigames.core.lobby.LobbyService;
-import me.petr1furious.potatominigames.core.session.ActiveSession;
-import me.petr1furious.potatominigames.core.session.GamePhase;
-import me.petr1furious.potatominigames.core.session.SessionManager;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 /** Outside games, targets are other non-spectators who are not in a game either. */
 public final class SessionGadgetContext implements GadgetContext {
@@ -39,7 +39,10 @@ public final class SessionGadgetContext implements GadgetContext {
     /** None for spectators. */
     private Optional<GameSession> playing(Player player) {
         return sessions.sessionOf(player)
-                .filter(session -> session.phase() == GamePhase.RUNNING && session.isParticipant(player))
+                .filter(
+                        session ->
+                                session.phase() == GamePhase.RUNNING
+                                        && session.isParticipant(player))
                 .map(ActiveSession::gameSession);
     }
 
@@ -55,7 +58,9 @@ public final class SessionGadgetContext implements GadgetContext {
 
     @Override
     public boolean friendly(Player first, Player second) {
-        return playing(first).map(session -> session.arePlayersFriendly(first, second)).orElse(false);
+        return playing(first)
+                .map(session -> session.arePlayersFriendly(first, second))
+                .orElse(false);
     }
 
     @Override
@@ -66,7 +71,9 @@ public final class SessionGadgetContext implements GadgetContext {
         }
         List<Player> targets = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player != user && player.getGameMode() != GameMode.SPECTATOR && !sessions.isBusy(player)) {
+            if (player != user
+                    && player.getGameMode() != GameMode.SPECTATOR
+                    && !sessions.isBusy(player)) {
                 targets.add(player);
             }
         }
@@ -75,6 +82,8 @@ public final class SessionGadgetContext implements GadgetContext {
 
     @Override
     public boolean hideTargetNames(Player viewer) {
-        return playing(viewer).map(session -> session.shouldHideTrackedPlayerNames(viewer)).orElse(false);
+        return playing(viewer)
+                .map(session -> session.shouldHideTrackedPlayerNames(viewer))
+                .orElse(false);
     }
 }

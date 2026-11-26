@@ -2,19 +2,19 @@ package me.petr1furious.potatominigames.gadgets;
 
 import me.petr1furious.potatominigames.i18n.I18n;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-
 /**
- * Points at the nearest trackable player. No distance shown, by design. The needle is
- * updated whenever carried (else it spins when drawn); the action bar only while held.
+ * Points at the nearest trackable player. No distance shown, by design. The needle is updated
+ * whenever carried (else it spins when drawn); the action bar only while held.
  */
 public class TrackerCompassGadget extends AbstractGadget {
     public static final String ID = "tracker-compass";
@@ -23,28 +23,40 @@ public class TrackerCompassGadget extends AbstractGadget {
 
     public TrackerCompassGadget(GadgetContext context) {
         super(ID, context, true);
-        context.plugin().getServer().getScheduler().runTaskTimer(context.plugin(), this::tick,
-                UPDATE_PERIOD_TICKS, UPDATE_PERIOD_TICKS);
+        context.plugin()
+                .getServer()
+                .getScheduler()
+                .runTaskTimer(
+                        context.plugin(), this::tick, UPDATE_PERIOD_TICKS, UPDATE_PERIOD_TICKS);
     }
 
     private void tick() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.SPECTATOR || !isCarrying(player) || !usableBy(player)) {
+            if (player.getGameMode() == GameMode.SPECTATOR
+                    || !isCarrying(player)
+                    || !usableBy(player)) {
                 continue;
             }
             boolean holding = isHolding(player);
             Player target = nearestTarget(player);
             if (target == null) {
                 if (holding) {
-                    player.sendActionBar(I18n.tr("gadgets.tracker.nobody").color(NamedTextColor.GRAY));
+                    player.sendActionBar(
+                            I18n.tr("gadgets.tracker.nobody").color(NamedTextColor.GRAY));
                 }
                 continue;
             }
             player.setCompassTarget(target.getLocation());
             if (holding) {
-                player.sendActionBar(I18n.tr("gadgets.tracker.target",
-                        context.hideTargetNames(player) ? I18n.tr("gadgets.enemy").color(NamedTextColor.AQUA)
-                                : Component.text(target.getName(), NamedTextColor.AQUA)).color(NamedTextColor.GRAY));
+                player.sendActionBar(
+                        I18n.tr(
+                                        "gadgets.tracker.target",
+                                        context.hideTargetNames(player)
+                                                ? I18n.tr("gadgets.enemy")
+                                                        .color(NamedTextColor.AQUA)
+                                                : Component.text(
+                                                        target.getName(), NamedTextColor.AQUA))
+                                .color(NamedTextColor.GRAY));
             }
         }
     }
@@ -66,7 +78,9 @@ public class TrackerCompassGadget extends AbstractGadget {
 
     /** Type check first avoids a meta copy per slot. */
     private static boolean isTracker(ItemStack item) {
-        return item != null && item.getType() == Material.COMPASS && GadgetItems.checkForItem(item, TAG);
+        return item != null
+                && item.getType() == Material.COMPASS
+                && GadgetItems.checkForItem(item, TAG);
     }
 
     /** Same world only. */
@@ -91,8 +105,10 @@ public class TrackerCompassGadget extends AbstractGadget {
         var item = new ItemStack(Material.COMPASS);
         GadgetItems.addTag(item, TAG);
         var meta = item.getItemMeta();
-        meta.displayName(I18n.tr("gadgets.tracker.name").color(NamedTextColor.GREEN)
-                .decoration(TextDecoration.ITALIC, false));
+        meta.displayName(
+                I18n.tr("gadgets.tracker.name")
+                        .color(NamedTextColor.GREEN)
+                        .decoration(TextDecoration.ITALIC, false));
         meta.setEnchantmentGlintOverride(true);
         item.setItemMeta(meta);
         item.setAmount(count);

@@ -28,33 +28,33 @@ import java.util.logging.Level;
 public final class PartyGame implements PresetGame {
     private static final List<String> CLASSIC_MODES =
             List.of(
-                "pvp",
-                "sumo",
-                "pvp_ffa",
-                "pvp_select",
-                "sumo_ffa",
-                "arms_race",
-                "one_shot",
-                "tnt_run",
-                "mob_count",
-                "rhino",
-                "miners",
-                "magic_battle",
-                "color_floor",
-                "anvils",
-                "build_memory",
-                "gartic_phone",
-                FurryQuestSession.ID,
-                "tool_race",
-                "parkour_race",
-                "hole_in_the_wall",
-                "hot_potato",
-                "jump_rope",
-                "drop_tower",
-                "chicken_shooter",
-                "less_is_better",
-                "wait_for_it",
-                "party_games");
+                    "pvp",
+                    "sumo",
+                    "pvp_ffa",
+                    "pvp_select",
+                    "sumo_ffa",
+                    "arms_race",
+                    "one_shot",
+                    "tnt_run",
+                    "mob_count",
+                    "rhino",
+                    "miners",
+                    "magic_battle",
+                    "color_floor",
+                    "anvils",
+                    "build_memory",
+                    "gartic_phone",
+                    FurryQuestSession.ID,
+                    "tool_race",
+                    "parkour_race",
+                    "hole_in_the_wall",
+                    "hot_potato",
+                    "jump_rope",
+                    "drop_tower",
+                    "chicken_shooter",
+                    "less_is_better",
+                    "wait_for_it",
+                    "party_games");
 
     private final PartyConfig config;
     private final ConfigRegistry configs;
@@ -76,7 +76,10 @@ public final class PartyGame implements PresetGame {
         refreshPresetModes();
     }
 
-    private PartyGame(PartyConfig config, ConfigRegistry configs, JavaPlugin plugin,
+    private PartyGame(
+            PartyConfig config,
+            ConfigRegistry configs,
+            JavaPlugin plugin,
             PresetStore<List<String>> presets) {
         this.config = config;
         this.configs = configs;
@@ -86,7 +89,9 @@ public final class PartyGame implements PresetGame {
 
     private static PresetStore<List<String>> loadPresets(JavaPlugin plugin) {
         try {
-            return new PresetStore<>(plugin.getDataFolder().toPath().resolve("data/party-presets.yml"), CLASSIC_MODES,
+            return new PresetStore<>(
+                    plugin.getDataFolder().toPath().resolve("data/party-presets.yml"),
+                    CLASSIC_MODES,
                     new PresetStore.Codec<List<String>>() {
                         @Override
                         public List<String> read(ConfigurationSection entry) {
@@ -99,7 +104,8 @@ public final class PartyGame implements PresetGame {
                         }
                     });
         } catch (IOException exception) {
-            throw new IllegalStateException("Cannot load Party Games presets; existing data has been left untouched.",
+            throw new IllegalStateException(
+                    "Cannot load Party Games presets; existing data has been left untouched.",
                     exception);
         }
     }
@@ -135,14 +141,23 @@ public final class PartyGame implements PresetGame {
             throw new CommandFailure(I18n.tr("party.rounds.preset.error.busy"));
     }
 
-    void savePreset(Player player, String name, String icon, List<String> rounds) throws CommandFailure {
+    void savePreset(Player player, String name, String icon, List<String> rounds)
+            throws CommandFailure {
         requirePresetIdle(name);
         try {
-            var saved = presets.save(player.getUniqueId(), player.getName(), name, icon,
-                    PartyGamesState.checkedSequence(rounds));
+            var saved =
+                    presets.save(
+                            player.getUniqueId(),
+                            player.getName(),
+                            name,
+                            icon,
+                            PartyGamesState.checkedSequence(rounds));
             refreshPresetModes();
-            player.sendMessage(I18n.render(I18n.tr("party.rounds.preset.saved", saved.name())
-                    .color(NamedTextColor.GREEN), player));
+            player.sendMessage(
+                    I18n.render(
+                            I18n.tr("party.rounds.preset.saved", saved.name())
+                                    .color(NamedTextColor.GREEN),
+                            player));
         } catch (IllegalArgumentException exception) {
             throw new CommandFailure(I18n.message(exception));
         } catch (IOException exception) {
@@ -209,9 +224,17 @@ public final class PartyGame implements PresetGame {
     @Override
     public List<Ballot> ballots(String mode) {
         if (!mode.equals("party_games")) return List.of();
-        return List.of(new Ballot("length", "match length",
-                () -> List.of("small", "medium", "large", "marathon"), () -> "medium",
-                List.of(Material.LIME_DYE, Material.YELLOW_DYE, Material.ORANGE_DYE, Material.NETHER_STAR)));
+        return List.of(
+                new Ballot(
+                        "length",
+                        "match length",
+                        () -> List.of("small", "medium", "large", "marathon"),
+                        () -> "medium",
+                        List.of(
+                                Material.LIME_DYE,
+                                Material.YELLOW_DYE,
+                                Material.ORANGE_DYE,
+                                Material.NETHER_STAR)));
     }
 
     @Override
@@ -291,7 +314,10 @@ public final class PartyGame implements PresetGame {
     public Component description(String mode) {
         var preset = preset(mode);
         if (preset != null)
-            return I18n.tr("party.rounds.preset.description", preset.ownerName(), preset.settings().size());
+            return I18n.tr(
+                    "party.rounds.preset.description",
+                    preset.ownerName(),
+                    preset.settings().size());
         return I18n.tr("party.rounds.description." + (CLASSIC_MODES.contains(mode) ? mode : "pvp"));
     }
 
@@ -300,7 +326,8 @@ public final class PartyGame implements PresetGame {
         var preset = preset(mode);
         if (preset != null) return new PartyGamesSession(services, config, preset.settings());
         if (PartyGamesState.QUICK_MODES.contains(mode))
-            return PartyRoundFactory.create(mode, services, config, PartyRoundContext.standalone(services));
+            return PartyRoundFactory.create(
+                    mode, services, config, PartyRoundContext.standalone(services));
         if (mode.equals("pvp_select")) return new DuelSession(services, config, false, true, true);
         if (mode.equals("gartic_phone")) return new GarticPhoneSession(services, config);
         if (mode.equals("one_shot"))
@@ -326,7 +353,10 @@ public final class PartyGame implements PresetGame {
         if (mode.equals("tnt_run")) return new TntRunSession(services, config);
         if (mode.equals("mob_count")) return new MobCountSession(services, config);
         if (mode.equals("rhino")) return new RhinoSession(services, config);
-        return new DuelSession(services, config, mode.equals("sumo") || mode.equals("sumo_ffa"),
+        return new DuelSession(
+                services,
+                config,
+                mode.equals("sumo") || mode.equals("sumo_ffa"),
                 mode.equals("pvp_ffa") || mode.equals("sumo_ffa"));
     }
 }

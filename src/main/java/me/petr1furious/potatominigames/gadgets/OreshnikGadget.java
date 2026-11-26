@@ -1,12 +1,13 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyCodec;
 import me.petr1furious.potatominigames.core.world.Locations;
+import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -45,16 +46,12 @@ public class OreshnikGadget extends AbstractGadget {
 
     @Override
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (!GadgetItems.isRightClick(event))
-            return;
-        if (!GadgetItems.checkForItem(event.getItem(), TAG))
-            return;
+        if (!GadgetItems.isRightClick(event)) return;
+        if (!GadgetItems.checkForItem(event.getItem(), TAG)) return;
         Player player = event.getPlayer();
-        if (player.getGameMode() == GameMode.SPECTATOR)
-            return;
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
         event.setCancelled(true);
-        if (getRemainingCooldownTicks(player) > 0)
-            return;
+        if (getRemainingCooldownTicks(player) > 0) return;
         setCooldown(player);
         var targetBlock = player.getTargetBlockExact(256);
         if (targetBlock == null) {
@@ -64,15 +61,14 @@ public class OreshnikGadget extends AbstractGadget {
         spawnArrowWaves(targetBlock.getLocation(), wavesCount.get(), arrowsCount.get(), player);
         if (player.getGameMode() != GameMode.CREATIVE && event.getHand() != null) {
             ItemStack item = player.getInventory().getItem(event.getHand());
-            if (item != null)
-                item.setAmount(item.getAmount() - 1);
+            if (item != null) item.setAmount(item.getAmount() - 1);
         }
     }
 
     @Override
-    public boolean handleProjectileImpact(Projectile projectile, Location location, Entity shooter, Entity target) {
-        if (!GadgetItems.checkForProjectile(projectile, TAG))
-            return false;
+    public boolean handleProjectileImpact(
+            Projectile projectile, Location location, Entity shooter, Entity target) {
+        if (!GadgetItems.checkForProjectile(projectile, TAG)) return false;
         Locations.spawnExplosion(location, explosionPower.get(), shooter);
         projectile.remove();
         return true;
@@ -94,7 +90,8 @@ public class OreshnikGadget extends AbstractGadget {
     private static double spawnHeight(Location center) {
         var world = center.getWorld();
         for (int y = center.getBlockY() + 1; y < world.getMaxHeight(); y++) {
-            if (world.getBlockAt(center.getBlockX(), y, center.getBlockZ()).getType() == Material.BARRIER) {
+            if (world.getBlockAt(center.getBlockX(), y, center.getBlockZ()).getType()
+                    == Material.BARRIER) {
                 return Math.max(1, y - 1 - center.getY());
             }
         }
@@ -105,25 +102,52 @@ public class OreshnikGadget extends AbstractGadget {
         double spawnHeight = spawnHeight(center);
         for (int wave = 0; wave < waves; wave++) {
             int delay = wave * wavesDelay.get();
-            context.plugin().getServer().getScheduler().runTaskLater(context.plugin(), () -> {
-                for (int i = 0; i < arrows; i++) {
-                    Location arrowLoc = center.clone().add(0, spawnHeight, 0);
-                    arrowLoc.getWorld().spawn(arrowLoc, Arrow.class, spawnedArrow -> {
-                        GadgetItems.setProjectileTag(spawnedArrow, TAG);
-                        double scatterRange = range.get();
-                        double randomX;
-                        double randomZ;
-                        do {
-                            randomX = (random.nextDouble() * 2 - 1) * scatterRange;
-                            randomZ = (random.nextDouble() * 2 - 1) * scatterRange;
-                        } while (randomX * randomX + randomZ * randomZ > scatterRange * scatterRange);
-                        spawnedArrow.setVelocity(spawnedArrow.getVelocity().add(new Vector(randomX, -10.0, randomZ)));
-                        spawnedArrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
-                        spawnedArrow.setFireTicks(Integer.MAX_VALUE);
-                        spawnedArrow.setShooter(shooter);
-                    });
-                }
-            }, delay);
+            context.plugin()
+                    .getServer()
+                    .getScheduler()
+                    .runTaskLater(
+                            context.plugin(),
+                            () -> {
+                                for (int i = 0; i < arrows; i++) {
+                                    Location arrowLoc = center.clone().add(0, spawnHeight, 0);
+                                    arrowLoc.getWorld()
+                                            .spawn(
+                                                    arrowLoc,
+                                                    Arrow.class,
+                                                    spawnedArrow -> {
+                                                        GadgetItems.setProjectileTag(
+                                                                spawnedArrow, TAG);
+                                                        double scatterRange = range.get();
+                                                        double randomX;
+                                                        double randomZ;
+                                                        do {
+                                                            randomX =
+                                                                    (random.nextDouble() * 2 - 1)
+                                                                            * scatterRange;
+                                                            randomZ =
+                                                                    (random.nextDouble() * 2 - 1)
+                                                                            * scatterRange;
+                                                        } while (randomX * randomX
+                                                                        + randomZ * randomZ
+                                                                > scatterRange * scatterRange);
+                                                        spawnedArrow.setVelocity(
+                                                                spawnedArrow
+                                                                        .getVelocity()
+                                                                        .add(
+                                                                                new Vector(
+                                                                                        randomX,
+                                                                                        -10.0,
+                                                                                        randomZ)));
+                                                        spawnedArrow.setPickupStatus(
+                                                                AbstractArrow.PickupStatus
+                                                                        .DISALLOWED);
+                                                        spawnedArrow.setFireTicks(
+                                                                Integer.MAX_VALUE);
+                                                        spawnedArrow.setShooter(shooter);
+                                                    });
+                                }
+                            },
+                            delay);
         }
     }
 
@@ -133,7 +157,9 @@ public class OreshnikGadget extends AbstractGadget {
         GadgetItems.addTag(item, TAG);
         var meta = item.getItemMeta();
         meta.displayName(
-                I18n.tr("gadgets.oreshnik.name").color(NamedTextColor.DARK_PURPLE).decoration(TextDecoration.ITALIC, false));
+                I18n.tr("gadgets.oreshnik.name")
+                        .color(NamedTextColor.DARK_PURPLE)
+                        .decoration(TextDecoration.ITALIC, false));
         meta.setEnchantmentGlintOverride(true);
         item.setItemMeta(meta);
         item.setAmount(count);

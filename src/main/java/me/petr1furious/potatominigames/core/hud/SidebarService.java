@@ -25,8 +25,8 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * Per-viewer sidebar; each line is a team prefix on an invisible entry and only changed
- * lines are updated. Spectators mirror their target's sidebar, or the first one shown.
+ * Per-viewer sidebar; each line is a team prefix on an invisible entry and only changed lines are
+ * updated. Spectators mirror their target's sidebar, or the first one shown.
  */
 public final class SidebarService {
     private static final int MAX_LINES = 15;
@@ -51,7 +51,9 @@ public final class SidebarService {
         View(Component title, Locale locale) {
             this.title = title;
             scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-            objective = scoreboard.registerNewObjective("sidebar", Criteria.DUMMY, I18n.render(title, locale));
+            objective =
+                    scoreboard.registerNewObjective(
+                            "sidebar", Criteria.DUMMY, I18n.render(title, locale));
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         }
 
@@ -108,7 +110,8 @@ public final class SidebarService {
     }
 
     private Player mirrorTarget(Player spectator) {
-        if (spectator.getSpectatorTarget() instanceof Player target && views.containsKey(target.getUniqueId())) {
+        if (spectator.getSpectatorTarget() instanceof Player target
+                && views.containsKey(target.getUniqueId())) {
             return target;
         }
         Collection<Player> watching = spectators.get();
@@ -170,7 +173,8 @@ public final class SidebarService {
     }
 
     private void applyNameTagVisibility(Team team) {
-        team.setOption(Team.Option.NAME_TAG_VISIBILITY,
+        team.setOption(
+                Team.Option.NAME_TAG_VISIBILITY,
                 nameTagsVisible ? Team.OptionStatus.ALWAYS : Team.OptionStatus.NEVER);
     }
 

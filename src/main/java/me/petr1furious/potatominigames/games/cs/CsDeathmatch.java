@@ -69,11 +69,12 @@ final class CsDeathmatch {
         return 1
                 + (int)
                         match.actors().stream()
-                                .filter(a ->
-                                        a.online
-                                                && (a.kills > actor.kills
-                                                        || a.kills == actor.kills
-                                                                && a.deaths < actor.deaths))
+                                .filter(
+                                        a ->
+                                                a.online
+                                                        && (a.kills > actor.kills
+                                                                || a.kills == actor.kills
+                                                                        && a.deaths < actor.deaths))
                                 .count();
     }
 }

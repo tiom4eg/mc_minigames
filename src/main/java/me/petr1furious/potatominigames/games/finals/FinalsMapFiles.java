@@ -70,8 +70,7 @@ final class FinalsMapFiles {
     }
 
     static void copyWorldContents(Path source, Path target) throws IOException {
-        if (Files.isDirectory(source, LinkOption.NOFOLLOW_LINKS))
-            copyDirectory(source, target);
+        if (Files.isDirectory(source, LinkOption.NOFOLLOW_LINKS)) copyDirectory(source, target);
         else if (source.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".zip"))
             extract(source, target);
         else throw FinalsMaps.failure("source");
@@ -97,8 +96,7 @@ final class FinalsMapFiles {
             while (iterator.hasNext()) {
                 Path path = iterator.next();
                 if (Files.isSymbolicLink(path)) throw FinalsMaps.failure("source");
-                if (!path.toRealPath().startsWith(realSource))
-                    throw FinalsMaps.failure("source");
+                if (!path.toRealPath().startsWith(realSource)) throw FinalsMaps.failure("source");
                 if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) continue;
                 if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
                     throw FinalsMaps.failure("source");
@@ -192,8 +190,7 @@ final class FinalsMapFiles {
                 zip64 = littleInt(file) == 0x07064b50L;
             }
             if (zip64) {
-                if ((disk != 0 && disk != 0xffff)
-                        || (centralDisk != 0 && centralDisk != 0xffff))
+                if ((disk != 0 && disk != 0xffff) || (centralDisk != 0 && centralDisk != 0xffff))
                     throw FinalsMaps.failure("world_format");
                 long locator = eocd - 20;
                 if (littleInt(file) != 0) throw FinalsMaps.failure("world_format");
@@ -221,8 +218,11 @@ final class FinalsMapFiles {
                 size = zip64Size;
                 offset = zip64Offset;
                 directoryLimit = record;
-            } else if (disk != 0 || centralDisk != 0 || diskEntries != count
-                    || size == 0xffffffffL || offset == 0xffffffffL) {
+            } else if (disk != 0
+                    || centralDisk != 0
+                    || diskEntries != count
+                    || size == 0xffffffffL
+                    || offset == 0xffffffffL) {
                 throw FinalsMaps.failure("world_format");
             }
             long end = checkedEnd(offset, size, directoryLimit);
@@ -245,7 +245,8 @@ final class FinalsMapFiles {
                 long localOffset = littleInt(file);
                 long next = checkedEnd(start + 46, (long) name + extra + comment, end);
                 if (entryDisk == 0xffff) {
-                    rejectZip64Disk(file, start + 46 + name, extra, compressed, uncompressed, localOffset);
+                    rejectZip64Disk(
+                            file, start + 46 + name, extra, compressed, uncompressed, localOffset);
                 } else if (entryDisk != 0) throw FinalsMaps.failure("world_format");
                 file.seek(next);
             }
@@ -265,8 +266,13 @@ final class FinalsMapFiles {
     }
 
     private static void rejectZip64Disk(
-            RandomAccessFile file, long start, int size, long compressed, long uncompressed,
-            long localOffset) throws IOException {
+            RandomAccessFile file,
+            long start,
+            int size,
+            long compressed,
+            long uncompressed,
+            long localOffset)
+            throws IOException {
         long end = start + size;
         file.seek(start);
         while (file.getFilePointer() < end) {
@@ -275,9 +281,10 @@ final class FinalsMapFiles {
             long field = file.getFilePointer();
             long next = checkedEnd(field, length, end);
             if (type == 1) {
-                int skip = (uncompressed == 0xffffffffL ? 8 : 0)
-                        + (compressed == 0xffffffffL ? 8 : 0)
-                        + (localOffset == 0xffffffffL ? 8 : 0);
+                int skip =
+                        (uncompressed == 0xffffffffL ? 8 : 0)
+                                + (compressed == 0xffffffffL ? 8 : 0)
+                                + (localOffset == 0xffffffffL ? 8 : 0);
                 checkedEnd(field, skip + 4L, next);
                 file.seek(field + skip);
                 if (littleInt(file) != 0) throw FinalsMaps.failure("world_format");

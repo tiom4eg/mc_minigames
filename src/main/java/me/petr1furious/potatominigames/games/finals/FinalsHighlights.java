@@ -5,8 +5,8 @@ import me.petr1furious.potatominigames.i18n.I18n;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
-import org.bukkit.Color;
 import org.bukkit.Chunk;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.BlockDisplay;
@@ -79,43 +79,113 @@ final class FinalsHighlights {
         update(arena, phase, activeStation, -1, -1, players, teams, teammateLocation);
     }
 
-    void update(FinalsMapArena arena, FinalsState.Phase phase, int activeStation,
-            long vaultSeconds, long cashoutSeconds, Collection<Player> players,
-            Map<UUID, Integer> teams, Function<Player, Location> teammateLocation) {
-        update(arena, phase, activeStation, vaultSeconds, cashoutSeconds, players, teams,
-                teammateLocation, ignored -> false);
+    void update(
+            FinalsMapArena arena,
+            FinalsState.Phase phase,
+            int activeStation,
+            long vaultSeconds,
+            long cashoutSeconds,
+            Collection<Player> players,
+            Map<UUID, Integer> teams,
+            Function<Player, Location> teammateLocation) {
+        update(
+                arena,
+                phase,
+                activeStation,
+                vaultSeconds,
+                cashoutSeconds,
+                players,
+                teams,
+                teammateLocation,
+                ignored -> false);
     }
 
-    void update(FinalsMapArena arena, FinalsState.Phase phase, int activeStation,
-            long vaultSeconds, long cashoutSeconds, Collection<Player> players,
-            Map<UUID, Integer> teams, Function<Player, Location> teammateLocation,
+    void update(
+            FinalsMapArena arena,
+            FinalsState.Phase phase,
+            int activeStation,
+            long vaultSeconds,
+            long cashoutSeconds,
+            Collection<Player> players,
+            Map<UUID, Integer> teams,
+            Function<Player, Location> teammateLocation,
             Predicate<Player> downed) {
-        update(arena, phase, activeStation, vaultSeconds, cashoutSeconds, players, teams,
-                teammateLocation, downed, null, null);
+        update(
+                arena,
+                phase,
+                activeStation,
+                vaultSeconds,
+                cashoutSeconds,
+                players,
+                teams,
+                teammateLocation,
+                downed,
+                null,
+                null);
     }
 
-    void update(FinalsMapArena arena, FinalsState.Phase phase, int activeStation,
-            long vaultSeconds, long cashoutSeconds, Collection<Player> players,
-            Map<UUID, Integer> teams, Function<Player, Location> teammateLocation,
-            Predicate<Player> downed, Location cashbox, UUID carrier) {
-        update(arena, phase, activeStation, vaultSeconds, cashoutSeconds, players, teams,
-                teammateLocation, downed, cashbox, carrier, ignored -> false);
+    void update(
+            FinalsMapArena arena,
+            FinalsState.Phase phase,
+            int activeStation,
+            long vaultSeconds,
+            long cashoutSeconds,
+            Collection<Player> players,
+            Map<UUID, Integer> teams,
+            Function<Player, Location> teammateLocation,
+            Predicate<Player> downed,
+            Location cashbox,
+            UUID carrier) {
+        update(
+                arena,
+                phase,
+                activeStation,
+                vaultSeconds,
+                cashoutSeconds,
+                players,
+                teams,
+                teammateLocation,
+                downed,
+                cashbox,
+                carrier,
+                ignored -> false);
     }
 
-    void update(FinalsMapArena arena, FinalsState.Phase phase, int activeStation,
-            long vaultSeconds, long cashoutSeconds, Collection<Player> players,
-            Map<UUID, Integer> teams, Function<Player, Location> teammateLocation,
-            Predicate<Player> downed, Location cashbox, UUID carrier, Predicate<Player> hitHealth) {
-        teammateGlow.update(arena.world(),
-                phase == FinalsState.Phase.FINISHED ? List.of() : players, teams);
+    void update(
+            FinalsMapArena arena,
+            FinalsState.Phase phase,
+            int activeStation,
+            long vaultSeconds,
+            long cashoutSeconds,
+            Collection<Player> players,
+            Map<UUID, Integer> teams,
+            Function<Player, Location> teammateLocation,
+            Predicate<Player> downed,
+            Location cashbox,
+            UUID carrier,
+            Predicate<Player> hitHealth) {
+        teammateGlow.update(
+                arena.world(), phase == FinalsState.Phase.FINISHED ? List.of() : players, teams);
         Set<UUID> present = new HashSet<>();
         for (Player player : players) {
-            List<Marker> markers = new ArrayList<>(markers(arena, phase, activeStation, vaultSeconds, cashoutSeconds,
-                    player, players, teams, teammateLocation, downed));
+            List<Marker> markers =
+                    new ArrayList<>(
+                            markers(
+                                    arena,
+                                    phase,
+                                    activeStation,
+                                    vaultSeconds,
+                                    cashoutSeconds,
+                                    player,
+                                    players,
+                                    teams,
+                                    teammateLocation,
+                                    downed));
             if (markers.isEmpty()) continue;
             markers.addAll(enemyHealthMarkers(player, players, teams, hitHealth));
             Marker box = cashboxMarker(phase, cashbox);
-            if (box != null && arena.world().equals(cashbox.getWorld())
+            if (box != null
+                    && arena.world().equals(cashbox.getWorld())
                     && !player.getUniqueId().equals(carrier)) markers.add(box);
             UUID id = player.getUniqueId();
             present.add(id);
@@ -128,37 +198,54 @@ final class FinalsHighlights {
             refresh(view, markers);
         }
         views.entrySet()
-                .removeIf(entry -> {
-                    if (present.contains(entry.getKey())) return false;
-                    entry.getValue().clear();
-                    return true;
-                });
+                .removeIf(
+                        entry -> {
+                            if (present.contains(entry.getKey())) return false;
+                            entry.getValue().clear();
+                            return true;
+                        });
     }
 
     static Marker cashboxMarker(FinalsState.Phase phase, Location point) {
-        if (point == null || phase != FinalsState.Phase.CASHBOX_AVAILABLE
-                && phase != FinalsState.Phase.CARRIED) return null;
-        return new Marker("cashbox", point.clone(), I18n.tr("finals.highlight.cashbox"),
-                NamedTextColor.GOLD, Material.GOLD_BLOCK);
+        if (point == null
+                || phase != FinalsState.Phase.CASHBOX_AVAILABLE
+                        && phase != FinalsState.Phase.CARRIED) return null;
+        return new Marker(
+                "cashbox",
+                point.clone(),
+                I18n.tr("finals.highlight.cashbox"),
+                NamedTextColor.GOLD,
+                Material.GOLD_BLOCK);
     }
 
     @SuppressWarnings("deprecation") // Effective maximum, matching the teammate HP display.
-    static List<Marker> enemyHealthMarkers(Player viewer, Collection<Player> players,
-            Map<UUID, Integer> teams, Predicate<Player> revealed) {
+    static List<Marker> enemyHealthMarkers(
+            Player viewer,
+            Collection<Player> players,
+            Map<UUID, Integer> teams,
+            Predicate<Player> revealed) {
         Integer team = teams.get(viewer.getUniqueId());
         if (team == null || !viewer.isOnline()) return List.of();
         List<Marker> markers = new ArrayList<>();
         for (Player target : players) {
             Integer opposing = teams.get(target.getUniqueId());
-            if (opposing == null || team.equals(opposing) || !target.isOnline() || target.isDead()
-                    || !viewer.getWorld().equals(target.getWorld()) || !revealed.test(target)
+            if (opposing == null
+                    || team.equals(opposing)
+                    || !target.isOnline()
+                    || target.isDead()
+                    || !viewer.getWorld().equals(target.getWorld())
+                    || !revealed.test(target)
                     || !viewer.canSee(target)) continue;
             int maximum = Math.max(1, (int) Math.ceil(target.getMaxHealth()));
             int health = Math.clamp((int) Math.ceil(target.getHealth()), 0, maximum);
             if (health == 0) continue;
-            markers.add(new Marker("enemy-health-" + target.getUniqueId(),
-                    target.getLocation().clone().add(0, target.getHeight() + .3, 0),
-                    I18n.tr("finals.highlight.enemy_health", health, maximum), NamedTextColor.RED, null));
+            markers.add(
+                    new Marker(
+                            "enemy-health-" + target.getUniqueId(),
+                            target.getLocation().clone().add(0, target.getHeight() + .3, 0),
+                            I18n.tr("finals.highlight.enemy_health", health, maximum),
+                            NamedTextColor.RED,
+                            null));
         }
         return markers;
     }
@@ -171,19 +258,43 @@ final class FinalsHighlights {
             Collection<Player> players,
             Map<UUID, Integer> teams,
             Function<Player, Location> teammateLocation) {
-        return markers(arena, phase, activeStation, -1, -1, viewer, players, teams, teammateLocation);
+        return markers(
+                arena, phase, activeStation, -1, -1, viewer, players, teams, teammateLocation);
     }
 
-    static List<Marker> markers(FinalsMapArena arena, FinalsState.Phase phase, int activeStation,
-            long vaultSeconds, long cashoutSeconds, Player viewer, Collection<Player> players,
-            Map<UUID, Integer> teams, Function<Player, Location> teammateLocation) {
-        return markers(arena, phase, activeStation, vaultSeconds, cashoutSeconds, viewer,
-                players, teams, teammateLocation, ignored -> false);
+    static List<Marker> markers(
+            FinalsMapArena arena,
+            FinalsState.Phase phase,
+            int activeStation,
+            long vaultSeconds,
+            long cashoutSeconds,
+            Player viewer,
+            Collection<Player> players,
+            Map<UUID, Integer> teams,
+            Function<Player, Location> teammateLocation) {
+        return markers(
+                arena,
+                phase,
+                activeStation,
+                vaultSeconds,
+                cashoutSeconds,
+                viewer,
+                players,
+                teams,
+                teammateLocation,
+                ignored -> false);
     }
 
-    static List<Marker> markers(FinalsMapArena arena, FinalsState.Phase phase, int activeStation,
-            long vaultSeconds, long cashoutSeconds, Player viewer, Collection<Player> players,
-            Map<UUID, Integer> teams, Function<Player, Location> teammateLocation,
+    static List<Marker> markers(
+            FinalsMapArena arena,
+            FinalsState.Phase phase,
+            int activeStation,
+            long vaultSeconds,
+            long cashoutSeconds,
+            Player viewer,
+            Collection<Player> players,
+            Map<UUID, Integer> teams,
+            Function<Player, Location> teammateLocation,
             Predicate<Player> downed) {
         Integer team = teams.get(viewer.getUniqueId());
         if (phase == FinalsState.Phase.FINISHED
@@ -198,14 +309,16 @@ final class FinalsHighlights {
                     new Marker(
                             "vault",
                             arena.vault().clone(),
-                            vaultSeconds < 0 ? I18n.tr("finals.highlight.vault")
+                            vaultSeconds < 0
+                                    ? I18n.tr("finals.highlight.vault")
                                     : I18n.tr("finals.highlight.vault_time", vaultSeconds),
                             NamedTextColor.GREEN,
                             Material.EMERALD_BLOCK));
         }
         for (int station = 0; station < 2; station++) {
-            boolean box = phase == FinalsState.Phase.CASHBOX_AVAILABLE
-                    || phase == FinalsState.Phase.CARRIED;
+            boolean box =
+                    phase == FinalsState.Phase.CASHBOX_AVAILABLE
+                            || phase == FinalsState.Phase.CARRIED;
             if (!box && !(phase == FinalsState.Phase.CASHOUT && station == activeStation)) continue;
             result.add(
                     new Marker(
@@ -213,7 +326,10 @@ final class FinalsHighlights {
                             arena.station(station).clone(),
                             cashoutSeconds < 0
                                     ? I18n.tr("finals.highlight.cashout", station == 0 ? "A" : "B")
-                                    : I18n.tr("finals.highlight.cashout_time", station == 0 ? "A" : "B", cashoutSeconds),
+                                    : I18n.tr(
+                                            "finals.highlight.cashout_time",
+                                            station == 0 ? "A" : "B",
+                                            cashoutSeconds),
                             NamedTextColor.GOLD,
                             Material.GOLD_BLOCK));
         }
@@ -229,8 +345,11 @@ final class FinalsHighlights {
                     new Marker(
                             "teammate-" + id,
                             point.clone(),
-                            I18n.tr(downed.test(target) ? "finals.highlight.downed"
-                                    : "finals.highlight.teammate", target.getName()),
+                            I18n.tr(
+                                    downed.test(target)
+                                            ? "finals.highlight.downed"
+                                            : "finals.highlight.teammate",
+                                    target.getName()),
                             team == 0 ? NamedTextColor.RED : NamedTextColor.BLUE,
                             null));
         }
@@ -263,25 +382,31 @@ final class FinalsHighlights {
                     if (!overlay.outline().getLocation().equals(block))
                         overlay.outline().teleport(block);
                     if (overlay.projected() != placement.projected()) {
-                        overlay.outline().setTransformationMatrix(outlineTransform(marker, placement.projected()));
-                        overlay = new Overlay(overlay.label(), overlay.outline(), placement.projected());
+                        overlay.outline()
+                                .setTransformationMatrix(
+                                        outlineTransform(marker, placement.projected()));
+                        overlay =
+                                new Overlay(
+                                        overlay.label(), overlay.outline(), placement.projected());
                         view.overlays.put(marker.key(), overlay);
                     }
                 }
             }
             // Paper clears private visibility when chunk tracking ends. The entity can be
             // valid again before this refresh, so validity alone does not mean it is visible.
-            if (!view.player.canSee(overlay.label())) view.player.showEntity(plugin, overlay.label());
+            if (!view.player.canSee(overlay.label()))
+                view.player.showEntity(plugin, overlay.label());
             if (overlay.outline() != null && !view.player.canSee(overlay.outline()))
                 view.player.showEntity(plugin, overlay.outline());
         }
         view.overlays
                 .entrySet()
-                .removeIf(entry -> {
-                    if (wanted.contains(entry.getKey())) return false;
-                    entry.getValue().remove();
-                    return true;
-                });
+                .removeIf(
+                        entry -> {
+                            if (wanted.contains(entry.getKey())) return false;
+                            entry.getValue().remove();
+                            return true;
+                        });
     }
 
     private Overlay create(Player viewer, Marker marker, Placement placement, Component text) {
@@ -313,7 +438,9 @@ final class FinalsHighlights {
                                             entity.setGlowing(true);
                                             entity.setGlowColorOverride(
                                                     Color.fromRGB(marker.color().value()));
-                                            entity.setTransformationMatrix(outlineTransform(marker, placement.projected()));
+                                            entity.setTransformationMatrix(
+                                                    outlineTransform(
+                                                            marker, placement.projected()));
                                         });
             }
             viewer.showEntity(plugin, label);
@@ -350,11 +477,15 @@ final class FinalsHighlights {
             return new Placement(label, null, marker.label(), false);
         int clientDistance = viewer.getClientViewDistance();
         int sendDistance = viewer.getSendViewDistance();
-        int chunks = Math.min(clientDistance > 0 ? clientDistance : 2, sendDistance > 0 ? sendDistance : 2);
+        int chunks =
+                Math.min(
+                        clientDistance > 0 ? clientDistance : 2,
+                        sendDistance > 0 ? sendDistance : 2);
         double radius = Math.min(24, Math.max(8, (chunks - 1) * 16d));
         Vector direction = label.toVector().subtract(eye.toVector());
         double distance = direction.length();
-        if (distance <= radius && viewer.isChunkSent(Chunk.getChunkKey(label))
+        if (distance <= radius
+                && viewer.isChunkSent(Chunk.getChunkKey(label))
                 && (block == null || viewer.isChunkSent(Chunk.getChunkKey(block))))
             return new Placement(label, block, marker.label(), false);
 
@@ -374,12 +505,16 @@ final class FinalsHighlights {
         projected.setYaw(0);
         projected.setPitch(0);
         long actualDistance = Math.round(viewer.getLocation().distance(marker.location()));
-        Component caption = cashout
-                ? I18n.tr("finals.highlight.cashout_distant", marker.key().equals("cashout-0") ? "A" : "B",
-                        marker.label(), actualDistance)
-                : I18n.tr("finals.highlight.distant", marker.label(), actualDistance);
-        return new Placement(projected, block == null ? null : projected.clone().add(0, -.5, 0),
-                caption, true);
+        Component caption =
+                cashout
+                        ? I18n.tr(
+                                "finals.highlight.cashout_distant",
+                                marker.key().equals("cashout-0") ? "A" : "B",
+                                marker.label(),
+                                actualDistance)
+                        : I18n.tr("finals.highlight.distant", marker.label(), actualDistance);
+        return new Placement(
+                projected, block == null ? null : projected.clone().add(0, -.5, 0), caption, true);
     }
 
     private static Placement separate(Placement placement, List<Location> occupied) {
@@ -406,7 +541,8 @@ final class FinalsHighlights {
     }
 
     private static Matrix4f outlineTransform(boolean projected) {
-        return projected ? new Matrix4f().translation(-.125f, 0, -.125f).scale(.25f)
+        return projected
+                ? new Matrix4f().translation(-.125f, 0, -.125f).scale(.25f)
                 : new Matrix4f().translation(-.01f, -.01f, -.01f).scale(1.02f);
     }
 
@@ -420,7 +556,8 @@ final class FinalsHighlights {
         Location point = marker.location();
         if (marker.key().equals("cashbox")) return point.clone();
         if (marker.key().startsWith("cashout-"))
-            return new Location(point.getWorld(), point.getX() - .5, point.getY(), point.getZ() - .5);
+            return new Location(
+                    point.getWorld(), point.getX() - .5, point.getY(), point.getZ() - .5);
         return new Location(point.getWorld(), point.getBlockX(), point.getY(), point.getBlockZ());
     }
 

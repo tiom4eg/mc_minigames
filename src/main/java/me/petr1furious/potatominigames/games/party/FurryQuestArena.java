@@ -1,12 +1,5 @@
 package me.petr1furious.potatominigames.games.party;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -15,16 +8,30 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.EntityType;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+
 final class FurryQuestArena {
     static final int FLOOR = 70;
     static final int EDGE = 22;
     static final int DECK = 9;
     private static final int[] FLEE_TURNS = {0, 1, -1, 2, -2, 3, -3, 4};
-    private static final List<FurryQuest.Plot> PATROL = List.of(
-            new FurryQuest.Plot(-6, -5), new FurryQuest.Plot(7, -5),
-            new FurryQuest.Plot(7, 5), new FurryQuest.Plot(-6, 5));
+    private static final List<FurryQuest.Plot> PATROL =
+            List.of(
+                    new FurryQuest.Plot(-6, -5), new FurryQuest.Plot(7, -5),
+                    new FurryQuest.Plot(7, 5), new FurryQuest.Plot(-6, 5));
     private static final List<EntityType> SPECIES =
-            List.of(EntityType.SHEEP, EntityType.COW, EntityType.PIG, EntityType.CHICKEN, EntityType.GOAT);
+            List.of(
+                    EntityType.SHEEP,
+                    EntityType.COW,
+                    EntityType.PIG,
+                    EntityType.CHICKEN,
+                    EntityType.GOAT);
 
     private static final class Walker {
         final Animals body;
@@ -59,7 +66,11 @@ final class FurryQuestArena {
         int contactIndex = random.nextInt(40);
         waypoint = random.nextInt(PATROL.size());
         for (int i = 0; i < 40; i++) {
-            Animals body = (Animals) world.spawnEntity(i == contactIndex ? patrolTarget() : meadow(), SPECIES.get(i % SPECIES.size()));
+            Animals body =
+                    (Animals)
+                            world.spawnEntity(
+                                    i == contactIndex ? patrolTarget() : meadow(),
+                                    SPECIES.get(i % SPECIES.size()));
             body.setAdult();
             body.setAgeLock(true);
             body.setInvulnerable(true);
@@ -110,8 +121,9 @@ final class FurryQuestArena {
 
     FurryQuest.Station stationAt(Block block) {
         for (var station : FurryQuest.Station.values()) {
-            if (block.getX() == station.x && block.getY() == FLOOR + station.y && block.getZ() == station.z)
-                return station;
+            if (block.getX() == station.x
+                    && block.getY() == FLOOR + station.y
+                    && block.getZ() == station.z) return station;
         }
         return null;
     }
@@ -119,13 +131,15 @@ final class FurryQuestArena {
     int bowlAt(Location feet) {
         Block support = feet.clone().subtract(0, .01, 0).getBlock();
         var row = FurryQuest.Site.TROUGH.plot;
-        if (support.getY() != FLOOR + 1 || support.getZ() != row.z()
+        if (support.getY() != FLOOR + 1
+                || support.getZ() != row.z()
                 || support.getType() != Material.WATER_CAULDRON) return -1;
         return support.getX() - row.x() - FurryQuest.FIRST_BOWL_OFFSET;
     }
 
     private boolean open(int x, int z) {
-        return Math.abs(x) < EDGE && Math.abs(z) < EDGE
+        return Math.abs(x) < EDGE
+                && Math.abs(z) < EDGE
                 && switch (world.getBlockAt(x, FLOOR, z).getType()) {
                     case GRASS_BLOCK, COARSE_DIRT, GRAVEL, OAK_PLANKS, ANDESITE, MOSS_BLOCK -> true;
                     default -> false;
@@ -161,15 +175,24 @@ final class FurryQuestArena {
         return new Location(world, x + .5, FLOOR + 1, z + .5);
     }
 
-    Animals doubleAgent() { return doubleAgent; }
+    Animals doubleAgent() {
+        return doubleAgent;
+    }
 
     List<Animals> shuffledDisguises() {
-        var animals = new ArrayList<>(herd.values().stream().map(w -> w.body).filter(a -> a != doubleAgent).toList());
+        var animals =
+                new ArrayList<>(
+                        herd.values().stream()
+                                .map(w -> w.body)
+                                .filter(a -> a != doubleAgent)
+                                .toList());
         Collections.shuffle(animals, random);
         return animals;
     }
 
-    boolean contains(UUID id) { return herd.containsKey(id); }
+    boolean contains(UUID id) {
+        return herd.containsKey(id);
+    }
 
     private void walk(Walker walker, Location target, long tick) {
         walker.destination = target;
@@ -214,7 +237,8 @@ final class FurryQuestArena {
 
     void scatter(Location impact, long tick) {
         for (Walker walker : herd.values()) {
-            if (walker.claimed || walker.body.getLocation().distanceSquared(impact) > 8 * 8) continue;
+            if (walker.claimed || walker.body.getLocation().distanceSquared(impact) > 8 * 8)
+                continue;
             walker.fleeFrom = impact;
             walker.fleeUntil = tick + 60;
             flee(walker);
@@ -224,7 +248,8 @@ final class FurryQuestArena {
     private void flee(Walker walker) {
         Location here = walker.body.getLocation();
         double dx = here.getX() - walker.fleeFrom.getX(), dz = here.getZ() - walker.fleeFrom.getZ();
-        double away = dx * dx + dz * dz < .01 ? random.nextDouble() * 2 * Math.PI : Math.atan2(dz, dx);
+        double away =
+                dx * dx + dz * dz < .01 ? random.nextDouble() * 2 * Math.PI : Math.atan2(dz, dx);
         var navigation = walker.body.getPathfinder();
         // Try sideways exits too, so animals at a fence can run along it.
         for (int turn : FLEE_TURNS) {
@@ -234,7 +259,9 @@ final class FurryQuestArena {
             Location target = destination(world.getBlockAt(x, FLOOR, z));
             if (target == null || target.distanceSquared(here) < 4) continue;
             var path = navigation.findPath(target);
-            if (path != null && path.getFinalPoint() != null && path.getFinalPoint().distanceSquared(target) < 2.25
+            if (path != null
+                    && path.getFinalPoint() != null
+                    && path.getFinalPoint().distanceSquared(target) < 2.25
                     && navigation.moveTo(path, 2.0)) {
                 walker.destination = target;
                 return;
@@ -248,8 +275,11 @@ final class FurryQuestArena {
             if (walker.claimed) continue;
             if (walker.fleeFrom != null) {
                 if (tick < walker.fleeUntil) {
-                    if (tick % 5 == 0 && (walker.destination == null || !walker.body.getPathfinder().hasPath()
-                            || walker.body.getLocation().distanceSquared(walker.destination) < 2.25)) flee(walker);
+                    if (tick % 5 == 0
+                            && (walker.destination == null
+                                    || !walker.body.getPathfinder().hasPath()
+                                    || walker.body.getLocation().distanceSquared(walker.destination)
+                                            < 2.25)) flee(walker);
                     continue;
                 }
                 walker.body.getPathfinder().stopPathfinding();
@@ -266,7 +296,8 @@ final class FurryQuestArena {
                 patrol(tick);
                 continue;
             }
-            if (walker.destination != null && walker.body.getLocation().distanceSquared(walker.destination) < 2.25) {
+            if (walker.destination != null
+                    && walker.body.getLocation().distanceSquared(walker.destination) < 2.25) {
                 walker.destination = null;
                 walker.nextWander = tick + 60 + random.nextInt(100);
             }
@@ -282,7 +313,8 @@ final class FurryQuestArena {
             } else if (walker.destination != null) {
                 // A vanilla behaviour (such as grazing) may have interrupted the route.
                 var path = walker.body.getPathfinder().getCurrentPath();
-                if (path == null || path.getFinalPoint() == null
+                if (path == null
+                        || path.getFinalPoint() == null
                         || path.getFinalPoint().distanceSquared(walker.destination) > 2.25)
                     walker.body.getPathfinder().moveTo(walker.destination, 1.0);
             }

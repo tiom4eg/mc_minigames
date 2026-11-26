@@ -1,10 +1,14 @@
 package me.petr1furious.potatominigames.games.warfare;
 
+import me.petr1furious.potatominigames.core.command.CommandFailure;
+import me.petr1furious.potatominigames.core.game.EndReason;
+import me.petr1furious.potatominigames.core.game.GameSession;
+import me.petr1furious.potatominigames.core.game.SessionServices;
+import me.petr1furious.potatominigames.gadgets.FPVDroneGadget;
 import me.petr1furious.potatominigames.i18n.I18n;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -17,14 +21,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
-import me.petr1furious.potatominigames.core.command.CommandFailure;
-import me.petr1furious.potatominigames.core.game.EndReason;
-import me.petr1furious.potatominigames.core.game.GameSession;
-import me.petr1furious.potatominigames.core.game.SessionServices;
-import me.petr1furious.potatominigames.gadgets.FPVDroneGadget;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 abstract class WarfareSessionBase implements GameSession {
     /** Start option and queue vote: the map to play. */
@@ -38,6 +37,7 @@ abstract class WarfareSessionBase implements GameSession {
 
     /** Null without configured maps, when the game plays in gameWorld. */
     protected WarfareMap map;
+
     private World world;
     private Vector center;
     private int radius;
@@ -85,9 +85,15 @@ abstract class WarfareSessionBase implements GameSession {
         if (config.arenaBorderEnabled.get() && borderAtStart()) {
             Location center = chooseArenaBorderCenter();
             double initialSize = Math.max(1.0, config.arenaBorderInitialSize.get());
-            double finalSize = Math.max(1.0, Math.min(initialSize, config.arenaBorderFinalSize.get()));
-            services.arena().applyBorder(world, center, initialSize, finalSize,
-                    Math.max(0, config.arenaBorderTimeToFinalSeconds.get()));
+            double finalSize =
+                    Math.max(1.0, Math.min(initialSize, config.arenaBorderFinalSize.get()));
+            services.arena()
+                    .applyBorder(
+                            world,
+                            center,
+                            initialSize,
+                            finalSize,
+                            Math.max(0, config.arenaBorderTimeToFinalSeconds.get()));
         }
     }
 
@@ -98,19 +104,32 @@ abstract class WarfareSessionBase implements GameSession {
         }
         List<WarfareMap> usable = config.mapsFor(services.session().mode());
         if (usable.isEmpty()) {
-            Component modeName = switch (services.session().mode()) {
-                case "classic", "team_beacon" -> I18n.tr("warfare.mode." + services.session().mode());
-                default -> Component.text(services.session().mode());
-            };
+            Component modeName =
+                    switch (services.session().mode()) {
+                        case "classic", "team_beacon" ->
+                                I18n.tr("warfare.mode." + services.session().mode());
+                        default -> Component.text(services.session().mode());
+                    };
             throw new CommandFailure(I18n.tr("warfare.map.no_usable", modeName));
         }
         String forced = services.option(MAP_OPTION);
         if (forced == null) {
             return usable.get(ThreadLocalRandom.current().nextInt(usable.size()));
         }
-        return usable.stream().filter(candidate -> candidate.name().equalsIgnoreCase(forced)).findFirst()
-                .orElseThrow(() -> new CommandFailure(I18n.tr("warfare.map.unusable", forced,
-                        String.join(", ", usable.stream().map(WarfareMap::name).toList()))));
+        return usable.stream()
+                .filter(candidate -> candidate.name().equalsIgnoreCase(forced))
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new CommandFailure(
+                                        I18n.tr(
+                                                "warfare.map.unusable",
+                                                forced,
+                                                String.join(
+                                                        ", ",
+                                                        usable.stream()
+                                                                .map(WarfareMap::name)
+                                                                .toList()))));
     }
 
     /** False when the session brings the border in itself, later in the game. */
@@ -130,7 +149,8 @@ abstract class WarfareSessionBase implements GameSession {
             offsetX = Math.cos(angle) * distance;
             offsetZ = Math.sin(angle) * distance;
         }
-        return new Location(world, gameCenter.getX() + offsetX, gameCenter.getY(), gameCenter.getZ() + offsetZ);
+        return new Location(
+                world, gameCenter.getX() + offsetX, gameCenter.getY(), gameCenter.getZ() + offsetZ);
     }
 
     /** Follows the shrinking border when one is active. */
@@ -158,7 +178,12 @@ abstract class WarfareSessionBase implements GameSession {
         player.teleport(target);
         if (keepInvisibility) {
             player.addPotionEffect(
-                    new PotionEffect(PotionEffectType.INVISIBILITY, PotionEffect.INFINITE_DURATION, 1, false, false));
+                    new PotionEffect(
+                            PotionEffectType.INVISIBILITY,
+                            PotionEffect.INFINITE_DURATION,
+                            1,
+                            false,
+                            false));
         }
         if (config.enableGameInventory.get()) {
             var kit = config.gameInventory();
@@ -179,7 +204,8 @@ abstract class WarfareSessionBase implements GameSession {
 
     @Override
     public void onFoodLevelChange(FoodLevelChangeEvent event) {
-        if (config.noHunger.get() && event.getEntity() instanceof Player player
+        if (config.noHunger.get()
+                && event.getEntity() instanceof Player player
                 && services.participants().isParticipant(player)
                 && event.getFoodLevel() < player.getFoodLevel()) {
             event.setCancelled(true);
@@ -217,8 +243,7 @@ abstract class WarfareSessionBase implements GameSession {
 
     protected List<Component> buildDistanceLines(Player viewer) {
         int granularity = Math.max(1, config.distanceGranularity.get());
-        record Row(int distance, Component line) {
-        }
+        record Row(int distance, Component line) {}
         List<Row> rows = new ArrayList<>();
         for (Player target : getTrackedPlayers(viewer)) {
             if (!viewer.getWorld().equals(target.getWorld())) {
@@ -226,10 +251,17 @@ abstract class WarfareSessionBase implements GameSession {
             }
             double distance = viewer.getLocation().distance(target.getLocation());
             int roundedDistance = ((int) (distance + 0.5) / granularity) * granularity;
-            rows.add(new Row(roundedDistance, Component.text()
-                    .append(Component.text(distanceRange(roundedDistance, granularity), NamedTextColor.GOLD))
-                    .append(Component.space()).append(targetLabel(viewer, target).color(NamedTextColor.AQUA))
-                    .build()));
+            rows.add(
+                    new Row(
+                            roundedDistance,
+                            Component.text()
+                                    .append(
+                                            Component.text(
+                                                    distanceRange(roundedDistance, granularity),
+                                                    NamedTextColor.GOLD))
+                                    .append(Component.space())
+                                    .append(targetLabel(viewer, target).color(NamedTextColor.AQUA))
+                                    .build()));
         }
         rows.sort((a, b) -> Integer.compare(b.distance(), a.distance()));
         List<Component> lines = new ArrayList<>();
@@ -240,17 +272,22 @@ abstract class WarfareSessionBase implements GameSession {
     }
 
     private Component targetLabel(Player viewer, Player target) {
-        return shouldHideTrackedPlayerNames(viewer) ? I18n.tr("warfare.enemy") : Component.text(target.getName());
+        return shouldHideTrackedPlayerNames(viewer)
+                ? I18n.tr("warfare.enemy")
+                : Component.text(target.getName());
     }
 
     protected Component refreshLine() {
-        return I18n.tr("warfare.hud.refresh", Component.text(Math.max(0, secondsUntilHudRefresh),
-                NamedTextColor.GREEN)).color(NamedTextColor.GRAY);
+        return I18n.tr(
+                        "warfare.hud.refresh",
+                        Component.text(Math.max(0, secondsUntilHudRefresh), NamedTextColor.GREEN))
+                .color(NamedTextColor.GRAY);
     }
 
     // Distances refresh only every interval (stale positions are intended); the
     // "Refresh" line ticks every second from the cached content.
-    private final java.util.Map<java.util.UUID, List<Component>> cachedHudLines = new java.util.HashMap<>();
+    private final java.util.Map<java.util.UUID, List<Component>> cachedHudLines =
+            new java.util.HashMap<>();
 
     @Override
     public void onSecondTick(long secondsElapsed) {
@@ -299,7 +336,8 @@ abstract class WarfareSessionBase implements GameSession {
             return;
         }
         Player player = event.getPlayer();
-        if (!services.participants().isParticipant(player) || fpvDrone.isPlayerInDroneMode(player)) {
+        if (!services.participants().isParticipant(player)
+                || fpvDrone.isPlayerInDroneMode(player)) {
             return;
         }
         liftHandler.handleLift(player, config.liftMaterial.get());
@@ -315,10 +353,10 @@ abstract class WarfareSessionBase implements GameSession {
     public List<Component> summary() {
         List<Component> lines = new ArrayList<>(summary);
         if (map != null) {
-            lines.add(I18n.tr("warfare.summary.map", Component.text(map.name(), NamedTextColor.WHITE))
-                    .color(NamedTextColor.GRAY));
+            lines.add(
+                    I18n.tr("warfare.summary.map", Component.text(map.name(), NamedTextColor.WHITE))
+                            .color(NamedTextColor.GRAY));
         }
         return lines;
     }
-
 }

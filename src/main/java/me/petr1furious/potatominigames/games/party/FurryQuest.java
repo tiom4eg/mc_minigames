@@ -21,10 +21,15 @@ final class FurryQuest {
     private static final int CONTACT_TICKS = 15 * 20;
 
     enum Station {
-        BARN_BARREL(16, 1, -14), LOOM(-15, 1, 3), DOCK_POST(-11, 1, -9),
-        BLUE(-8, 1, -17), GOLD(0, 1, -18), RED(6, 1, -16), SCARECROW(18, 3, 16);
-
+        BARN_BARREL(16, 1, -14),
+        LOOM(-15, 1, 3),
+        DOCK_POST(-11, 1, -9),
+        BLUE(-8, 1, -17),
+        GOLD(0, 1, -18),
+        RED(6, 1, -16),
+        SCARECROW(18, 3, 16);
         final int x, y, z;
+
         Station(int x, int y, int z) {
             this.x = x;
             this.y = y;
@@ -40,35 +45,50 @@ final class FurryQuest {
             };
         }
 
-        boolean chime() { return this == BLUE || this == GOLD || this == RED; }
+        boolean chime() {
+            return this == BLUE || this == GOLD || this == RED;
+        }
     }
 
     record Plot(int x, int z) {}
 
     /** How clearly the task gives away a hider to the sniper. */
-    enum Difficulty { EASY, MEDIUM, HARD }
+    enum Difficulty {
+        EASY,
+        MEDIUM,
+        HARD
+    }
 
     enum Site {
-        POND(Difficulty.EASY, -13, -10), HAY(Difficulty.EASY, 12, -11),
-        TREE(Difficulty.MEDIUM, -12, 10), TROUGH(Difficulty.EASY, 13, 8), BELL(Difficulty.HARD, 1, 15),
-        PARCEL(Difficulty.MEDIUM, Station.BARN_BARREL, Station.LOOM), FISH(Difficulty.MEDIUM, Station.DOCK_POST),
+        POND(Difficulty.EASY, -13, -10),
+        HAY(Difficulty.EASY, 12, -11),
+        TREE(Difficulty.MEDIUM, -12, 10),
+        TROUGH(Difficulty.EASY, 13, 8),
+        BELL(Difficulty.HARD, 1, 15),
+        PARCEL(Difficulty.MEDIUM, Station.BARN_BARREL, Station.LOOM),
+        FISH(Difficulty.MEDIUM, Station.DOCK_POST),
         CHIMES(Difficulty.HARD, Station.BLUE, Station.GOLD, Station.RED),
-        SWAP(Difficulty.MEDIUM, Station.SCARECROW), CONTACT(Difficulty.HARD);
+        SWAP(Difficulty.MEDIUM, Station.SCARECROW),
+        CONTACT(Difficulty.HARD);
 
         final Difficulty difficulty;
         final Plot plot;
         final List<Station> stops;
+
         Site(Difficulty difficulty, Plot plot, List<Station> stops) {
             this.difficulty = difficulty;
             this.plot = plot;
             this.stops = stops;
         }
+
         Site(Difficulty difficulty) {
             this(difficulty, null, List.of()); // The contact moves with the herd.
         }
+
         Site(Difficulty difficulty, int x, int z) {
             this(difficulty, new Plot(x, z), List.of());
         }
+
         Site(Difficulty difficulty, Station... stops) {
             this(difficulty, new Plot(stops[0].x, stops[0].z), List.of(stops));
         }
@@ -78,8 +98,23 @@ final class FurryQuest {
     static final int REPEATS = 3;
     static final int WOOL_TICKS = 5 * 20;
     static final int BITE_WINDOW = 20;
-    enum Interaction { IGNORED, NEXT, CAST, EARLY, WRONG_NOTE, COMPLETE }
-    enum Outcome { MISSIONS, LIVESTOCK, ALL_CAUGHT, TIME, SNIPER_LEFT }
+
+    enum Interaction {
+        IGNORED,
+        NEXT,
+        CAST,
+        EARLY,
+        WRONG_NOTE,
+        COMPLETE
+    }
+
+    enum Outcome {
+        MISSIONS,
+        LIVESTOCK,
+        ALL_CAUGHT,
+        TIME,
+        SNIPER_LEFT
+    }
 
     private static final class Route {
         final List<Site> sites;
@@ -119,7 +154,9 @@ final class FurryQuest {
         long biteTick = -1;
         boolean crouching, jumping;
 
-        TaskProgress(Site site) { this.site = site; }
+        TaskProgress(Site site) {
+            this.site = site;
+        }
 
         Station station() {
             return site.stops.isEmpty() ? null : site.stops.get(progress);
@@ -201,16 +238,28 @@ final class FurryQuest {
     private int mistakes;
 
     FurryQuest(Collection<UUID> players, Random random) {
-        if (players.size() < 2) throw new IllegalArgumentException("Furry Quest requires two players");
+        if (players.size() < 2)
+            throw new IllegalArgumentException("Furry Quest requires two players");
         var ids = new ArrayList<>(players);
         sniper = ids.remove(random.nextInt(ids.size()));
         for (UUID id : ids) routes.put(id, new Route(random));
     }
 
-    UUID sniper() { return sniper; }
-    int remaining() { return (int) routes.values().stream().filter(r -> r.active).count(); }
-    int completed(UUID id) { return TASKS - routes.get(id).pending.size(); }
-    List<Site> assignments(UUID id) { return routes.get(id).sites; }
+    UUID sniper() {
+        return sniper;
+    }
+
+    int remaining() {
+        return (int) routes.values().stream().filter(r -> r.active).count();
+    }
+
+    int completed(UUID id) {
+        return TASKS - routes.get(id).pending.size();
+    }
+
+    List<Site> assignments(UUID id) {
+        return routes.get(id).sites;
+    }
 
     boolean unfinished(UUID id, Site site) {
         return pending(id, site) != null;
@@ -244,7 +293,9 @@ final class FurryQuest {
         return outcome == null && route != null && route.active ? route.pending.get(site) : null;
     }
 
-    Outcome outcome() { return outcome; }
+    Outcome outcome() {
+        return outcome;
+    }
 
     int contactSecondsLeft(UUID id) {
         TaskProgress task = pending(id, Site.CONTACT);
@@ -299,16 +350,21 @@ final class FurryQuest {
         return result;
     }
 
-    boolean finalHunt() { return finalHunt; }
+    boolean finalHunt() {
+        return finalHunt;
+    }
 
     boolean startFinalHuntIfReady() {
-        if (finalHunt || outcome != null || routes.values().stream().anyMatch(r -> r.active && !r.pending.isEmpty()))
+        if (finalHunt
+                || outcome != null
+                || routes.values().stream().anyMatch(r -> r.active && !r.pending.isEmpty()))
             return false;
         finalHunt = true;
         return true;
     }
 
-    boolean act(UUID id, Site site, double dx, double dz, boolean level, boolean crouch, boolean jump) {
+    boolean act(
+            UUID id, Site site, double dx, double dz, boolean level, boolean crouch, boolean jump) {
         TaskProgress task = pending(id, site);
         if (task == null || !task.act(dx, dz, level, crouch, jump)) return false;
         routes.get(id).complete(site);
@@ -328,7 +384,9 @@ final class FurryQuest {
         if (outcome == null && ++mistakes > MISTAKE_LIMIT) outcome = Outcome.LIVESTOCK;
     }
 
-    int mistakesLeft() { return Math.max(0, MISTAKE_LIMIT - mistakes); }
+    int mistakesLeft() {
+        return Math.max(0, MISTAKE_LIMIT - mistakes);
+    }
 
     void timeout() {
         if (outcome == null) outcome = finalHunt ? Outcome.MISSIONS : Outcome.TIME;
@@ -336,11 +394,15 @@ final class FurryQuest {
 
     PartyRoundResult result(Set<UUID> eligible) {
         if (outcome == null) return PartyRoundResult.empty();
-        List<UUID> winners = switch (outcome) {
-            case ALL_CAUGHT, TIME -> List.of(sniper);
-            case MISSIONS, LIVESTOCK, SNIPER_LEFT -> routes.entrySet().stream()
-                    .filter(e -> !finalHunt || e.getValue().active).map(Map.Entry::getKey).toList();
-        };
+        List<UUID> winners =
+                switch (outcome) {
+                    case ALL_CAUGHT, TIME -> List.of(sniper);
+                    case MISSIONS, LIVESTOCK, SNIPER_LEFT ->
+                            routes.entrySet().stream()
+                                    .filter(e -> !finalHunt || e.getValue().active)
+                                    .map(Map.Entry::getKey)
+                                    .toList();
+                };
         return new PartyRoundResult(List.of(winners)).eligible(eligible);
     }
 }

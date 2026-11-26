@@ -2,8 +2,8 @@ package me.petr1furious.potatominigames.games.finals;
 
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 
-import me.petr1furious.potatominigames.core.game.SessionServices;
 import me.petr1furious.potatominigames.core.config.ConfigRegistry;
+import me.petr1furious.potatominigames.core.game.SessionServices;
 import me.petr1furious.potatominigames.core.player.ParticipantRegistry;
 import me.petr1furious.potatominigames.core.session.ActiveSession;
 import me.petr1furious.potatominigames.core.session.GamePhase;
@@ -17,19 +17,19 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Door;
 import org.bukkit.block.data.type.TrapDoor;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.TNTPrimed;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.Event;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -102,8 +102,9 @@ public final class FinalsSessionCheck {
     }
 
     private static void bulletClassification() throws Exception {
-        var bullet = FinalsCombatContext.class.getDeclaredMethod(
-                "damageBullet", Player.class, Player.class, double.class, Location.class);
+        var bullet =
+                FinalsCombatContext.class.getDeclaredMethod(
+                        "damageBullet", Player.class, Player.class, double.class, Location.class);
         bullet.setAccessible(true);
         Fixture f = new Fixture();
         FinalsCombatContext combat = context(f.session);
@@ -111,48 +112,90 @@ public final class FinalsSessionCheck {
         Location blastOrigin = new Location(f.world.world, 8, 65, 9);
         Location reflectedOrigin = new Location(f.world.world, -2, 66, 1);
 
-        f.blue.damageAction = (amount, source) -> {
-            damageScope(f, false, f.red.location, "ordinary melee damage is combat damage, never bullet damage");
-            check(amount == 3 && source == f.red.player, "generic damage retains its amount and attacker");
-        };
+        f.blue.damageAction =
+                (amount, source) -> {
+                    damageScope(
+                            f,
+                            false,
+                            f.red.location,
+                            "ordinary melee damage is combat damage, never bullet damage");
+                    check(
+                            amount == 3 && source == f.red.player,
+                            "generic damage retains its amount and attacker");
+                };
         combat.damage(f.blue.player, f.red.player, 3);
-        damageRestored(f, false, false, null, "generic damage restores the enclosing flags and origin");
-        f.blue.damageAction = (amount, source) -> {
-            damageScope(f, false, blastOrigin, "explosion-origin damage is not classified as a bullet");
-            check(field(f.session, "damageOrigin").get(f.session) != blastOrigin,
-                    "generic damage snapshots the caller's origin");
-        };
+        damageRestored(
+                f, false, false, null, "generic damage restores the enclosing flags and origin");
+        f.blue.damageAction =
+                (amount, source) -> {
+                    damageScope(
+                            f,
+                            false,
+                            blastOrigin,
+                            "explosion-origin damage is not classified as a bullet");
+                    check(
+                            field(f.session, "damageOrigin").get(f.session) != blastOrigin,
+                            "generic damage snapshots the caller's origin");
+                };
         combat.damage(f.blue.player, f.red.player, 5, blastOrigin);
-        damageRestored(f, false, false, null, "explosion damage leaves no bullet or origin state behind");
+        damageRestored(
+                f, false, false, null, "explosion damage leaves no bullet or origin state behind");
 
         DamageFailure nestedFailure = new DamageFailure();
-        f.red.damageAction = (amount, source) -> {
-            damageScope(f, false, reflectedOrigin, "nested reflected/gadget damage clears bullet classification");
-            check(source == f.blue.player && amount == 2, "nested generic damage attributes the defender as attacker");
-            throw nestedFailure;
-        };
-        f.blue.damageAction = (amount, source) -> {
-            damageScope(f, true, bulletOrigin, "only the explicit bullet callback is marked as bullet damage");
-            check(field(f.session, "damageOrigin").get(f.session) != bulletOrigin,
-                    "bullet damage snapshots the caller's origin");
-            Object outerOrigin = field(f.session, "damageOrigin").get(f.session);
-            try {
-                combat.damage(f.red.player, f.blue.player, 2, reflectedOrigin);
-                throw new AssertionError("Nested damage failure must reach its caller");
-            } catch (DamageFailure expected) {
-                check(expected == nestedFailure, "nested damage preserves the original exception");
-            }
-            damageRestored(f, true, true, outerOrigin,
-                    "nested generic failure restores the outer bullet scope and exact origin object");
-        };
+        f.red.damageAction =
+                (amount, source) -> {
+                    damageScope(
+                            f,
+                            false,
+                            reflectedOrigin,
+                            "nested reflected/gadget damage clears bullet classification");
+                    check(
+                            source == f.blue.player && amount == 2,
+                            "nested generic damage attributes the defender as attacker");
+                    throw nestedFailure;
+                };
+        f.blue.damageAction =
+                (amount, source) -> {
+                    damageScope(
+                            f,
+                            true,
+                            bulletOrigin,
+                            "only the explicit bullet callback is marked as bullet damage");
+                    check(
+                            field(f.session, "damageOrigin").get(f.session) != bulletOrigin,
+                            "bullet damage snapshots the caller's origin");
+                    Object outerOrigin = field(f.session, "damageOrigin").get(f.session);
+                    try {
+                        combat.damage(f.red.player, f.blue.player, 2, reflectedOrigin);
+                        throw new AssertionError("Nested damage failure must reach its caller");
+                    } catch (DamageFailure expected) {
+                        check(
+                                expected == nestedFailure,
+                                "nested damage preserves the original exception");
+                    }
+                    damageRestored(
+                            f,
+                            true,
+                            true,
+                            outerOrigin,
+                            "nested generic failure restores the outer bullet scope and exact"
+                                    + " origin object");
+                };
         invokeBullet(bullet, combat, f.blue.player, f.red.player, 7, bulletOrigin);
-        damageRestored(f, false, false, null, "completed bullet damage restores the idle session scope");
+        damageRestored(
+                f, false, false, null, "completed bullet damage restores the idle session scope");
 
         DamageFailure bulletFailure = new DamageFailure();
-        f.blue.damageAction = (amount, source) -> {
-            damageScope(f, true, bulletOrigin, "bullet classification remains active inside a failing damage callback");
-            throw bulletFailure;
-        };
+        f.blue.damageAction =
+                (amount, source) -> {
+                    damageScope(
+                            f,
+                            true,
+                            bulletOrigin,
+                            "bullet classification remains active inside a failing damage"
+                                    + " callback");
+                    throw bulletFailure;
+                };
         try {
             invokeBullet(bullet, combat, f.blue.player, f.red.player, 7, bulletOrigin);
             throw new AssertionError("Bullet damage failure must reach its caller");
@@ -165,44 +208,70 @@ public final class FinalsSessionCheck {
         set(f.session, "applyingCombatDamage", true);
         set(f.session, "applyingBulletDamage", true);
         set(f.session, "damageOrigin", enclosingOrigin);
-        f.blue.damageAction = (amount, source) -> {
-            damageScope(f, false, blastOrigin, "nested explosions clear an existing bullet marker");
-            throw nestedFailure;
-        };
+        f.blue.damageAction =
+                (amount, source) -> {
+                    damageScope(
+                            f,
+                            false,
+                            blastOrigin,
+                            "nested explosions clear an existing bullet marker");
+                    throw nestedFailure;
+                };
         try {
             combat.damage(f.blue.player, f.red.player, 5, blastOrigin);
             throw new AssertionError("Generic damage failure must reach its caller");
         } catch (DamageFailure expected) {
             check(expected == nestedFailure, "nested explosion preserves its failure");
         }
-        damageRestored(f, true, true, enclosingOrigin,
+        damageRestored(
+                f,
+                true,
+                true,
+                enclosingOrigin,
                 "generic damage restores non-default enclosing bullet state after failure");
     }
 
-    private static void invokeBullet(java.lang.reflect.Method method, FinalsCombatContext context,
-            Player target, Player source, double amount, Location origin) throws Exception {
-        try { method.invoke(context, target, source, amount, origin); }
-        catch (java.lang.reflect.InvocationTargetException failure) {
+    private static void invokeBullet(
+            java.lang.reflect.Method method,
+            FinalsCombatContext context,
+            Player target,
+            Player source,
+            double amount,
+            Location origin)
+            throws Exception {
+        try {
+            method.invoke(context, target, source, amount, origin);
+        } catch (java.lang.reflect.InvocationTargetException failure) {
             if (failure.getCause() instanceof Exception exception) throw exception;
             throw (Error) failure.getCause();
         }
     }
 
-    private static void damageScope(Fixture f, boolean bullet, Location origin, String label) throws Exception {
-        check((boolean) field(f.session, "applyingCombatDamage").get(f.session)
-                        && (boolean) field(f.session, "applyingBulletDamage").get(f.session) == bullet
-                        && origin.equals(field(f.session, "damageOrigin").get(f.session)), label);
+    private static void damageScope(Fixture f, boolean bullet, Location origin, String label)
+            throws Exception {
+        check(
+                (boolean) field(f.session, "applyingCombatDamage").get(f.session)
+                        && (boolean) field(f.session, "applyingBulletDamage").get(f.session)
+                                == bullet
+                        && origin.equals(field(f.session, "damageOrigin").get(f.session)),
+                label);
     }
 
-    private static void damageRestored(Fixture f, boolean combat, boolean bullet, Object origin,
-            String label) throws Exception {
-        check((boolean) field(f.session, "applyingCombatDamage").get(f.session) == combat
-                        && (boolean) field(f.session, "applyingBulletDamage").get(f.session) == bullet
-                        && field(f.session, "damageOrigin").get(f.session) == origin, label);
+    private static void damageRestored(
+            Fixture f, boolean combat, boolean bullet, Object origin, String label)
+            throws Exception {
+        check(
+                (boolean) field(f.session, "applyingCombatDamage").get(f.session) == combat
+                        && (boolean) field(f.session, "applyingBulletDamage").get(f.session)
+                                == bullet
+                        && field(f.session, "damageOrigin").get(f.session) == origin,
+                label);
     }
 
     @FunctionalInterface
-    private interface DamageAction { void accept(double amount, Entity source) throws Exception; }
+    private interface DamageAction {
+        void accept(double amount, Entity source) throws Exception;
+    }
 
     private static final class DamageFailure extends RuntimeException {}
 
@@ -335,14 +404,19 @@ public final class FinalsSessionCheck {
         Fixture f = new Fixture();
         f.depositRed();
         f.state.beginSteal(BLUE, 100);
-        EntityDamageEvent fall = new EntityDamageEvent(f.blue.player,
-                EntityDamageEvent.DamageCause.FALL, null, 18);
+        EntityDamageEvent fall =
+                new EntityDamageEvent(f.blue.player, EntityDamageEvent.DamageCause.FALL, null, 18);
         f.session.onEntityDamage(fall);
-        check(fall.isCancelled(), "fall damage is disabled for an active contestant without spawn protection");
-        check(f.state.stealDeadlines().containsKey(BLUE), "falling does not interrupt an ongoing cashout steal");
+        check(
+                fall.isCancelled(),
+                "fall damage is disabled for an active contestant without spawn protection");
+        check(
+                f.state.stealDeadlines().containsKey(BLUE),
+                "falling does not interrupt an ongoing cashout steal");
         EntityDamageEvent fire = environmental(f.blue.player, 3);
         f.session.onEntityDamage(fire);
-        check(!fire.isCancelled() && !f.state.stealDeadlines().containsKey(BLUE),
+        check(
+                !fire.isCancelled() && !f.state.stealDeadlines().containsKey(BLUE),
                 "other environmental damage still applies and interrupts a steal");
     }
 
@@ -353,22 +427,29 @@ public final class FinalsSessionCheck {
         f.red.hand.type = Material.AIR;
         f.red.slot = 6;
         for (Material material : Material.values()) {
-            if (material != Material.GLASS && material != Material.GLASS_PANE
-                    && material != Material.TINTED_GLASS && !material.name().endsWith("_STAINED_GLASS")
+            if (material != Material.GLASS
+                    && material != Material.GLASS_PANE
+                    && material != Material.TINTED_GLASS
+                    && !material.name().endsWith("_STAINED_GLASS")
                     && !material.name().endsWith("_STAINED_GLASS_PANE")) continue;
             cover.setType(material);
-            PlayerInteractEvent start = interaction(f.red.player, cover, EquipmentSlot.HAND, Action.LEFT_CLICK_BLOCK);
+            PlayerInteractEvent start =
+                    interaction(f.red.player, cover, EquipmentSlot.HAND, Action.LEFT_CLICK_BLOCK);
             f.session.onPlayerInteract(start);
-            check(start.useInteractedBlock() == Event.Result.ALLOW && start.useItemInHand() == Event.Result.ALLOW,
+            check(
+                    start.useInteractedBlock() == Event.Result.ALLOW
+                            && start.useItemInHand() == Event.Result.ALLOW,
                     "bare-hand left click permits natural glass breaking: " + material);
             BlockBreakEvent broken = new BlockBreakEvent(cover, f.red.player);
             broken.setExpToDrop(4);
             f.session.onBlockBreak(broken);
-            check(!broken.isCancelled() && !broken.isDropItems() && broken.getExpToDrop() == 0,
+            check(
+                    !broken.isCancelled() && !broken.isDropItems() && broken.getExpToDrop() == 0,
                     "bare-hand glass breaks without drops or XP: " + material);
         }
         cover.setType(Material.GLASS);
-        PlayerInteractEvent offhand = interaction(f.red.player, cover, EquipmentSlot.OFF_HAND, Action.LEFT_CLICK_BLOCK);
+        PlayerInteractEvent offhand =
+                interaction(f.red.player, cover, EquipmentSlot.OFF_HAND, Action.LEFT_CLICK_BLOCK);
         f.session.onPlayerInteract(offhand);
         check(offhand.isCancelled(), "offhand cannot initiate glass demolition");
         for (Material held : List.of(Material.IRON_PICKAXE, Material.WOODEN_HOE, Material.STICK)) {
@@ -376,24 +457,31 @@ public final class FinalsSessionCheck {
             f.red.slot = 7;
             BlockBreakEvent broken = new BlockBreakEvent(cover, f.red.player);
             f.session.onBlockBreak(broken);
-            check(broken.isCancelled(), "holding an item cannot break glass, including the old pickaxe slot");
+            check(
+                    broken.isCancelled(),
+                    "holding an item cannot break glass, including the old pickaxe slot");
         }
         f.red.hand.type = Material.AIR;
-        for (Material solid : List.of(Material.OAK_PLANKS, Material.STONE, Material.ICE, Material.SEA_LANTERN)) {
+        for (Material solid :
+                List.of(Material.OAK_PLANKS, Material.STONE, Material.ICE, Material.SEA_LANTERN)) {
             cover.setType(solid);
             BlockBreakEvent broken = new BlockBreakEvent(cover, f.red.player);
             f.session.onBlockBreak(broken);
             check(broken.isCancelled(), "bare hands cannot break non-glass terrain: " + solid);
         }
         cover.setType(Material.GLASS);
-        for (Block protectedBlock : List.of(f.world.block(0, 64, 0), f.arena.vault().getBlock(),
-                f.world.block(24, 65, 0))) {
+        for (Block protectedBlock :
+                List.of(
+                        f.world.block(0, 64, 0),
+                        f.arena.vault().getBlock(),
+                        f.world.block(24, 65, 0))) {
             protectedBlock.setType(Material.GLASS);
             BlockBreakEvent broken = new BlockBreakEvent(protectedBlock, f.red.player);
             f.session.onBlockBreak(broken);
             check(broken.isCancelled(), "glass must still belong to destructible arena cover");
         }
-        for (String gate : List.of("protection", "countdown", "downed", "disconnected", "finished")) {
+        for (String gate :
+                List.of("protection", "countdown", "downed", "disconnected", "finished")) {
             Fixture blocked = new Fixture();
             Block glass = blocked.world.block(6, 65, 3);
             glass.setType(Material.GLASS);
@@ -402,15 +490,23 @@ public final class FinalsSessionCheck {
             BlockBreakEvent broken = new BlockBreakEvent(glass, blocked.red.player);
             blocked.session.onBlockBreak(broken);
             check(broken.isCancelled(), "glass demolition respects " + gate);
-            PlayerInteractEvent start = interaction(blocked.red.player, glass, EquipmentSlot.HAND, Action.LEFT_CLICK_BLOCK);
+            PlayerInteractEvent start =
+                    interaction(
+                            blocked.red.player, glass, EquipmentSlot.HAND, Action.LEFT_CLICK_BLOCK);
             blocked.session.onPlayerInteract(start);
-            check(start.useInteractedBlock() != Event.Result.ALLOW, "glass interaction respects " + gate);
+            check(
+                    start.useInteractedBlock() != Event.Result.ALLOW,
+                    "glass interaction respects " + gate);
         }
     }
 
     private static void doorAndTrapdoorInteractions() throws Exception {
-        for (Material material : List.of(Material.OAK_DOOR, Material.IRON_DOOR, Material.COPPER_DOOR,
-                Material.WAXED_OXIDIZED_COPPER_DOOR)) {
+        for (Material material :
+                List.of(
+                        Material.OAK_DOOR,
+                        Material.IRON_DOOR,
+                        Material.COPPER_DOOR,
+                        Material.WAXED_OXIDIZED_COPPER_DOOR)) {
             Fixture f = new Fixture();
             f.red.location = new Location(f.world.world, 5, 65, 3);
             f.red.hand.type = Material.WOODEN_HOE;
@@ -419,31 +515,50 @@ public final class FinalsSessionCheck {
             f.world.openable(top, material, false, Bisected.Half.TOP);
             PlayerInteractEvent opening = interact(f.red.player, top, EquipmentSlot.HAND);
             f.session.onPlayerInteract(opening);
-            check(opening.isCancelled() && f.world.open(bottom) && f.world.open(top),
-                    "right-clicking the upper half opens both halves with a weapon held: " + material);
+            check(
+                    opening.isCancelled() && f.world.open(bottom) && f.world.open(top),
+                    "right-clicking the upper half opens both halves with a weapon held: "
+                            + material);
             f.world.unchangedShape(bottom);
             f.world.unchangedShape(top);
-            check(((Door) bottom.getBlockData()).getHalf() == Bisected.Half.BOTTOM
+            check(
+                    ((Door) bottom.getBlockData()).getHalf() == Bisected.Half.BOTTOM
                             && ((Door) top.getBlockData()).getHalf() == Bisected.Half.TOP,
                     "opening preserves both door-half identities");
             f.session.onPlayerInteract(interact(f.red.player, bottom, EquipmentSlot.HAND));
-            check(!f.world.open(bottom) && !f.world.open(top), "second click closes both door halves: " + material);
+            check(
+                    !f.world.open(bottom) && !f.world.open(top),
+                    "second click closes both door halves: " + material);
             f.session.onPlayerInteract(interact(f.red.player, bottom, EquipmentSlot.OFF_HAND));
-            check(!f.world.open(bottom) && !f.world.open(top), "offhand duplicate cannot double-toggle a door");
+            check(
+                    !f.world.open(bottom) && !f.world.open(top),
+                    "offhand duplicate cannot double-toggle a door");
         }
-        for (Material material : List.of(Material.OAK_TRAPDOOR, Material.IRON_TRAPDOOR, Material.COPPER_TRAPDOOR)) {
+        for (Material material :
+                List.of(Material.OAK_TRAPDOOR, Material.IRON_TRAPDOOR, Material.COPPER_TRAPDOOR)) {
             Fixture f = new Fixture();
             f.red.location = new Location(f.world.world, 5, 65, 3);
             Block trapdoor = f.world.block(6, 65, 3);
             f.world.openable(trapdoor, material, true, Bisected.Half.TOP);
             PlayerInteractEvent close = interact(f.red.player, trapdoor, EquipmentSlot.HAND);
             f.session.onPlayerInteract(close);
-            check(close.isCancelled() && !f.world.open(trapdoor), "right-click toggles a trapdoor: " + material);
+            check(
+                    close.isCancelled() && !f.world.open(trapdoor),
+                    "right-click toggles a trapdoor: " + material);
             f.world.unchangedShape(trapdoor);
-            check(((TrapDoor) trapdoor.getBlockData()).getHalf() == Bisected.Half.TOP,
+            check(
+                    ((TrapDoor) trapdoor.getBlockData()).getHalf() == Bisected.Half.TOP,
                     "opening preserves a top-mounted trapdoor");
         }
-        for (String gate : List.of("protection", "countdown", "downed", "disconnected", "finished", "distance", "outside")) {
+        for (String gate :
+                List.of(
+                        "protection",
+                        "countdown",
+                        "downed",
+                        "disconnected",
+                        "finished",
+                        "distance",
+                        "outside")) {
             Fixture f = new Fixture();
             Block door = f.world.block(gate.equals("outside") ? 24 : 6, 65, 3);
             f.world.openable(door, Material.IRON_TRAPDOOR, false, Bisected.Half.BOTTOM);
@@ -458,7 +573,9 @@ public final class FinalsSessionCheck {
         f.world.openable(reachable, Material.OAK_TRAPDOOR, false, Bisected.Half.BOTTOM);
         f.red.location = reachable.getLocation().add(.5 - 4.5, .5, .5);
         f.session.onPlayerInteract(interact(f.red.player, reachable, EquipmentSlot.HAND));
-        check(f.world.open(reachable), "door interaction accepts the exact 4.5-block reach boundary");
+        check(
+                f.world.open(reachable),
+                "door interaction accepts the exact 4.5-block reach boundary");
         f.red.location.add(-.001, 0, 0);
         f.session.onPlayerInteract(interact(f.red.player, reachable, EquipmentSlot.HAND));
         check(f.world.open(reachable), "door interaction rejects distances beyond 4.5 blocks");
@@ -471,7 +588,9 @@ public final class FinalsSessionCheck {
         chest.setType(Material.CHEST);
         PlayerInteractEvent other = interact(f.red.player, chest, EquipmentSlot.HAND);
         f.session.onPlayerInteract(other);
-        check(other.useInteractedBlock() == Event.Result.DENY, "other native block interactions remain denied");
+        check(
+                other.useInteractedBlock() == Event.Result.DENY,
+                "other native block interactions remain denied");
     }
 
     private static void nativeControlsAndPressurePlates() throws Exception {
@@ -480,15 +599,22 @@ public final class FinalsSessionCheck {
         f.red.location = control.getLocation().add(-1, 0, 0);
         f.red.hand.type = Material.WOODEN_HOE;
         for (Material material : Material.values()) {
-            if (!material.name().endsWith("_BUTTON") && !material.name().endsWith("_FENCE_GATE")) continue;
+            if (!material.name().endsWith("_BUTTON") && !material.name().endsWith("_FENCE_GATE"))
+                continue;
             control.setType(material);
             PlayerInteractEvent click = interact(f.red.player, control, EquipmentSlot.HAND);
             f.session.onPlayerInteract(click);
-            check(click.useInteractedBlock() == Event.Result.ALLOW && click.useItemInHand() == Event.Result.DENY,
-                    "main-hand right click permits native redstone/toggle behavior without firing equipment: " + material);
+            check(
+                    click.useInteractedBlock() == Event.Result.ALLOW
+                            && click.useItemInHand() == Event.Result.DENY,
+                    "main-hand right click permits native redstone/toggle behavior without firing"
+                            + " equipment: "
+                            + material);
             PlayerInteractEvent offhand = interact(f.red.player, control, EquipmentSlot.OFF_HAND);
             f.session.onPlayerInteract(offhand);
-            check(offhand.useInteractedBlock() == Event.Result.DENY && offhand.useItemInHand() == Event.Result.DENY,
+            check(
+                    offhand.useInteractedBlock() == Event.Result.DENY
+                            && offhand.useItemInHand() == Event.Result.DENY,
                     "offhand duplicates cannot activate native controls: " + material);
         }
         for (Material material : Material.values()) {
@@ -496,37 +622,66 @@ public final class FinalsSessionCheck {
             control.setType(material);
             PlayerInteractEvent step = interaction(f.red.player, control, null, Action.PHYSICAL);
             f.session.onPlayerInteract(step);
-            check(step.useInteractedBlock() == Event.Result.ALLOW && step.useItemInHand() == Event.Result.DENY,
-                    "physical pressure plate activation accepts its native null hand and never uses equipment: " + material);
+            check(
+                    step.useInteractedBlock() == Event.Result.ALLOW
+                            && step.useItemInHand() == Event.Result.DENY,
+                    "physical pressure plate activation accepts its native null hand and never uses"
+                            + " equipment: "
+                            + material);
         }
-        for (Material material : List.of(Material.STONE_BUTTON, Material.OAK_FENCE_GATE, Material.HEAVY_WEIGHTED_PRESSURE_PLATE)) {
+        for (Material material :
+                List.of(
+                        Material.STONE_BUTTON,
+                        Material.OAK_FENCE_GATE,
+                        Material.HEAVY_WEIGHTED_PRESSURE_PLATE)) {
             boolean plate = material.name().endsWith("_PRESSURE_PLATE");
-            for (String gate : List.of("inactive", "preparing", "countdown", "protection", "downed", "disconnected", "finished", "outside")) {
+            for (String gate :
+                    List.of(
+                            "inactive",
+                            "preparing",
+                            "countdown",
+                            "protection",
+                            "downed",
+                            "disconnected",
+                            "finished",
+                            "outside")) {
                 Fixture blocked = new Fixture();
                 Block target = blocked.world.block(gate.equals("outside") ? 24 : 6, 65, 3);
                 target.setType(material);
                 blocked.red.location = target.getLocation().add(-1, 0, 0);
                 if (!gate.equals("outside")) interactionGate(blocked, gate);
-                PlayerInteractEvent denied = interaction(blocked.red.player, target, plate ? null : EquipmentSlot.HAND,
-                        plate ? Action.PHYSICAL : Action.RIGHT_CLICK_BLOCK);
+                PlayerInteractEvent denied =
+                        interaction(
+                                blocked.red.player,
+                                target,
+                                plate ? null : EquipmentSlot.HAND,
+                                plate ? Action.PHYSICAL : Action.RIGHT_CLICK_BLOCK);
                 blocked.session.onPlayerInteract(denied);
-                check(denied.useInteractedBlock() == Event.Result.DENY,
+                check(
+                        denied.useInteractedBlock() == Event.Result.DENY,
                         material + " interaction respects " + gate);
             }
         }
-        for (Material material : List.of(Material.FARMLAND, Material.TURTLE_EGG, Material.STONE,
-                Material.STONE_BUTTON, Material.OAK_FENCE_GATE)) {
+        for (Material material :
+                List.of(
+                        Material.FARMLAND,
+                        Material.TURTLE_EGG,
+                        Material.STONE,
+                        Material.STONE_BUTTON,
+                        Material.OAK_FENCE_GATE)) {
             control.setType(material);
             PlayerInteractEvent step = interaction(f.red.player, control, null, Action.PHYSICAL);
             f.session.onPlayerInteract(step);
-            check(step.useInteractedBlock() == Event.Result.DENY,
+            check(
+                    step.useInteractedBlock() == Event.Result.DENY,
                     "physical activation does not enable unrelated terrain mutations: " + material);
         }
         for (Material material : List.of(Material.CHEST, Material.LEVER, Material.CRAFTING_TABLE)) {
             control.setType(material);
             PlayerInteractEvent click = interact(f.red.player, control, EquipmentSlot.HAND);
             f.session.onPlayerInteract(click);
-            check(click.useInteractedBlock() == Event.Result.DENY,
+            check(
+                    click.useInteractedBlock() == Event.Result.DENY,
                     "unrelated right-click block interactions stay blocked: " + material);
         }
         control.setType(Material.OAK_PRESSURE_PLATE);
@@ -540,23 +695,32 @@ public final class FinalsSessionCheck {
         set(f.session, "weapons", weapons);
         PlayerInteractEvent step = interaction(f.red.player, control, null, Action.PHYSICAL);
         f.session.onPlayerInteract(step);
-        check(step.useInteractedBlock() == Event.Result.ALLOW && (Long) field(equipped, "guardUntil").get(equipped) == 400L,
+        check(
+                step.useInteractedBlock() == Event.Result.ALLOW
+                        && (Long) field(equipped, "guardUntil").get(equipped) == 400L,
                 "walking on a pressure plate does not cancel ongoing weapon use");
 
         FinalsRevives revives = bare(FinalsRevives.class);
         Class<?> channelType = Class.forName(FinalsRevives.class.getName() + "$Channel");
-        var channelConstructor = channelType.getDeclaredConstructor(Player.class, UUID.class, boolean.class, int.class, long.class);
+        var channelConstructor =
+                channelType.getDeclaredConstructor(
+                        Player.class, UUID.class, boolean.class, int.class, long.class);
         channelConstructor.setAccessible(true);
         Object channel = channelConstructor.newInstance(f.red.player, BLUE_MATE, false, 0, 300L);
         Map<UUID, Object> channels = new HashMap<>();
         channels.put(RED, channel);
         set(revives, "channels", channels);
         set(f.session, "revives", revives);
-        PlayerInteractEvent duringRevive = interaction(f.red.player, control, null, Action.PHYSICAL);
+        PlayerInteractEvent duringRevive =
+                interaction(f.red.player, control, null, Action.PHYSICAL);
         f.session.onPlayerInteract(duringRevive);
-        check(duringRevive.useInteractedBlock() == Event.Result.DENY && channels.get(RED) == channel,
-                "an occupied reviver cannot activate a pressure plate, but walking never interrupts the revive channel");
-        check((Long) field(equipped, "guardUntil").get(equipped) == 400L,
+        check(
+                duringRevive.useInteractedBlock() == Event.Result.DENY
+                        && channels.get(RED) == channel,
+                "an occupied reviver cannot activate a pressure plate, but walking never interrupts"
+                        + " the revive channel");
+        check(
+                (Long) field(equipped, "guardUntil").get(equipped) == 400L,
                 "a rejected physical interaction also preserves weapon state");
     }
 
@@ -638,31 +802,42 @@ public final class FinalsSessionCheck {
         check(kills.snapshot().get(RED) == 1, "actual enemy death records native credited killer");
         credited.session.onPlayerDeath(death);
         check(kills.snapshot().get(RED) == 1, "duplicate session death cannot inflate kills");
-        check(credited.red.sounds == 1, "only the actual credited enemy kill plays the killer cue once");
+        check(
+                credited.red.sounds == 1,
+                "only the actual credited enemy kill plays the killer cue once");
         credited.red.dead = true;
         credited.connected().remove(RED);
         credited.state.disconnect(RED, 100);
         credited.session.onParticipantRejoin(credited.red.player);
-        check(kills.snapshot().get(RED) == 1, "session disconnect and recovery preserve match kills");
+        check(
+                kills.snapshot().get(RED) == 1,
+                "session disconnect and recovery preserve match kills");
 
         Fixture friendly = new Fixture();
         friendly.blue.killer = friendly.blueMate.player;
         friendly.session.onPlayerDeath(death(friendly.blue.player));
-        FinalsKills friendlyKills = (FinalsKills) field(friendly.session, "kills").get(friendly.session);
+        FinalsKills friendlyKills =
+                (FinalsKills) field(friendly.session, "kills").get(friendly.session);
         check(friendlyKills.snapshot().isEmpty(), "actual friendly death receives no kill credit");
 
         Fixture outsider = new Fixture();
         outsider.blue.killer = new FakePlayer(UNKNOWN, outsider.world.world).player;
         outsider.session.onPlayerDeath(death(outsider.blue.player));
-        FinalsKills outsiderKills = (FinalsKills) field(outsider.session, "kills").get(outsider.session);
-        check(outsiderKills.snapshot().isEmpty(), "nonparticipant native killer receives no match credit");
+        FinalsKills outsiderKills =
+                (FinalsKills) field(outsider.session, "kills").get(outsider.session);
+        check(
+                outsiderKills.snapshot().isEmpty(),
+                "nonparticipant native killer receives no match credit");
 
         Fixture countdown = new Fixture();
         set(countdown.session, "state", null);
         countdown.blue.killer = countdown.red.player;
         countdown.session.onPlayerDeath(death(countdown.blue.player));
-        FinalsKills countdownKills = (FinalsKills) field(countdown.session, "kills").get(countdown.session);
-        check(countdownKills.snapshot().isEmpty(), "countdown accidents never count as match kills");
+        FinalsKills countdownKills =
+                (FinalsKills) field(countdown.session, "kills").get(countdown.session);
+        check(
+                countdownKills.snapshot().isEmpty(),
+                "countdown accidents never count as match kills");
     }
 
     private static void teamWipeDeadlines() throws Exception {
@@ -672,19 +847,25 @@ public final class FinalsSessionCheck {
         f.session.onPlayerDeath(death(f.red.player));
         set(f.session, "tick", 110L);
         f.session.onPlayerDeath(death(f.blue.player));
-        check(f.respawns().get(RED) == 160L && f.respawns().get(BLUE) == 170L,
+        check(
+                f.respawns().get(RED) == 160L && f.respawns().get(BLUE) == 170L,
                 "individual deaths keep the ordinary five-second schedule before a wipe");
         set(f.session, "tick", 120L);
         f.session.onPlayerDeath(death(f.blueMate.player));
-        check(f.respawns().values().stream().allMatch(deadline -> deadline == 440L),
-                "the third teammate death synchronizes all three timers to last death plus320 ticks");
+        check(
+                f.respawns().values().stream().allMatch(deadline -> deadline == 440L),
+                "the third teammate death synchronizes all three timers to last death plus320"
+                        + " ticks");
         set(f.session, "tick", 439L);
         var spawn = FinalsSession.class.getDeclaredMethod("spawn", Player.class);
         spawn.setAccessible(true);
         spawn.invoke(f.session, f.red.player);
-        check(map(f.session, "classes").isEmpty(), "the shared spawn entry cannot bypass a pending team wipe");
+        check(
+                map(f.session, "classes").isEmpty(),
+                "the shared spawn entry cannot bypass a pending team wipe");
         f.respawns().remove(RED);
-        check(!context(f.session).revive(f.blue.player, f.red.player),
+        check(
+                !context(f.session).revive(f.blue.player, f.red.player),
                 "revive rejects wipe-locked teammates even if another path makes a reviver active");
         f.respawns().put(RED, 440L);
         f.connected().remove(BLUE_MATE);
@@ -694,12 +875,17 @@ public final class FinalsSessionCheck {
         prepare.setAccessible(true);
         prepare.invoke(f.session);
         Map<UUID, Location> positions = map(f.session, "teamRespawnPositions");
-        check(positions.size() == 3 && positions.values().stream().allMatch(positions.get(RED)::equals),
-                "one chosen team spawn is cached identically for the entire cohort including an offline member");
+        check(
+                positions.size() == 3
+                        && positions.values().stream().allMatch(positions.get(RED)::equals),
+                "one chosen team spawn is cached identically for the entire cohort including an"
+                        + " offline member");
         f.blueMate.dead = true;
         f.session.onParticipantRejoin(f.blueMate.player);
-        check(f.respawns().get(BLUE_MATE) == 440L && positions.containsKey(BLUE_MATE),
-                "late reconnect retains its completed wave and shared anchor instead of adding five more seconds");
+        check(
+                f.respawns().get(BLUE_MATE) == 440L && positions.containsKey(BLUE_MATE),
+                "late reconnect retains its completed wave and shared anchor instead of adding five"
+                        + " more seconds");
         f.connected().clear();
         f.session.onEnd(me.petr1furious.potatominigames.core.game.EndReason.ABORTED);
         check(positions.isEmpty(), "match cleanup releases pending shared-spawn anchors");
@@ -707,42 +893,52 @@ public final class FinalsSessionCheck {
 
     private static void downedModeAndEligibility() throws Exception {
         FinalsSession exact = sessionFromStart(5, 6);
-        check((Boolean) field(exact, "revivalMode").get(exact),
+        check(
+                (Boolean) field(exact, "revivalMode").get(exact),
                 "the actual six-player three-per-team start enables downed statues");
         FinalsSession duos = sessionFromStart(5, 4);
         FinalsSession hosted = sessionFromStart(5, 5);
-        check((Boolean) field(duos, "revivalMode").get(duos)
+        check(
+                (Boolean) field(duos, "revivalMode").get(duos)
                         && (Boolean) field(hosted, "revivalMode").get(hosted),
                 "four-player and five-player hosted matches both enable two-v-two revivals");
         FinalsSession uneven = sessionFromStart(5, 3);
         FinalsSession larger = sessionFromStart(5, 8);
-        check(!(Boolean) field(uneven, "revivalMode").get(uneven)
+        check(
+                !(Boolean) field(uneven, "revivalMode").get(uneven)
                         && !(Boolean) field(larger, "revivalMode").get(larger),
                 "uneven and larger initial rosters retain normal respawn behavior");
         Fixture normal = new Fixture();
         normal.session.onPlayerDeath(death(normal.blue.player));
-        check(context(normal.session).awaitingRespawn(normal.blue.player),
-                "actual deaths outside three-v-three still qualify for the original instant Defibrillator");
+        check(
+                context(normal.session).awaitingRespawn(normal.blue.player),
+                "actual deaths outside three-v-three still qualify for the original instant"
+                        + " Defibrillator");
         normal.connected().remove(RED);
         normal.state.disconnect(RED, 100);
         normal.red.dead = true;
         normal.session.onParticipantRejoin(normal.red.player);
-        check(!context(normal.session).awaitingRespawn(normal.red.player),
+        check(
+                !context(normal.session).awaitingRespawn(normal.red.player),
                 "a reconnect-only recovery timer never creates a revivable corpse");
         Fixture downed = new Fixture();
         set(downed.session, "revivalMode", true);
         downed.session.onPlayerDeath(death(downed.blue.player));
-        check(downed.respawns().get(BLUE) == 260L, "a three-v-three death unlocks Space exactly eight seconds later");
+        check(
+                downed.respawns().get(BLUE) == 260L,
+                "a three-v-three death unlocks Space exactly eight seconds later");
         var request = FinalsSession.class.getDeclaredMethod("requestRespawn", UUID.class);
         request.setAccessible(true);
         set(downed.session, "tick", 259L);
         request.invoke(downed.session, BLUE);
-        check(downed.respawns().containsKey(BLUE) && map(downed.session, "classes").isEmpty(),
+        check(
+                downed.respawns().containsKey(BLUE) && map(downed.session, "classes").isEmpty(),
                 "Space before eight seconds cannot begin the native spawn path");
         set(downed.session, "tick", 1000L);
         var actualDowned = FinalsSession.class.getDeclaredMethod("downed", UUID.class);
         actualDowned.setAccessible(true);
-        check((Boolean) actualDowned.invoke(downed.session, BLUE),
+        check(
+                (Boolean) actualDowned.invoke(downed.session, BLUE),
                 "a corpse remains revivable indefinitely after the Space unlock time");
     }
 
@@ -750,41 +946,56 @@ public final class FinalsSessionCheck {
         FinalsSession hosted = sessionFromStart(5, 5);
         Map<UUID, Integer> teams = map(hosted, "roster");
         UUID master = new UUID(99, 5);
-        check(master.equals(field(hosted, "gameMaster").get(hosted))
-                        && teams.size() == 4 && !teams.containsKey(master),
+        check(
+                master.equals(field(hosted, "gameMaster").get(hosted))
+                        && teams.size() == 4
+                        && !teams.containsKey(master),
                 "the fifth participant is game master outside the four-contestant roster");
-        check(teams.values().stream().filter(team -> team == 0).count() == 2
+        check(
+                teams.values().stream().filter(team -> team == 0).count() == 2
                         && teams.values().stream().filter(team -> team == 1).count() == 2,
                 "a five-player start produces exactly two combatants on each team");
         SessionServices services = (SessionServices) field(hosted, "services").get(hosted);
-        check(services.participants().find(master).orElseThrow().team() == null,
+        check(
+                services.participants().find(master).orElseThrow().team() == null,
                 "the game master has no core team assignment");
         FakePlayer observer = new FakePlayer(master, new FakeWorld().world);
-        check(hosted.isGameMaster(observer.player) && !hosted.isInGame(observer.player)
+        check(
+                hosted.isGameMaster(observer.player)
+                        && !hosted.isInGame(observer.player)
                         && hosted.mayFollowPlayers(observer.player),
                 "the game master may spectate but is never treated as a live contestant");
-        check(!hosted.gameEventsReady(), "the game master cannot start events during map preparation/countdown");
-        hosted.onTeamChange(observer.player, me.petr1furious.potatominigames.core.team.TeamColor.RED);
-        check(services.participants().find(master).orElseThrow().team() == null,
+        check(
+                !hosted.gameEventsReady(),
+                "the game master cannot start events during map preparation/countdown");
+        hosted.onTeamChange(
+                observer.player, me.petr1furious.potatominigames.core.team.TeamColor.RED);
+        check(
+                services.participants().find(master).orElseThrow().team() == null,
                 "team commands cannot move the game master onto a fighting team");
         set(hosted, "preparing", true);
         hosted.onParticipantQuit(observer.player);
-        check(!hosted.isGameMaster(observer.player) && teams.size() == 4,
+        check(
+                !hosted.isGameMaster(observer.player) && teams.size() == 4,
                 "a disconnected game master loses controls without changing the teams");
         hosted.onParticipantRejoin(observer.player);
-        check(hosted.isGameMaster(observer.player) && teams.size() == 4,
+        check(
+                hosted.isGameMaster(observer.player) && teams.size() == 4,
                 "a returning game master retains the spectator role without becoming a contestant");
         hosted.onParticipantLeave(observer.player);
         hosted.onParticipantRejoin(observer.player);
-        check(!hosted.isGameMaster(observer.player),
+        check(
+                !hosted.isGameMaster(observer.player),
                 "a permanent game-master departure cannot regain event controls by reconnecting");
         FinalsSession six = sessionFromStart(5, 6);
-        check(field(six, "gameMaster").get(six) == null && map(six, "roster").size() == 6,
+        check(
+                field(six, "gameMaster").get(six) == null && map(six, "roster").size() == 6,
                 "six participants remain ordinary three-v-three with no game master");
     }
 
     private static PlayerDeathEvent death(Player player) {
-        return new PlayerDeathEvent(player, null, new ArrayList<>(), 0, Component.text("death"), true);
+        return new PlayerDeathEvent(
+                player, null, new ArrayList<>(), 0, Component.text("death"), true);
     }
 
     private static void legacyItemsAndNativeMutation() throws Exception {
@@ -988,7 +1199,9 @@ public final class FinalsSessionCheck {
         check(!context.canPlace(null), "missing placement targets are rejected safely");
         Location retired = f.arena.station(0).clone();
         f.arena.moveStation(0, retired.clone().add(0, 4, 0));
-        check(context.canPlace(retired.getBlock()), "cashout protection follows the actual body, freeing its old position");
+        check(
+                context.canPlace(retired.getBlock()),
+                "cashout protection follows the actual body, freeing its old position");
         FinalsGadgets gadgets = new FinalsGadgets(context);
         var placeable = FinalsGadgets.class.getDeclaredMethod("placeable", Block.class);
         placeable.setAccessible(true);
@@ -1008,9 +1221,11 @@ public final class FinalsSessionCheck {
         set(f.session, "state", null);
         set(f.session, "arena", null);
         FinalsCombatContext context = context(f.session);
-        check(!context.active(f.red.player) && !context.canAct(f.red.player),
+        check(
+                !context.active(f.red.player) && !context.canAct(f.red.player),
                 "map preparation blocks combat before weapons or geometry exist");
-        check(f.session.spectatorLocation(f.red.player) == null,
+        check(
+                f.session.spectatorLocation(f.red.player) == null,
                 "spectators cannot enter a partially placed map");
         PlayerInteractEvent objective = interact(f.red.player, null, EquipmentSlot.HAND);
         f.session.onPlayerInteract(objective);
@@ -1021,12 +1236,15 @@ public final class FinalsSessionCheck {
         f.session.loadoutChanged(f.red.player);
         f.connected().remove(RED);
         f.session.onParticipantRejoin(f.red.player);
-        check(f.connected().contains(RED) && f.respawns().isEmpty(),
+        check(
+                f.connected().contains(RED) && f.respawns().isEmpty(),
                 "rejoining during preparation waits for the prepared callback without spawning");
         var spawn = FinalsSession.class.getDeclaredMethod("spawn", Player.class);
         spawn.setAccessible(true);
         spawn.invoke(f.session, f.red.player);
-        check(map(f.session, "classes").isEmpty(), "early spawn requests cannot apply uninitialized loadouts");
+        check(
+                map(f.session, "classes").isEmpty(),
+                "early spawn requests cannot apply uninitialized loadouts");
     }
 
     private static void countdownLoadoutWindow() throws Exception {
@@ -1036,32 +1254,49 @@ public final class FinalsSessionCheck {
         yaml.set("matchTimingVersion", 1);
         map(configs, "files").put(FinalsConfig.FILE, yaml);
         FinalsConfig defaults = new FinalsConfig(configs);
-        check(defaults.countdownSeconds.get() == 18, "fresh Finals configuration grants 18 seconds for loadout selection");
-        check(countdownFromStart(5) == 360L, "persisted five-second defaults cannot shorten the loadout window");
-        check(countdownFromStart(0) == 360L, "invalid short settings still grant the full minimum window");
+        check(
+                defaults.countdownSeconds.get() == 18,
+                "fresh Finals configuration grants 18 seconds for loadout selection");
+        check(
+                countdownFromStart(5) == 360L,
+                "persisted five-second defaults cannot shorten the loadout window");
+        check(
+                countdownFromStart(0) == 360L,
+                "invalid short settings still grant the full minimum window");
         check(countdownFromStart(45) == 900L, "longer configured loadout windows remain supported");
         check(countdownFromStart(1000) == 1200L, "loadout selection is bounded to sixty seconds");
 
-        Fixture f = new Fixture(new Messages(() -> { throw new CountdownStarted(); }, null));
+        Fixture f =
+                new Fixture(
+                        new Messages(
+                                () -> {
+                                    throw new CountdownStarted();
+                                },
+                                null));
         set(f.session, "state", null);
         set(f.session, "countdownEnd", 360L);
         set(f.session, "tick", 358L);
         var tick = FinalsSession.class.getDeclaredMethod("tick");
         tick.setAccessible(true);
         tick.invoke(f.session);
-        check(field(f.session, "state").get(f.session) == null
+        check(
+                field(f.session, "state").get(f.session) == null
                         && (Long) field(f.session, "tick").get(f.session) == 359L,
                 "combat remains disabled through countdown tick359");
         try {
             tick.invoke(f.session);
             throw new AssertionError("GO must broadcast at the end of the loadout window");
         } catch (java.lang.reflect.InvocationTargetException expected) {
-            check(expected.getCause() instanceof CountdownStarted,
+            check(
+                    expected.getCause() instanceof CountdownStarted,
                     "tick360 reaches the real GO broadcast after creating match state");
         }
         FinalsState started = (FinalsState) field(f.session, "state").get(f.session);
-        check(started != null && started.phase() == FinalsState.Phase.VAULT_CLOSED
-                        && started.matchDeadline() == 360L + FinalsState.Rules.defaults().matchTicks(),
+        check(
+                started != null
+                        && started.phase() == FinalsState.Phase.VAULT_CLOSED
+                        && started.matchDeadline()
+                                == 360L + FinalsState.Rules.defaults().matchTicks(),
                 "tick360 starts combat and its own complete match timer");
     }
 
@@ -1070,7 +1305,8 @@ public final class FinalsSessionCheck {
         return (Long) field(session, "countdownEnd").get(session);
     }
 
-    private static FinalsSession sessionFromStart(int configured, int participantCount) throws Exception {
+    private static FinalsSession sessionFromStart(int configured, int participantCount)
+            throws Exception {
         ConfigRegistry configs = new ConfigRegistry(null);
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("cashoutTimingVersion", 1);
@@ -1084,17 +1320,33 @@ public final class FinalsSessionCheck {
             participants.add(new FakePlayer(new UUID(99, index + 1), world.world).player);
         ActiveSession active = bare(ActiveSession.class);
         set(active, "phase", GamePhase.RUNNING);
-        FinalsSession session = new FinalsSession(new SessionServices(null, active, participants,
-                null, null, null, null, null, null, null, new Messages(Audience::empty, null), null), config);
+        FinalsSession session =
+                new FinalsSession(
+                        new SessionServices(
+                                null,
+                                active,
+                                participants,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                new Messages(Audience::empty, null),
+                                null),
+                        config);
         var start = FinalsSession.class.getDeclaredMethod("start");
         start.setAccessible(true);
         try {
             start.invoke(session);
             throw new AssertionError("The pure fixture must stop at the native world boundary");
         } catch (java.lang.reflect.InvocationTargetException expected) {
-            check(expected.getCause() instanceof NullPointerException
+            check(
+                    expected.getCause() instanceof NullPointerException
                             && expected.getCause().getMessage().contains("createVoid"),
-                    "actual start configures rules before requesting unavailable native world transport");
+                    "actual start configures rules before requesting unavailable native world"
+                            + " transport");
         }
         return session;
     }
@@ -1104,12 +1356,17 @@ public final class FinalsSessionCheck {
     private static void cashboxThrowDirection() {
         Vector aim = new Vector(0, 0, 4);
         Vector velocity = FinalsSession.cashboxThrowVelocity(aim);
-        check(velocity.getZ() == 1.3 && velocity.getX() == 0 && velocity.getY() == .12,
+        check(
+                velocity.getZ() == 1.3 && velocity.getX() == 0 && velocity.getY() == .12,
                 "a horizontal cashbox throw has aimed forward force and a small upward arc");
-        check(aim.equals(new Vector(0, 0, 4)), "throw normalization never mutates the caller's aim");
-        check(FinalsSession.cashboxThrowVelocity(new Vector(0, 1, 0)).getY() > 1.4,
+        check(
+                aim.equals(new Vector(0, 0, 4)),
+                "throw normalization never mutates the caller's aim");
+        check(
+                FinalsSession.cashboxThrowVelocity(new Vector(0, 1, 0)).getY() > 1.4,
                 "looking up throws the cashbox upward with force");
-        check(FinalsSession.cashboxThrowVelocity(new Vector(0, -1, 0)).getY() < -1.1,
+        check(
+                FinalsSession.cashboxThrowVelocity(new Vector(0, -1, 0)).getY() < -1.1,
                 "looking down throws the cashbox downward");
     }
 
@@ -1118,18 +1375,21 @@ public final class FinalsSessionCheck {
         var throwBox = FinalsSession.class.getDeclaredMethod("throwCashbox", Player.class);
         throwBox.setAccessible(true);
         throwBox.invoke(f.session, f.red.player);
-        check(f.state.phase() == FinalsState.Phase.VAULT_CLOSED && f.world.spawned == 0,
+        check(
+                f.state.phase() == FinalsState.Phase.VAULT_CLOSED && f.world.spawned == 0,
                 "a non-carrier cannot create or throw a cashbox");
         f.state.activateVault(RED, 0);
         f.state.pickUp(RED, 100);
         f.protection().put(RED, 101L);
         throwBox.invoke(f.session, f.red.player);
-        check(RED.equals(f.state.carrier()) && f.world.spawned == 0,
+        check(
+                RED.equals(f.state.carrier()) && f.world.spawned == 0,
                 "a protected carrier cannot release the cashbox with Q");
         f.protection().clear();
         set(f.session, "preparing", true);
         throwBox.invoke(f.session, f.red.player);
-        check(RED.equals(f.state.carrier()) && f.world.spawned == 0,
+        check(
+                RED.equals(f.state.carrier()) && f.world.spawned == 0,
                 "preparation blocks throwing before initialized geometry or item transport");
     }
 
@@ -1139,42 +1399,54 @@ public final class FinalsSessionCheck {
         try {
             pulse = FinalsSession.class.getDeclaredMethod("updateStealSiren");
         } catch (NoSuchMethodException missing) {
-            throw new AssertionError("An active cashout steal needs a repeating warning siren", missing);
+            throw new AssertionError(
+                    "An active cashout steal needs a repeating warning siren", missing);
         }
         pulse.setAccessible(true);
         pulse.invoke(f.session);
         f.depositRed();
         pulse.invoke(f.session);
         check(f.world.sounds.isEmpty(), "idle objectives and ordinary cashouts stay silent");
-        var interact = FinalsSession.class.getDeclaredMethod("interactStation", Player.class, int.class);
+        var interact =
+                FinalsSession.class.getDeclaredMethod("interactStation", Player.class, int.class);
         interact.setAccessible(true);
         f.blue.location = f.arena.station(0);
         f.blueMate.location = f.arena.station(0);
         interact.invoke(f.session, f.blue.player, 0);
-        check(f.world.sounds.size() == 1, "starting a cashout steal immediately sounds the warning");
+        check(
+                f.world.sounds.size() == 1,
+                "starting a cashout steal immediately sounds the warning");
         interact.invoke(f.session, f.blueMate.player, 0);
-        check(f.world.sounds.size() == 1, "simultaneous thieves share one siren without stacking sounds");
+        check(
+                f.world.sounds.size() == 1,
+                "simultaneous thieves share one siren without stacking sounds");
         set(f.session, "tick", 105L);
         pulse.invoke(f.session);
         check(f.world.sounds.size() == 1, "the siren respects its pulse interval");
         f.arena.moveStation(0, f.arena.station(0).add(0, -.5, 0));
         set(f.session, "tick", 106L);
         pulse.invoke(f.session);
-        check(f.world.sounds.size() == 2
+        check(
+                f.world.sounds.size() == 2
                         && f.world.sounds.get(0).pitch() != f.world.sounds.get(1).pitch(),
                 "an ongoing steal alternates the two warning tones");
-        check(f.world.sounds.get(1).location().equals(f.arena.station(0).add(0, .75, 0)),
+        check(
+                f.world.sounds.get(1).location().equals(f.arena.station(0).add(0, .75, 0)),
                 "each warning pulse follows the current moving cashout position");
         var interrupt = FinalsSession.class.getDeclaredMethod("interruptSteal", Player.class);
         interrupt.setAccessible(true);
         interrupt.invoke(f.session, f.blue.player);
         set(f.session, "tick", 112L);
         pulse.invoke(f.session);
-        check(f.world.sounds.size() == 3, "the siren continues while another thief is still channeling");
+        check(
+                f.world.sounds.size() == 3,
+                "the siren continues while another thief is still channeling");
         interrupt.invoke(f.session, f.blueMate.player);
         set(f.session, "tick", 118L);
         pulse.invoke(f.session);
-        check(f.world.sounds.size() == 3, "interrupting the last channel immediately silences future pulses");
+        check(
+                f.world.sounds.size() == 3,
+                "interrupting the last channel immediately silences future pulses");
         interact.invoke(f.session, f.blue.player, 0);
         check(f.world.sounds.size() == 4, "a fresh steal immediately restarts its warning");
         long deadline = f.state.stealDeadlines().get(BLUE);
@@ -1289,9 +1561,11 @@ public final class FinalsSessionCheck {
         set(f.session, "state", null);
         Location redStart = (Location) spawnLocation.invoke(f.session, RED);
         Location blueStart = (Location) spawnLocation.invoke(f.session, BLUE);
-        check(redStart.equals(spawnLocation.invoke(f.session, redMate)),
+        check(
+                redStart.equals(spawnLocation.invoke(f.session, redMate)),
                 "all red teammates start at the same position during the loadout countdown");
-        check(blueStart.equals(spawnLocation.invoke(f.session, BLUE_MATE)),
+        check(
+                blueStart.equals(spawnLocation.invoke(f.session, BLUE_MATE)),
                 "all blue teammates start at the same position during the loadout countdown");
         check(!redStart.equals(blueStart), "opposing teams retain distinct starting positions");
         List<Location> redCandidates = new ArrayList<>(), blueCandidates = new ArrayList<>();
@@ -1299,83 +1573,128 @@ public final class FinalsSessionCheck {
             redCandidates.add(f.arena.spawn(0, index));
             blueCandidates.add(f.arena.spawn(1, index));
         }
-        check(redCandidates.contains(redStart) && blueCandidates.contains(blueStart),
-                "each shared starting position belongs to that team's full configured candidate set");
+        check(
+                redCandidates.contains(redStart) && blueCandidates.contains(blueStart),
+                "each shared starting position belongs to that team's full configured candidate"
+                        + " set");
         Location returned = (Location) spawnLocation.invoke(f.session, redMate);
         returned.add(100, 20, -100);
         returned.setYaw(42);
-        check(redStart.equals(spawnLocation.invoke(f.session, RED)),
+        check(
+                redStart.equals(spawnLocation.invoke(f.session, RED)),
                 "mutating a returned starting Location cannot move the cached team anchor");
         map(f.session, "classes").put(redMate, FinalsClass.HEAVY);
         map(f.session, "classes").put(BLUE_MATE, FinalsClass.LIGHT);
         set(f.session, "tick", 359L);
-        check(redStart.equals(spawnLocation.invoke(f.session, redMate))
+        check(
+                redStart.equals(spawnLocation.invoke(f.session, redMate))
                         && blueStart.equals(spawnLocation.invoke(f.session, BLUE_MATE)),
                 "countdown loadout changes keep each teammate at the shared team anchor");
         f.connected().remove(BLUE_MATE);
         f.connected().add(BLUE_MATE);
-        check(blueStart.equals(spawnLocation.invoke(f.session, BLUE_MATE)),
+        check(
+                blueStart.equals(spawnLocation.invoke(f.session, BLUE_MATE)),
                 "reconnecting during the countdown retains the shared team starting point");
 
         set(f.session, "state", f.state);
-        check((int) spawnIndex.invoke(f.session, RED) == 0 && (int) spawnIndex.invoke(f.session, redMate) == 1
-                        && (int) spawnIndex.invoke(f.session, BLUE) == 0 && (int) spawnIndex.invoke(f.session, BLUE_MATE) == 1,
+        check(
+                (int) spawnIndex.invoke(f.session, RED) == 0
+                        && (int) spawnIndex.invoke(f.session, redMate) == 1
+                        && (int) spawnIndex.invoke(f.session, BLUE) == 0
+                        && (int) spawnIndex.invoke(f.session, BLUE_MATE) == 1,
                 "normal match respawns retain each teammate's original per-team spawn index");
-        for (var entry : roster.entrySet()) check(
-                spawnLocation.invoke(f.session, entry.getKey()).equals(
-                        f.arena.spawn(entry.getValue(), (int) spawnIndex.invoke(f.session, entry.getKey()))),
-                "ordinary later respawns keep the configured per-member position instead of the random start cache");
+        for (var entry : roster.entrySet())
+            check(
+                    spawnLocation
+                            .invoke(f.session, entry.getKey())
+                            .equals(
+                                    f.arena.spawn(
+                                            entry.getValue(),
+                                            (int) spawnIndex.invoke(f.session, entry.getKey()))),
+                    "ordinary later respawns keep the configured per-member position instead of the"
+                            + " random start cache");
         f.connected().clear();
         f.session.onEnd(me.petr1furious.potatominigames.core.game.EndReason.ABORTED);
-        check(map(f.session, "startingSpawns").isEmpty(), "ending the match clears its random starting-point cache");
+        check(
+                map(f.session, "startingSpawns").isEmpty(),
+                "ending the match clears its random starting-point cache");
 
         Fixture custom = new Fixture();
         set(custom.session, "state", null);
         Location selected = new Location(custom.world.world, 11, 70, -4, 35, 15);
-        FinalsMapArena candidates = proxy(FinalsMapArena.class, (receiver, method, args) -> {
-            if (method.getName().equals("spawnLocations")) return List.of(selected);
-            return method.invoke(custom.arena, args);
-        });
+        FinalsMapArena candidates =
+                proxy(
+                        FinalsMapArena.class,
+                        (receiver, method, args) -> {
+                            if (method.getName().equals("spawnLocations")) return List.of(selected);
+                            return method.invoke(custom.arena, args);
+                        });
         set(custom.session, "arena", candidates);
         Location selectedCopy = selected.clone();
-        check(spawnLocation.invoke(custom.session, RED).equals(selectedCopy),
-                "starting selection uses the map's declared candidates instead of assuming generated spawn indices");
+        check(
+                spawnLocation.invoke(custom.session, RED).equals(selectedCopy),
+                "starting selection uses the map's declared candidates instead of assuming"
+                        + " generated spawn indices");
         selected.add(20, 4, 8);
-        check(spawnLocation.invoke(custom.session, RED).equals(selectedCopy),
+        check(
+                spawnLocation.invoke(custom.session, RED).equals(selectedCopy),
                 "mutating a source candidate cannot change the cached team start");
     }
 
     private static void mapDeathHeight() throws Exception {
         for (Double level : java.util.Arrays.asList(65.0, null, 60.0)) {
             Fixture f = new Fixture();
-            FinalsMapArena configured = proxy(FinalsMapArena.class, (p, method, args) ->
-                    method.getName().equals("deathHeight") ? level : method.invoke(f.arena, args));
+            FinalsMapArena configured =
+                    proxy(
+                            FinalsMapArena.class,
+                            (p, method, args) ->
+                                    method.getName().equals("deathHeight")
+                                            ? level
+                                            : method.invoke(f.arena, args));
             set(f.session, "arena", configured);
             Location at = f.red.location.clone();
             f.session.onPlayerMove(new PlayerMoveEvent(f.red.player, at, at.clone()));
             check(f.red.health == 20, "Standing exactly at or above the death height is safe");
-            Location below = at.clone(); below.setY(64.99);
+            Location below = at.clone();
+            below.setY(64.99);
             f.session.onPlayerMove(new PlayerMoveEvent(f.red.player, at, below));
-            check(f.red.health == (level != null && level == 65 ? 0 : 20),
+            check(
+                    f.red.health == (level != null && level == 65 ? 0 : 20),
                     "Only the selected map's death height kills a player below it");
         }
         Fixture frozen = new Fixture();
-        set(frozen.session, "arena", proxy(FinalsMapArena.class, (p, method, args) ->
-                method.getName().equals("deathHeight") ? 66d : method.invoke(frozen.arena, args)));
+        set(
+                frozen.session,
+                "arena",
+                proxy(
+                        FinalsMapArena.class,
+                        (p, method, args) ->
+                                method.getName().equals("deathHeight")
+                                        ? 66d
+                                        : method.invoke(frozen.arena, args)));
         callPlayerMethod(frozen.session, "freeze", frozen.red.player);
-        frozen.session.onPlayerMove(new PlayerMoveEvent(frozen.red.player, frozen.red.location,
-                frozen.red.location.clone().subtract(0, 1, 0)));
+        frozen.session.onPlayerMove(
+                new PlayerMoveEvent(
+                        frozen.red.player,
+                        frozen.red.location,
+                        frozen.red.location.clone().subtract(0, 1, 0)));
         check(frozen.red.health == 20, "Countdown freeze takes precedence over the death floor");
     }
 
     private static void objectiveRecovery() throws Exception {
         Fixture f = new Fixture();
-        set(f.session, "arena", proxy(FinalsMapArena.class, (p, method, args) ->
-                switch (method.getName()) {
-                    case "deathHeight" -> 60d;
-                    case "contains" -> ((Location) args[0]).getWorld().equals(f.world.world);
-                    default -> method.invoke(f.arena, args);
-                }));
+        set(
+                f.session,
+                "arena",
+                proxy(
+                        FinalsMapArena.class,
+                        (p, method, args) ->
+                                switch (method.getName()) {
+                                    case "deathHeight" -> 60d;
+                                    case "contains" ->
+                                            ((Location) args[0]).getWorld().equals(f.world.world);
+                                    default -> method.invoke(f.arena, args);
+                                }));
         Location ledge = new Location(f.world.world, 10.5, 80, 10.5);
         f.world.block(10, 79, 10).setType(Material.STONE);
         f.red.location = ledge.clone();
@@ -1386,21 +1705,35 @@ public final class FinalsSessionCheck {
         f.session.onPlayerMove(new PlayerMoveEvent(f.red.player, f.red.location, f.red.location));
         var recovery = FinalsSession.class.getDeclaredMethod("recoveryPoint", UUID.class);
         recovery.setAccessible(true);
-        check(recovery.invoke(f.session, RED).equals(ledge), "Falling below the death floor preserves the departure ledge");
+        check(
+                recovery.invoke(f.session, RED).equals(ledge),
+                "Falling below the death floor preserves the departure ledge");
         set(f.session, "cashboxRecovery", recovery.invoke(f.session, RED));
         var returnBox = FinalsSession.class.getDeclaredMethod("cashboxReturnPoint");
         returnBox.setAccessible(true);
-        check(returnBox.invoke(f.session).equals(ledge.clone().add(0, .25, 0)),
-                "Cashbox returns just above its last grounded departure, not the vault or airborne release");
-        var ctx = FinalsSession.class.getDeclaredMethod("reviveContext"); ctx.setAccessible(true);
+        check(
+                returnBox.invoke(f.session).equals(ledge.clone().add(0, .25, 0)),
+                "Cashbox returns just above its last grounded departure, not the vault or airborne"
+                        + " release");
+        var ctx = FinalsSession.class.getDeclaredMethod("reviveContext");
+        ctx.setAccessible(true);
         var revive = (FinalsRevives.Context) ctx.invoke(f.session);
-        check(revive.recovery(RED).equals(ledge), "Statues use the same departure anchor as the cashbox");
-        check(!revive.inside(f.red.location), "Statue movement treats a custom death floor as out of bounds");
-        Location boundary = ledge.clone(); boundary.setY(60);
+        check(
+                revive.recovery(RED).equals(ledge),
+                "Statues use the same departure anchor as the cashbox");
+        check(
+                !revive.inside(f.red.location),
+                "Statue movement treats a custom death floor as out of bounds");
+        Location boundary = ledge.clone();
+        boundary.setY(60);
         check(revive.inside(boundary), "Objects exactly at the death floor remain valid");
         f.world.block(10, 79, 10).setType(Material.AIR);
-        check(!revive.safeRecovery(ledge), "A destroyed departure ledge is no longer a valid return location");
-        check(!recovery.invoke(f.session, RED).equals(ledge), "Destroyed ledges use a supported fallback");
+        check(
+                !revive.safeRecovery(ledge),
+                "A destroyed departure ledge is no longer a valid return location");
+        check(
+                !recovery.invoke(f.session, RED).equals(ledge),
+                "Destroyed ledges use a supported fallback");
     }
 
     private static void fixedCountdownAnchor() throws Exception {
@@ -1464,17 +1797,16 @@ public final class FinalsSessionCheck {
     }
 
     private static PlayerInteractEvent interact(Player player, Block block, EquipmentSlot hand) {
-        return interaction(player, block, hand, block == null ? Action.RIGHT_CLICK_AIR : Action.RIGHT_CLICK_BLOCK);
+        return interaction(
+                player,
+                block,
+                hand,
+                block == null ? Action.RIGHT_CLICK_AIR : Action.RIGHT_CLICK_BLOCK);
     }
 
-    private static PlayerInteractEvent interaction(Player player, Block block, EquipmentSlot hand, Action action) {
-        return new PlayerInteractEvent(
-                player,
-                action,
-                null,
-                block,
-                BlockFace.UP,
-                hand);
+    private static PlayerInteractEvent interaction(
+            Player player, Block block, EquipmentSlot hand, Action action) {
+        return new PlayerInteractEvent(player, action, null, block, BlockFace.UP, hand);
     }
 
     private static EntityExplodeEvent explosion(Entity entity, List<Block> blocks) {
@@ -1488,7 +1820,8 @@ public final class FinalsSessionCheck {
 
     private static final class Fixture {
         // Explicit short cashouts keep the existing objective-rotation boundary fixtures stable.
-        final FinalsState.Rules rules = new FinalsState.Rules(100, 800, 100, 12_000, 10_000, 20_000);
+        final FinalsState.Rules rules =
+                new FinalsState.Rules(100, 800, 100, 12_000, 10_000, 20_000);
         final FakeWorld world = new FakeWorld();
         final FinalsArena arena = new FinalsArena(world.world);
         final FinalsState state = new FinalsState(ROSTER, 0, rules);
@@ -1636,7 +1969,10 @@ public final class FinalsSessionCheck {
                                         case "getEyeLocation" -> location.clone().add(0, 1.6, 0);
                                         case "getInventory" -> inventory;
                                         case "getOpenInventory" -> view;
-                                        case "closeInventory" -> { openHolder = null; yield null; }
+                                        case "closeInventory" -> {
+                                            openHolder = null;
+                                            yield null;
+                                        }
                                         case "getWalkSpeed" -> walkSpeed;
                                         case "getFlySpeed" -> flySpeed;
                                         case "setWalkSpeed" -> {
@@ -1653,13 +1989,23 @@ public final class FinalsSessionCheck {
                                         }
                                         case "isDead" -> dead;
                                         case "isOnGround" -> grounded;
-                                        case "setHealth" -> { health = (double) args[0]; yield null; }
+                                        case "setHealth" -> {
+                                            health = (double) args[0];
+                                            yield null;
+                                        }
                                         case "getKiller" -> killer;
-                                        case "playSound" -> { sounds++; yield null; }
+                                        case "playSound" -> {
+                                            sounds++;
+                                            yield null;
+                                        }
                                         case "setNoDamageTicks" -> null;
                                         case "damage" -> {
-                                            if (damageAction == null) throw new AssertionError("Unexpected native damage callback");
-                                            damageAction.accept((double) args[0], args.length > 1 ? (Entity) args[1] : null);
+                                            if (damageAction == null)
+                                                throw new AssertionError(
+                                                        "Unexpected native damage callback");
+                                            damageAction.accept(
+                                                    (double) args[0],
+                                                    args.length > 1 ? (Entity) args[1] : null);
                                             yield null;
                                         }
                                         case "setGlowing", "removePotionEffect" -> null;
@@ -1748,7 +2094,8 @@ public final class FinalsSessionCheck {
 
         void openable(Block block, Material material, boolean open, Bisected.Half half) {
             block.setType(material);
-            data.put(new Position(block.getX(), block.getY(), block.getZ()),
+            data.put(
+                    new Position(block.getX(), block.getY(), block.getZ()),
                     new OpenState(material, open, half).data());
         }
 
@@ -1758,11 +2105,16 @@ public final class FinalsSessionCheck {
 
         void unchangedShape(Block block) {
             BlockData state = block.getBlockData();
-            check(((org.bukkit.block.data.Directional) state).getFacing() == BlockFace.WEST,
+            check(
+                    ((org.bukkit.block.data.Directional) state).getFacing() == BlockFace.WEST,
                     "opening keeps the original facing");
-            check(((org.bukkit.block.data.Powerable) state).isPowered(), "opening keeps the powered property");
-            if (state instanceof Door door) check(door.getHinge() == Door.Hinge.RIGHT, "opening keeps door hinge");
-            if (state instanceof TrapDoor trapdoor) check(trapdoor.isWaterlogged(), "opening keeps waterlogging");
+            check(
+                    ((org.bukkit.block.data.Powerable) state).isPowered(),
+                    "opening keeps the powered property");
+            if (state instanceof Door door)
+                check(door.getHinge() == Door.Hinge.RIGHT, "opening keeps door hinge");
+            if (state instanceof TrapDoor trapdoor)
+                check(trapdoor.isWaterlogged(), "opening keeps waterlogging");
         }
 
         FakeWorld() {
@@ -1783,7 +2135,10 @@ public final class FinalsSessionCheck {
                                                                 (int) args[2]);
                                         case "setSpawnLocation" -> true;
                                         case "playSound" -> {
-                                            sounds.add(new SoundPulse(((Location) args[0]).clone(), (float) args[3]));
+                                            sounds.add(
+                                                    new SoundPulse(
+                                                            ((Location) args[0]).clone(),
+                                                            (float) args[3]));
                                             yield null;
                                         }
                                         case "equals" -> p == args[0];
@@ -1811,23 +2166,39 @@ public final class FinalsSessionCheck {
                                 case "getY" -> y;
                                 case "getZ" -> z;
                                 case "getType" -> blocks.getOrDefault(at, Material.AIR);
-                                case "isPassable" -> blocks.getOrDefault(at, Material.AIR) == Material.AIR;
+                                case "isPassable" ->
+                                        blocks.getOrDefault(at, Material.AIR) == Material.AIR;
                                 case "isLiquid" -> false;
                                 case "setType" -> {
                                     blocks.put(at, (Material) args[0]);
                                     data.remove(at);
                                     yield null;
                                 }
-                                case "getBlockData" -> data.getOrDefault(at,
-                                        proxy(BlockData.class, (ignored, operation, values) -> {
-                                            if (operation.getName().equals("getMaterial")) return blocks.getOrDefault(at, Material.AIR);
-                                            throw new AssertionError("Unexpected plain block data: " + operation.getName());
-                                        }));
-                                case "setBlockData" -> { data.put(at, (BlockData) args[0]); yield null; }
+                                case "getBlockData" ->
+                                        data.getOrDefault(
+                                                at,
+                                                proxy(
+                                                        BlockData.class,
+                                                        (ignored, operation, values) -> {
+                                                            if (operation
+                                                                    .getName()
+                                                                    .equals("getMaterial"))
+                                                                return blocks.getOrDefault(
+                                                                        at, Material.AIR);
+                                                            throw new AssertionError(
+                                                                    "Unexpected plain block data: "
+                                                                            + operation.getName());
+                                                        }));
+                                case "setBlockData" -> {
+                                    data.put(at, (BlockData) args[0]);
+                                    yield null;
+                                }
                                 case "getRelative" -> {
                                     BlockFace face = (BlockFace) args[0];
                                     int distance = args.length == 2 ? (int) args[1] : 1;
-                                    yield block(x + face.getModX() * distance, y + face.getModY() * distance,
+                                    yield block(
+                                            x + face.getModX() * distance,
+                                            y + face.getModY() * distance,
                                             z + face.getModZ() * distance);
                                 }
                                 case "getLocation" -> new Location(world, x, y, z);
@@ -1855,29 +2226,56 @@ public final class FinalsSessionCheck {
         }
 
         BlockData data() {
-            Class<? extends BlockData> type = material.name().endsWith("TRAPDOOR") ? TrapDoor.class : Door.class;
-            return proxy(type, (p, method, args) -> switch (method.getName()) {
-                case "getMaterial" -> material;
-                case "isOpen" -> open;
-                case "setOpen" -> { open = (boolean) args[0]; yield null; }
-                case "getHalf" -> half;
-                case "setHalf" -> { half = (Bisected.Half) args[0]; yield null; }
-                case "getFacing" -> facing;
-                case "setFacing" -> { facing = (BlockFace) args[0]; yield null; }
-                case "getHinge" -> hinge;
-                case "setHinge" -> { hinge = (Door.Hinge) args[0]; yield null; }
-                case "isPowered" -> powered;
-                case "setPowered" -> { powered = (boolean) args[0]; yield null; }
-                case "isWaterlogged" -> waterlogged;
-                case "setWaterlogged" -> { waterlogged = (boolean) args[0]; yield null; }
-                case "clone" -> {
-                    OpenState copy = new OpenState(material, open, half);
-                    copy.facing = facing; copy.hinge = hinge;
-                    copy.powered = powered; copy.waterlogged = waterlogged;
-                    yield copy.data();
-                }
-                default -> throw new AssertionError("Unexpected openable data call: " + method.getName());
-            });
+            Class<? extends BlockData> type =
+                    material.name().endsWith("TRAPDOOR") ? TrapDoor.class : Door.class;
+            return proxy(
+                    type,
+                    (p, method, args) ->
+                            switch (method.getName()) {
+                                case "getMaterial" -> material;
+                                case "isOpen" -> open;
+                                case "setOpen" -> {
+                                    open = (boolean) args[0];
+                                    yield null;
+                                }
+                                case "getHalf" -> half;
+                                case "setHalf" -> {
+                                    half = (Bisected.Half) args[0];
+                                    yield null;
+                                }
+                                case "getFacing" -> facing;
+                                case "setFacing" -> {
+                                    facing = (BlockFace) args[0];
+                                    yield null;
+                                }
+                                case "getHinge" -> hinge;
+                                case "setHinge" -> {
+                                    hinge = (Door.Hinge) args[0];
+                                    yield null;
+                                }
+                                case "isPowered" -> powered;
+                                case "setPowered" -> {
+                                    powered = (boolean) args[0];
+                                    yield null;
+                                }
+                                case "isWaterlogged" -> waterlogged;
+                                case "setWaterlogged" -> {
+                                    waterlogged = (boolean) args[0];
+                                    yield null;
+                                }
+                                case "clone" -> {
+                                    OpenState copy = new OpenState(material, open, half);
+                                    copy.facing = facing;
+                                    copy.hinge = hinge;
+                                    copy.powered = powered;
+                                    copy.waterlogged = waterlogged;
+                                    yield copy.data();
+                                }
+                                default ->
+                                        throw new AssertionError(
+                                                "Unexpected openable data call: "
+                                                        + method.getName());
+                            });
         }
     }
 

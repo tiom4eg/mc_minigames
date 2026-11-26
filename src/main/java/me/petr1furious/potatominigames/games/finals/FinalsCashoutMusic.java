@@ -53,18 +53,26 @@ final class FinalsCashoutMusic {
     }
 
     private static Entity createEmitter(JavaPlugin plugin, Player player, Location point) {
-        TextDisplay emitter = point.getWorld().spawn(point, TextDisplay.class, display -> {
-            display.setVisibleByDefault(false);
-            display.setPersistent(false);
-            display.setInvulnerable(true);
-            display.setGravity(false);
-            display.setViewRange(4f);
-            // Client interpolation also moves the logical entity sound position. Smooth
-            // movement between server packets; radius crossings fade over the same two ticks.
-            display.setTeleportDuration(2);
-            // Empty text is invisible. Do not mark the entity silent: the client rejects
-            // entity-bound sounds whose source has that flag.
-        });
+        TextDisplay emitter =
+                point.getWorld()
+                        .spawn(
+                                point,
+                                TextDisplay.class,
+                                display -> {
+                                    display.setVisibleByDefault(false);
+                                    display.setPersistent(false);
+                                    display.setInvulnerable(true);
+                                    display.setGravity(false);
+                                    display.setViewRange(4f);
+                                    // Client interpolation also moves the logical entity sound
+                                    // position. Smooth
+                                    // movement between server packets; radius crossings fade over
+                                    // the same two ticks.
+                                    display.setTeleportDuration(2);
+                                    // Empty text is invisible. Do not mark the entity silent: the
+                                    // client rejects
+                                    // entity-bound sounds whose source has that flag.
+                                });
         try {
             player.showEntity(plugin, emitter);
             return emitter;
@@ -87,8 +95,7 @@ final class FinalsCashoutMusic {
         Location origin = source.getLocation();
         Set<UUID> present = new HashSet<>();
         for (Player player : audience) {
-            if (!player.isOnline()
-                    || !origin.getWorld().equals(player.getWorld())) continue;
+            if (!player.isOnline() || !origin.getWorld().equals(player.getWorld())) continue;
             UUID id = player.getUniqueId();
             present.add(id);
             boolean nearby = player.getLocation().distanceSquared(origin) <= RANGE_SQUARED;
@@ -104,7 +111,12 @@ final class FinalsCashoutMusic {
             if (nearby) {
                 var direction = origin.clone().add(0, .5, 0).toVector().subtract(point.toVector());
                 if (direction.lengthSquared() > 1e-8)
-                    point.add(direction.normalize().multiply(player.getLocation().distance(origin) * DISTANCE_SCALE));
+                    point.add(
+                            direction
+                                    .normalize()
+                                    .multiply(
+                                            player.getLocation().distance(origin)
+                                                    * DISTANCE_SCALE));
             } else point.add(0, MUTED_HEIGHT, 0);
             if (playback == null) {
                 if (!nearby) continue;

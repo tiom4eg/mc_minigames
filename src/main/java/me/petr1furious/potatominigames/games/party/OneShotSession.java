@@ -300,13 +300,14 @@ final class OneShotSession implements PartyRoundSession {
         }
         if (tick % 20 == 0) shots.expire(tick);
         bonuses.values()
-                .removeIf(b -> {
-                    if (!b.item().isValid() || tick >= b.expires()) {
-                        b.item().remove();
-                        return true;
-                    }
-                    return false;
-                });
+                .removeIf(
+                        b -> {
+                            if (!b.item().isValid() || tick >= b.expires()) {
+                                b.item().remove();
+                                return true;
+                            }
+                            return false;
+                        });
         if (tick >= nextBonus) {
             spawnBonus();
             nextBonus = tick + bonusTicks;

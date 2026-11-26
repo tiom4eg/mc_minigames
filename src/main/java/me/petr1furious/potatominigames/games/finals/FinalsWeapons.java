@@ -64,28 +64,32 @@ final class FinalsWeapons {
         forget(player.getUniqueId());
         equipped.put(player.getUniqueId(), new Equipped(weapon));
         ItemStack item = new ItemStack(weapon.material());
-        item.editMeta(meta -> {
-            meta.displayName(weapon.display());
-            meta.setUnbreakable(true);
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
-            meta.getPersistentDataContainer().set(itemKey, PersistentDataType.STRING, weapon.id());
-            List<Component> lore = new ArrayList<>();
-            if (weapon.isGun()) {
-                lore.add(I18n.tr("finals.weapon.gun_controls"));
-                lore.add(I18n.tr("finals.weapon.magazine", weapon.magazine()));
-            } else {
-                lore.add(I18n.tr("finals.weapon.melee_controls"));
-                if (weapon == FinalsWeapon.DAGGER) lore.add(I18n.tr("finals.weapon.dagger_hint"));
-                if (weapon == FinalsWeapon.RIOT_SHIELD)
-                    lore.add(I18n.tr("finals.weapon.guard_hint"));
-                if (weapon == FinalsWeapon.DUAL_BLADES)
-                    lore.add(I18n.tr("finals.weapon.deflect_hint"));
-                if (weapon == FinalsWeapon.SLEDGEHAMMER)
-                    lore.add(I18n.tr("finals.weapon.hammer_hint"));
-                if (weapon == FinalsWeapon.SPEAR) lore.add(I18n.tr("finals.weapon.spear_hint"));
-            }
-            meta.lore(lore);
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(weapon.display());
+                    meta.setUnbreakable(true);
+                    meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
+                    meta.getPersistentDataContainer()
+                            .set(itemKey, PersistentDataType.STRING, weapon.id());
+                    List<Component> lore = new ArrayList<>();
+                    if (weapon.isGun()) {
+                        lore.add(I18n.tr("finals.weapon.gun_controls"));
+                        lore.add(I18n.tr("finals.weapon.magazine", weapon.magazine()));
+                    } else {
+                        lore.add(I18n.tr("finals.weapon.melee_controls"));
+                        if (weapon == FinalsWeapon.DAGGER)
+                            lore.add(I18n.tr("finals.weapon.dagger_hint"));
+                        if (weapon == FinalsWeapon.RIOT_SHIELD)
+                            lore.add(I18n.tr("finals.weapon.guard_hint"));
+                        if (weapon == FinalsWeapon.DUAL_BLADES)
+                            lore.add(I18n.tr("finals.weapon.deflect_hint"));
+                        if (weapon == FinalsWeapon.SLEDGEHAMMER)
+                            lore.add(I18n.tr("finals.weapon.hammer_hint"));
+                        if (weapon == FinalsWeapon.SPEAR)
+                            lore.add(I18n.tr("finals.weapon.spear_hint"));
+                    }
+                    meta.lore(lore);
+                });
         player.getInventory().setItem(0, I18n.item(item, player));
         player.getInventory().setHeldItemSlot(0);
     }
@@ -370,11 +374,15 @@ final class FinalsWeapons {
 
     boolean canReflectBullet(Player defender, Player shooter, Location origin) {
         Equipped held = equipped.get(defender.getUniqueId());
-        return held != null && held.weapon == FinalsWeapon.DUAL_BLADES
-                && guarding(defender, shooter, held, true, origin) && enemy(defender, shooter);
+        return held != null
+                && held.weapon == FinalsWeapon.DUAL_BLADES
+                && guarding(defender, shooter, held, true, origin)
+                && enemy(defender, shooter);
     }
 
-    /** Called after the session validates the guard; the original hit still deals reduced damage. */
+    /**
+     * Called after the session validates the guard; the original hit still deals reduced damage.
+     */
     void reflectBullet(Player defender, Player shooter, double damage) {
         Location origin = defender.getEyeLocation();
         Vector direction = shooter.getEyeLocation().toVector().subtract(origin.toVector());
@@ -388,7 +396,8 @@ final class FinalsWeapons {
         context.damageReflectedBullet(shooter, defender, damage, origin);
     }
 
-    private boolean guarding(Player target, Player source, Equipped held, boolean ranged, Location origin) {
+    private boolean guarding(
+            Player target, Player source, Equipped held, boolean ranged, Location origin) {
         if (!usable(target, held) || context.tick() >= held.guardUntil) return false;
         if (ranged && held.weapon == FinalsWeapon.DUAL_BLADES) {
             Location eye = target.getEyeLocation();
@@ -407,7 +416,8 @@ final class FinalsWeapons {
         return incomingMultiplier(target, source, false, false, null);
     }
 
-    double incomingMultiplier(Player target, Player source, boolean ranged, boolean melee, Location origin) {
+    double incomingMultiplier(
+            Player target, Player source, boolean ranged, boolean melee, Location origin) {
         Equipped held = equipped.get(target.getUniqueId());
         if (held == null
                 || held.weapon != FinalsWeapon.RIOT_SHIELD

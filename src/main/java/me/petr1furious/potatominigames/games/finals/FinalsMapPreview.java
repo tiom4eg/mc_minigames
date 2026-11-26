@@ -117,18 +117,20 @@ public final class FinalsMapPreview implements Listener {
         Location eye = player.getLocation();
         List<Marker> visible =
                 markers(draft).stream()
-                        .filter(marker ->
-                                marker.point().at(player.getWorld()).distanceSquared(eye)
-                                        <= RANGE_SQUARED)
+                        .filter(
+                                marker ->
+                                        marker.point().at(player.getWorld()).distanceSquared(eye)
+                                                <= RANGE_SQUARED)
                         .toList();
         view.displays
                 .entrySet()
-                .removeIf(entry -> {
-                    if (visible.contains(entry.getKey()) && entry.getValue().isValid())
-                        return false;
-                    entry.getValue().remove();
-                    return true;
-                });
+                .removeIf(
+                        entry -> {
+                            if (visible.contains(entry.getKey()) && entry.getValue().isValid())
+                                return false;
+                            entry.getValue().remove();
+                            return true;
+                        });
         for (Marker marker : visible) {
             view.displays.computeIfAbsent(
                     marker,
@@ -174,10 +176,21 @@ public final class FinalsMapPreview implements Listener {
         append(result, draft.blue, "blue_spawn", NamedTextColor.BLUE, true);
         for (int i = 0; i < draft.jumpPads.size(); i++) {
             var pad = draft.jumpPads.get(i);
-            result.add(new Marker(pad.targeted() ? "pad_targeted" : "pad_up", i + 1,
-                    pad.origin(), NamedTextColor.AQUA, true));
+            result.add(
+                    new Marker(
+                            pad.targeted() ? "pad_targeted" : "pad_up",
+                            i + 1,
+                            pad.origin(),
+                            NamedTextColor.AQUA,
+                            true));
             if (pad.target() != null)
-                result.add(new Marker("pad_target", i + 1, pad.target(), NamedTextColor.LIGHT_PURPLE, true));
+                result.add(
+                        new Marker(
+                                "pad_target",
+                                i + 1,
+                                pad.target(),
+                                NamedTextColor.LIGHT_PURPLE,
+                                true));
         }
         return List.copyOf(result);
     }

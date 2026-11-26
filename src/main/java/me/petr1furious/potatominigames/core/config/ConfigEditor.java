@@ -1,31 +1,40 @@
 package me.petr1furious.potatominigames.core.config;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
+
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
-
 /**
- * Dotted-path view of one or more config files for the {@code config} commands: every scalar,
- * flat string list and declared property, minus each file's hidden prefixes.
+ * Dotted-path view of one or more config files for the {@code config} commands: every scalar, flat
+ * string list and declared property, minus each file's hidden prefixes.
  */
 public final class ConfigEditor {
     public enum Kind {
-        SECTION, VALUE, LIST
+        SECTION,
+        VALUE,
+        LIST
     }
 
-    private record Mount(String prefix, String fileName) {
-    }
+    private record Mount(String prefix, String fileName) {}
 
     /** A resolved path; {@code key} is the path inside {@code fileName}. */
-    public record Node(Kind kind, String path, String fileName, String key, Property<?> declared,
-            Property<?> template, Object raw) {
+    public record Node(
+            Kind kind,
+            String path,
+            String fileName,
+            String key,
+            Property<?> declared,
+            Property<?> template,
+            Object raw) {
 
         public boolean isDeclared() {
             return declared != null;
@@ -58,18 +67,21 @@ public final class ConfigEditor {
         }
 
         public Component typeComponent() {
-            return declared != null ? declared.typeComponent()
+            return declared != null
+                    ? declared.typeComponent()
                     : template != null ? template.typeComponent() : Property.typeComponent(type());
         }
 
         public Component valueComponent() {
             return (declared != null ? declared.get() == null : raw == null)
-                    ? I18n.tr("core.config.unset") : Component.text(value());
+                    ? I18n.tr("core.config.unset")
+                    : Component.text(value());
         }
 
         public Component defaultComponent() {
             return declared != null && declared.defaultValue() == null
-                    ? I18n.tr("core.config.unset") : Component.text(defaultValue() != null ? defaultValue() : "");
+                    ? I18n.tr("core.config.unset")
+                    : Component.text(defaultValue() != null ? defaultValue() : "");
         }
 
         /** Rendered code default; null for undeclared keys. */
@@ -115,9 +127,12 @@ public final class ConfigEditor {
             return new Node(Kind.SECTION, "", null, "", null, null, null);
         }
         for (Mount mount : mounts) {
-            if (!mount.prefix().isEmpty() && (path.equals(mount.prefix()) || path.startsWith(mount.prefix() + "."))) {
-                String key = path.length() == mount.prefix().length() ? ""
-                        : path.substring(mount.prefix().length() + 1);
+            if (!mount.prefix().isEmpty()
+                    && (path.equals(mount.prefix()) || path.startsWith(mount.prefix() + "."))) {
+                String key =
+                        path.length() == mount.prefix().length()
+                                ? ""
+                                : path.substring(mount.prefix().length() + 1);
                 return resolve(mount.fileName(), key, path);
             }
         }
@@ -148,13 +163,20 @@ public final class ConfigEditor {
         return children(section.fileName(), section.key(), section.path());
     }
 
-    /** Declared: live via the codec. Undeclared: typed like the stored value, written, file reloaded. */
+    /**
+     * Declared: live via the codec. Undeclared: typed like the stored value, written, file
+     * reloaded.
+     */
     public void set(Node node, String raw) {
         if (node.isDeclared()) {
             registry.setDeclared(node.fileName(), node.key(), raw);
         } else {
-            registry.setRaw(node.fileName(), node.key(),
-                    node.template() != null ? node.template().toYaml(raw) : parseLike(node.raw(), raw));
+            registry.setRaw(
+                    node.fileName(),
+                    node.key(),
+                    node.template() != null
+                            ? node.template().toYaml(raw)
+                            : parseLike(node.raw(), raw));
         }
     }
 
@@ -165,7 +187,9 @@ public final class ConfigEditor {
         registry.resetDeclared(node.fileName(), node.key());
     }
 
-    /** @return the entry as stored */
+    /**
+     * @return the entry as stored
+     */
     public String listAdd(Node node, String entry) {
         List<String> entries = node.entries();
         if (find(entries, entry) != null) {
@@ -176,13 +200,17 @@ public final class ConfigEditor {
         return entry;
     }
 
-    /** @return the entry as it was stored */
+    /**
+     * @return the entry as it was stored
+     */
     public String listRemove(Node node, String entry) {
         List<String> entries = node.entries();
         String found = find(entries, entry);
         if (found == null) {
-            throw entries.isEmpty() ? I18n.exception("core.config.not_listed", entry)
-                    : I18n.exception("core.config.not_listed_entries", entry, String.join(", ", entries));
+            throw entries.isEmpty()
+                    ? I18n.exception("core.config.not_listed", entry)
+                    : I18n.exception(
+                            "core.config.not_listed_entries", entry, String.join(", ", entries));
         }
         entries.remove(found);
         registry.setRaw(node.fileName(), node.key(), entries);
@@ -216,11 +244,13 @@ public final class ConfigEditor {
         }
         if (raw instanceof List<?> list) {
             return list.stream().allMatch(entry -> entry instanceof String)
-                    ? new Node(Kind.LIST, path, fileName, key, null, null, list) : null;
+                    ? new Node(Kind.LIST, path, fileName, key, null, null, list)
+                    : null;
         }
         if (raw == null) {
-            boolean declaredBelow = declared.keySet().stream()
-                    .anyMatch(name -> name.startsWith(key + ".") && !isHidden(spec, name));
+            boolean declaredBelow =
+                    declared.keySet().stream()
+                            .anyMatch(name -> name.startsWith(key + ".") && !isHidden(spec, name));
             if (declaredBelow) {
                 return new Node(Kind.SECTION, path, fileName, key, null, null, null);
             }
@@ -228,7 +258,8 @@ public final class ConfigEditor {
             int dot = key.lastIndexOf('.');
             boolean parentExists = dot < 0 || yaml.isConfigurationSection(key.substring(0, dot));
             return template != null && parentExists
-                    ? new Node(Kind.VALUE, path, fileName, key, null, template, null) : null;
+                    ? new Node(Kind.VALUE, path, fileName, key, null, template, null)
+                    : null;
         }
         if (raw instanceof Number || raw instanceof Boolean || raw instanceof String) {
             return new Node(Kind.VALUE, path, fileName, key, null, template, raw);
@@ -252,14 +283,16 @@ public final class ConfigEditor {
         String[] segments = key.isEmpty() ? new String[0] : key.split("\\.");
         for (String pattern : registry.specOf(fileName).keys().keySet()) {
             String[] parts = pattern.split("\\.");
-            if (parts.length > segments.length && !parts[segments.length].equals("*")
+            if (parts.length > segments.length
+                    && !parts[segments.length].equals("*")
                     && matches(parts, segments, segments.length)) {
                 names.add(parts[segments.length]);
             }
         }
         List<Node> result = new ArrayList<>();
         for (String name : names) {
-            Node child = resolve(fileName, prefix + name, path.isEmpty() ? name : path + "." + name);
+            Node child =
+                    resolve(fileName, prefix + name, path.isEmpty() ? name : path + "." + name);
             if (child != null) {
                 result.add(child);
             }
@@ -268,7 +301,8 @@ public final class ConfigEditor {
     }
 
     private static boolean isHidden(ConfigRegistry.FileSpec spec, String key) {
-        return spec.hidden().stream().anyMatch(prefix -> key.equals(prefix) || key.startsWith(prefix + "."));
+        return spec.hidden().stream()
+                .anyMatch(prefix -> key.equals(prefix) || key.startsWith(prefix + "."));
     }
 
     private static Property<?> templateOf(ConfigRegistry.FileSpec spec, String key) {
@@ -301,9 +335,12 @@ public final class ConfigEditor {
                 case null, default -> raw;
             };
         } catch (RuntimeException exception) {
-            throw I18n.exception("core.config.expected", Property.typeComponent(
-                    current instanceof Integer || current instanceof Long ? "int"
-                            : current instanceof Number ? "number" : "boolean"));
+            throw I18n.exception(
+                    "core.config.expected",
+                    Property.typeComponent(
+                            current instanceof Integer || current instanceof Long
+                                    ? "int"
+                                    : current instanceof Number ? "number" : "boolean"));
         }
     }
 }

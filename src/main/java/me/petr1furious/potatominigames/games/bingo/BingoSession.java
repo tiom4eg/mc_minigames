@@ -1,45 +1,5 @@
 package me.petr1furious.potatominigames.games.bingo;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityPickupItemEvent;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.inventory.FurnaceExtractEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitTask;
-
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
 import me.petr1furious.potatominigames.core.command.CommandFailure;
 import me.petr1furious.potatominigames.core.game.EndReason;
 import me.petr1furious.potatominigames.core.game.GameSession;
@@ -57,11 +17,55 @@ import me.petr1furious.potatominigames.games.bingo.model.BoardEntry;
 import me.petr1furious.potatominigames.games.bingo.model.GameDifficulty;
 import me.petr1furious.potatominigames.games.bingo.model.GameMode;
 import me.petr1furious.potatominigames.games.bingo.model.TeamState;
+import me.petr1furious.potatominigames.i18n.I18n;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.FurnaceExtractEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitTask;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 final class BingoSession implements GameSession {
 
-    private record Punishment(BukkitTask releaseTask, long releaseAtMillis, Location deathLocation,
-            ItemStack[] contents, ItemStack[] armor, ItemStack offHand) {
+    private record Punishment(
+            BukkitTask releaseTask,
+            long releaseAtMillis,
+            Location deathLocation,
+            ItemStack[] contents,
+            ItemStack[] armor,
+            ItemStack offHand) {
         int remainingTicks() {
             long remainingMillis = Math.max(0L, releaseAtMillis - System.currentTimeMillis());
             return (int) Math.ceil(remainingMillis / 50.0d);
@@ -79,8 +83,10 @@ final class BingoSession implements GameSession {
     private GameDifficulty difficulty;
     private BoardService.Board board;
     private final Map<TeamColor, TeamState> teamStates = new EnumMap<>(TeamColor.class);
+
     /** Lockout: the team that collected each cell first; it alone holds it. */
     private final TeamColor[] owners = new TeamColor[25];
+
     private final Map<UUID, Punishment> punishments = new HashMap<>();
 
     private long elapsedSeconds;
@@ -99,8 +105,14 @@ final class BingoSession implements GameSession {
     /** Start option overriding the configured difficulty; the queue passes it too. */
     static final String DIFFICULTY_OPTION = "difficulty";
 
-    BingoSession(SessionServices services, BingoConfig config, ItemPoolService itemPool,
-            BoardService boardService, BoardUiService boardUi, BingoKit kit, GameMode mode) {
+    BingoSession(
+            SessionServices services,
+            BingoConfig config,
+            ItemPoolService itemPool,
+            BoardService boardService,
+            BoardUiService boardUi,
+            BingoKit kit,
+            GameMode mode) {
         this.services = services;
         this.mode = mode;
         this.config = config;
@@ -111,7 +123,10 @@ final class BingoSession implements GameSession {
     }
 
     private TeamColor teamOf(Player player) {
-        return services.participants().find(player.getUniqueId()).map(Participant::team).orElse(null);
+        return services.participants()
+                .find(player.getUniqueId())
+                .map(Participant::team)
+                .orElse(null);
     }
 
     private TeamState stateOf(TeamColor color) {
@@ -161,8 +176,12 @@ final class BingoSession implements GameSession {
             }
         }
 
-        broadcast(I18n.tr("bingo.started", mode.displayName().color(NamedTextColor.GOLD),
-                difficulty.displayName().color(NamedTextColor.GOLD)).color(NamedTextColor.GREEN));
+        broadcast(
+                I18n.tr(
+                                "bingo.started",
+                                mode.displayName().color(NamedTextColor.GOLD),
+                                difficulty.displayName().color(NamedTextColor.GOLD))
+                        .color(NamedTextColor.GREEN));
 
         if (dropRemaining <= 0) {
             openFloorNow();
@@ -246,7 +265,8 @@ final class BingoSession implements GameSession {
             summary.add(I18n.tr("bingo.ranking").color(NamedTextColor.GRAY));
             int place = 1;
             for (TeamState state : ranking) {
-                summary.add(Summary.rank(place, teamDisplayName(state), teamResultComponent(state)));
+                summary.add(
+                        Summary.rank(place, teamDisplayName(state), teamResultComponent(state)));
                 place++;
             }
         }
@@ -273,15 +293,24 @@ final class BingoSession implements GameSession {
     public void onParticipantJoin(Player player) {
         TeamColor color = teamOf(player);
         if (color == null) {
-            color = services.teams().resolveForStart("bingo",
-                    services.participants().find(player.getUniqueId()).orElseThrow());
+            color =
+                    services.teams()
+                            .resolveForStart(
+                                    "bingo",
+                                    services.participants()
+                                            .find(player.getUniqueId())
+                                            .orElseThrow());
         }
         teamStates.computeIfAbsent(color, TeamState::new).addMember(player.getName());
         services.sidebar().setNameColor(player, color);
         preparePlayerForRound(player);
         // The cage is gone; spawn at the arena surface.
-        player.teleport(new Location(arenaWorld, arenaX + 0.5,
-                arenaWorld.getHighestBlockYAt(arenaX, arenaZ) + 1.0, arenaZ + 0.5));
+        player.teleport(
+                new Location(
+                        arenaWorld,
+                        arenaX + 0.5,
+                        arenaWorld.getHighestBlockYAt(arenaX, arenaZ) + 1.0,
+                        arenaZ + 0.5));
         butfastRewardTeamCount = Math.max(butfastRewardTeamCount, activeTeams().size());
         updateSidebar();
         refreshOpenBoards();
@@ -318,7 +347,13 @@ final class BingoSession implements GameSession {
             int remainingTicks = punishment == null ? 0 : punishment.remainingTicks();
             if (punishment != null && remainingTicks > 0) {
                 player.addPotionEffect(
-                        new PotionEffect(PotionEffectType.BLINDNESS, remainingTicks + 40, 1, false, false, false));
+                        new PotionEffect(
+                                PotionEffectType.BLINDNESS,
+                                remainingTicks + 40,
+                                1,
+                                false,
+                                false,
+                                false));
             }
         } else {
             player.setGameMode(org.bukkit.GameMode.SURVIVAL);
@@ -402,7 +437,9 @@ final class BingoSession implements GameSession {
             team.setScore(computeScore(team));
         }
 
-        broadcast(teamCollectedMessage(player.getName(), team, Component.translatable(material.translationKey())));
+        broadcast(
+                teamCollectedMessage(
+                        player.getName(), team, Component.translatable(material.translationKey())));
         playCollectionSounds(player);
         checkFinish(team);
         updateSidebar();
@@ -420,14 +457,21 @@ final class BingoSession implements GameSession {
     }
 
     private void checkFinish(TeamState team) {
-        boolean won = mode.lineBoard() ? computeBestLine(team.collected()) >= 5
-                : allRequiredCollected(team.collected());
+        boolean won =
+                mode.lineBoard()
+                        ? computeBestLine(team.collected()) >= 5
+                        : allRequiredCollected(team.collected());
 
         if (won && !team.finished()) {
             team.setFinished(true);
             team.setFinishedAtSeconds((int) elapsedSeconds);
-            broadcast(I18n.tr(mode == GameMode.LOCKOUT ? "bingo.team.line" : "bingo.team.completed",
-                    team.color().displayNameComponent()).color(NamedTextColor.GOLD));
+            broadcast(
+                    I18n.tr(
+                                    mode == GameMode.LOCKOUT
+                                            ? "bingo.team.line"
+                                            : "bingo.team.completed",
+                                    team.color().displayNameComponent())
+                            .color(NamedTextColor.GOLD));
             moveFinishedTeamToSpectators(team.color());
             playParticipantsSound(Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
         }
@@ -440,12 +484,13 @@ final class BingoSession implements GameSession {
             return;
         }
         long finished = active.stream().filter(TeamState::finished).count();
-        boolean shouldEnd = switch (mode) {
-            case BUTFAST -> finished == active.size();
-            // A line wins outright; with every cell taken, the most cells win.
-            case LOCKOUT -> finished > 0 || allRequiredCollected(claimedCells());
-            default -> finished >= Math.max(1, active.size() - 1);
-        };
+        boolean shouldEnd =
+                switch (mode) {
+                    case BUTFAST -> finished == active.size();
+                    // A line wins outright; with every cell taken, the most cells win.
+                    case LOCKOUT -> finished > 0 || allRequiredCollected(claimedCells());
+                    default -> finished >= Math.max(1, active.size() - 1);
+                };
         if (!shouldEnd) {
             return;
         }
@@ -475,18 +520,18 @@ final class BingoSession implements GameSession {
 
     private int computeBestLine(boolean[] collected) {
         int[][] lines = {
-                { 0, 1, 2, 3, 4 },
-                { 5, 6, 7, 8, 9 },
-                { 10, 11, 12, 13, 14 },
-                { 15, 16, 17, 18, 19 },
-                { 20, 21, 22, 23, 24 },
-                { 0, 5, 10, 15, 20 },
-                { 1, 6, 11, 16, 21 },
-                { 2, 7, 12, 17, 22 },
-                { 3, 8, 13, 18, 23 },
-                { 4, 9, 14, 19, 24 },
-                { 0, 6, 12, 18, 24 },
-                { 4, 8, 12, 16, 20 }
+            {0, 1, 2, 3, 4},
+            {5, 6, 7, 8, 9},
+            {10, 11, 12, 13, 14},
+            {15, 16, 17, 18, 19},
+            {20, 21, 22, 23, 24},
+            {0, 5, 10, 15, 20},
+            {1, 6, 11, 16, 21},
+            {2, 7, 12, 17, 22},
+            {3, 8, 13, 18, 23},
+            {4, 9, 14, 19, 24},
+            {0, 6, 12, 18, 24},
+            {4, 8, 12, 16, 20}
         };
 
         int best = 0;
@@ -550,7 +595,13 @@ final class BingoSession implements GameSession {
         player.setFlying(false);
         if (punishmentSeconds > 0) {
             player.addPotionEffect(
-                    new PotionEffect(PotionEffectType.BLINDNESS, punishmentSeconds * 20 + 40, 1, false, false, false));
+                    new PotionEffect(
+                            PotionEffectType.BLINDNESS,
+                            punishmentSeconds * 20 + 40,
+                            1,
+                            false,
+                            false,
+                            false));
         }
 
         ItemStack[] contents = cloneContents(player.getInventory().getContents());
@@ -563,12 +614,21 @@ final class BingoSession implements GameSession {
                 I18n.tr("bingo.death_pause", punishmentSeconds).color(NamedTextColor.RED));
 
         Location deathLocation = player.getLocation().clone();
-        BukkitTask releaseTask = Bukkit.getScheduler().runTaskLater(services.plugin(),
-                () -> clearPunishment(player, true),
-                Math.max(1, punishmentSeconds) * 20L);
-        punishments.put(id, new Punishment(releaseTask,
-                System.currentTimeMillis() + Math.max(1, punishmentSeconds) * 1000L,
-                deathLocation, contents, armor, offHand));
+        BukkitTask releaseTask =
+                Bukkit.getScheduler()
+                        .runTaskLater(
+                                services.plugin(),
+                                () -> clearPunishment(player, true),
+                                Math.max(1, punishmentSeconds) * 20L);
+        punishments.put(
+                id,
+                new Punishment(
+                        releaseTask,
+                        System.currentTimeMillis() + Math.max(1, punishmentSeconds) * 1000L,
+                        deathLocation,
+                        contents,
+                        armor,
+                        offHand));
     }
 
     private void clearPunishment(Player player, boolean restorePlayer) {
@@ -577,7 +637,9 @@ final class BingoSession implements GameSession {
             return;
         }
         state.releaseTask().cancel();
-        if (!restorePlayer || !player.isOnline() || !services.participants().isParticipant(player)) {
+        if (!restorePlayer
+                || !player.isOnline()
+                || !services.participants().isParticipant(player)) {
             return;
         }
 
@@ -604,12 +666,15 @@ final class BingoSession implements GameSession {
         if (state.contents() != null) {
             player.getInventory().setContents(cloneContents(state.contents()));
             player.getInventory().setArmorContents(cloneContents(state.armor()));
-            player.getInventory().setItemInOffHand(state.offHand() == null ? null : state.offHand().clone());
+            player.getInventory()
+                    .setItemInOffHand(state.offHand() == null ? null : state.offHand().clone());
             if (player.getInventory().getItem(8) == null) {
                 player.getInventory().setItem(8, I18n.item(boardUi.createCard(), player));
             }
         }
-        player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 20 * 20, 0, false, false, false));
+        player.addPotionEffect(
+                new PotionEffect(
+                        PotionEffectType.FIRE_RESISTANCE, 20 * 20, 0, false, false, false));
         player.sendActionBar(I18n.tr("bingo.respawned").color(NamedTextColor.GREEN));
     }
 
@@ -647,10 +712,12 @@ final class BingoSession implements GameSession {
 
     @Override
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player attacker) || !(event.getEntity() instanceof Player victim)) {
+        if (!(event.getDamager() instanceof Player attacker)
+                || !(event.getEntity() instanceof Player victim)) {
             return;
         }
-        if (services.participants().isParticipant(attacker) && services.participants().isParticipant(victim)) {
+        if (services.participants().isParticipant(attacker)
+                && services.participants().isParticipant(victim)) {
             event.setCancelled(true);
         }
     }
@@ -755,7 +822,8 @@ final class BingoSession implements GameSession {
 
     @Override
     public void onSwapHandItems(PlayerSwapHandItemsEvent event) {
-        if (boardUi.isBingoCard(event.getMainHandItem()) || boardUi.isBingoCard(event.getOffHandItem())) {
+        if (boardUi.isBingoCard(event.getMainHandItem())
+                || boardUi.isBingoCard(event.getOffHandItem())) {
             event.setCancelled(true);
         }
     }
@@ -815,7 +883,8 @@ final class BingoSession implements GameSession {
             player.sendActionBar(I18n.tr("bingo.not_participating").color(NamedTextColor.RED));
             return;
         }
-        boardUi.openBoard(player, board, team, mode, difficulty, this::rewardForIndex, lockoutOwners());
+        boardUi.openBoard(
+                player, board, team, mode, difficulty, this::rewardForIndex, lockoutOwners());
     }
 
     /** Passed to the board UI, which marks other teams' cells in lockout. */
@@ -830,7 +899,8 @@ final class BingoSession implements GameSession {
         }
         BoardUiService.ClickAction action = boardUi.mapClick(player, rawSlot);
         if (action.type() == BoardUiService.ClickActionType.TOGGLE_MODE) {
-            boardUi.openBoard(player, board, team, mode, difficulty, this::rewardForIndex, lockoutOwners());
+            boardUi.openBoard(
+                    player, board, team, mode, difficulty, this::rewardForIndex, lockoutOwners());
         }
     }
 
@@ -841,7 +911,14 @@ final class BingoSession implements GameSession {
         for (Player player : services.participants().onlinePlayers()) {
             TeamState team = stateOf(teamOf(player));
             if (team != null) {
-                boardUi.refreshOpenBoard(player, board, team, mode, difficulty, this::rewardForIndex, lockoutOwners());
+                boardUi.refreshOpenBoard(
+                        player,
+                        board,
+                        team,
+                        mode,
+                        difficulty,
+                        this::rewardForIndex,
+                        lockoutOwners());
             }
         }
     }
@@ -858,10 +935,20 @@ final class BingoSession implements GameSession {
         kit.fillStarterItems(player.getInventory());
         player.getInventory().setItem(8, I18n.item(boardUi.createCard(), player));
         player.addPotionEffect(
-                new PotionEffect(PotionEffectType.WATER_BREATHING, PotionEffect.INFINITE_DURATION, 0, false, false,
+                new PotionEffect(
+                        PotionEffectType.WATER_BREATHING,
+                        PotionEffect.INFINITE_DURATION,
+                        0,
+                        false,
+                        false,
                         false));
         player.addPotionEffect(
-                new PotionEffect(PotionEffectType.NIGHT_VISION, PotionEffect.INFINITE_DURATION, 0, false, false,
+                new PotionEffect(
+                        PotionEffectType.NIGHT_VISION,
+                        PotionEffect.INFINITE_DURATION,
+                        0,
+                        false,
+                        false,
                         false));
         PlayerStateService.unlockAllRecipes(player);
         PlayerStateService.resetAllAdvancements(player);
@@ -870,14 +957,16 @@ final class BingoSession implements GameSession {
     }
 
     private void applySpeedBonus(Player player, int heldSlot) {
-        if (ended || !services.participants().isParticipant(player)
+        if (ended
+                || !services.participants().isParticipant(player)
                 || player.getGameMode() != org.bukkit.GameMode.SURVIVAL) {
             player.removePotionEffect(PotionEffectType.SPEED);
             return;
         }
         ItemStack held = player.getInventory().getItem(heldSlot);
         if (boardUi.isBingoCard(held)) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, 1, false, false, false));
+            player.addPotionEffect(
+                    new PotionEffect(PotionEffectType.SPEED, 40, 1, false, false, false));
         } else {
             player.removePotionEffect(PotionEffectType.SPEED);
         }
@@ -947,23 +1036,35 @@ final class BingoSession implements GameSession {
         List<TeamState> teams = new ArrayList<>(teamStates.values());
         teams.sort(teamRankingComparator());
         List<Component> lines = new ArrayList<>();
-        lines.add(I18n.tr("bingo.hud.mode", mode.displayName().color(NamedTextColor.YELLOW),
-                difficulty.displayName().color(NamedTextColor.YELLOW)).color(NamedTextColor.GOLD));
-        lines.add(I18n.tr("bingo.hud.time", Component.text(TimeFormat.clock(elapsedSeconds), NamedTextColor.GREEN),
-                Component.text(TimeFormat.clock(finishSeconds), NamedTextColor.GREEN)).color(NamedTextColor.GOLD));
+        lines.add(
+                I18n.tr(
+                                "bingo.hud.mode",
+                                mode.displayName().color(NamedTextColor.YELLOW),
+                                difficulty.displayName().color(NamedTextColor.YELLOW))
+                        .color(NamedTextColor.GOLD));
+        lines.add(
+                I18n.tr(
+                                "bingo.hud.time",
+                                Component.text(
+                                        TimeFormat.clock(elapsedSeconds), NamedTextColor.GREEN),
+                                Component.text(
+                                        TimeFormat.clock(finishSeconds), NamedTextColor.GREEN))
+                        .color(NamedTextColor.GOLD));
         lines.add(Component.text(" "));
         for (TeamState state : teams) {
-            lines.add(Component.text()
-                    .append(teamDisplayName(state))
-                    .append(Component.text(": ", NamedTextColor.GOLD))
-                    .append(teamResultComponent(state))
-                    .build());
+            lines.add(
+                    Component.text()
+                            .append(teamDisplayName(state))
+                            .append(Component.text(": ", NamedTextColor.GOLD))
+                            .append(teamResultComponent(state))
+                            .build());
             if (lines.size() >= 15) {
                 break;
             }
         }
         for (Player player : services.participants().onlinePlayers()) {
-            services.sidebar().update(player, I18n.tr("bingo.name").color(NamedTextColor.GOLD), lines);
+            services.sidebar()
+                    .update(player, I18n.tr("bingo.name").color(NamedTextColor.GOLD), lines);
         }
     }
 
@@ -976,21 +1077,26 @@ final class BingoSession implements GameSession {
 
     private Component teamResultComponent(TeamState state) {
         if (mode == GameMode.LOCKOUT) {
-            return (state.finished() ? I18n.tr("bingo.result.bingo", state.score()) : Component.text(state.score()))
+            return (state.finished()
+                            ? I18n.tr("bingo.result.bingo", state.score())
+                            : Component.text(state.score()))
                     .color(state.finished() ? NamedTextColor.GREEN : NamedTextColor.WHITE);
         }
         if (mode != GameMode.DEFAULT) {
             return Component.text(state.score(), NamedTextColor.WHITE);
         }
         if (state.finished() && state.finishedAtSeconds() >= 0) {
-            return Component.text(TimeFormat.clock(state.finishedAtSeconds()), NamedTextColor.GREEN);
+            return Component.text(
+                    TimeFormat.clock(state.finishedAtSeconds()), NamedTextColor.GREEN);
         }
         return Component.text(state.score() + "/5", NamedTextColor.RED);
     }
 
     private Component teamCollectedMessage(String nickname, TeamState team, Component itemName) {
-        return I18n.tr(mode == GameMode.LOCKOUT ? "bingo.item.claimed" : "bingo.item.collected",
-                Component.text(nickname, team.color().textColor()), itemName.color(NamedTextColor.AQUA))
+        return I18n.tr(
+                        mode == GameMode.LOCKOUT ? "bingo.item.claimed" : "bingo.item.collected",
+                        Component.text(nickname, team.color().textColor()),
+                        itemName.color(NamedTextColor.AQUA))
                 .color(NamedTextColor.GOLD);
     }
 
@@ -1026,19 +1132,20 @@ final class BingoSession implements GameSession {
     }
 
     private void playParticipantsSound(Sound sound, float volume, float pitch) {
-        services.messages().playSound(services.participants().onlinePlayers(), sound, volume, pitch);
+        services.messages()
+                .playSound(services.participants().onlinePlayers(), sound, volume, pitch);
     }
 
     private void playCollectionSounds(Player collector) {
         for (Player player : services.participants().onlinePlayers()) {
             if (player.getUniqueId().equals(collector.getUniqueId())) {
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.9f, 1.2f);
+                player.playSound(
+                        player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.9f, 1.2f);
             } else {
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.7f, 1.4f);
             }
         }
     }
-
 
     private static ItemStack[] cloneContents(ItemStack[] source) {
         if (source == null) {
@@ -1054,15 +1161,17 @@ final class BingoSession implements GameSession {
     private Comparator<TeamState> teamRankingComparator() {
         if (mode == GameMode.LOCKOUT) {
             // The team with a line first, then the most cells.
-            return Comparator.comparing(TeamState::finished).reversed()
+            return Comparator.comparing(TeamState::finished)
+                    .reversed()
                     .thenComparing(Comparator.comparingInt(TeamState::score).reversed());
         }
         if (mode != GameMode.DEFAULT) {
             return Comparator.comparingInt(TeamState::score).reversed();
         }
-        return Comparator
-                .comparing(TeamState::finished).reversed()
-                .thenComparingInt(state -> state.finished() ? state.finishedAtSeconds() : Integer.MAX_VALUE)
+        return Comparator.comparing(TeamState::finished)
+                .reversed()
+                .thenComparingInt(
+                        state -> state.finished() ? state.finishedAtSeconds() : Integer.MAX_VALUE)
                 .thenComparing(Comparator.comparingInt(TeamState::score).reversed());
     }
 }

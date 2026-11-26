@@ -24,14 +24,27 @@ public final class FinalsCashoutPhysicsCheck {
         }
         Method displayPosition = physics.getDeclaredMethod("displayPosition", Location.class);
         displayPosition.setAccessible(true);
-        for (float[] angles : new float[][]{{87.30008f, 76.34995f}, {179.84937f, 71.54993f}, {37, 90}}) {
+        for (float[] angles :
+                new float[][] {{87.30008f, 76.34995f}, {179.84937f, 71.54993f}, {37, 90}}) {
             Location saved = new Location(null, 700.3, 96.5, 700.8, angles[0], angles[1]);
             Location display = (Location) displayPosition.invoke(null, saved);
-            close(display.getYaw(), 0, "Saved editor yaw must not rotate a cashout around its corner");
-            close(display.getPitch(), 0, "Saved editor pitch must not tilt a cashout into its support");
-            close(display.getX(), 699.8, "The display starts at the physics body's exact minimum X");
+            close(
+                    display.getYaw(),
+                    0,
+                    "Saved editor yaw must not rotate a cashout around its corner");
+            close(
+                    display.getPitch(),
+                    0,
+                    "Saved editor pitch must not tilt a cashout into its support");
+            close(
+                    display.getX(),
+                    699.8,
+                    "The display starts at the physics body's exact minimum X");
             close(display.getY(), 96.5, "The display rests at the physics body's surface height");
-            close(display.getZ(), 700.3, "The display starts at the physics body's exact minimum Z");
+            close(
+                    display.getZ(),
+                    700.3,
+                    "The display starts at the physics body's exact minimum Z");
             close(saved.getYaw(), angles[0], "Rendering leaves saved player-facing yaw intact");
             close(saved.getPitch(), angles[1], "Rendering leaves saved player-facing pitch intact");
         }
@@ -72,49 +85,106 @@ public final class FinalsCashoutPhysicsCheck {
         Object removed = step(5, 0, List.of());
         close(value(removed, "y"), 4.92, "Destroying support restarts gravity immediately");
         Object embeddedSlab = step(5.25, 0, List.of(new BoundingBox(0, 5, 0, 1, 5.5, 1)));
-        close(value(embeddedSlab, "y"), 5.5,
+        close(
+                value(embeddedSlab, "y"),
+                5.5,
                 "A cashout initially embedded in a slab is lifted onto its surface");
-        close(value(embeddedSlab, "velocity"), 0, "Resolving initial penetration cancels downward momentum");
+        close(
+                value(embeddedSlab, "velocity"),
+                0,
+                "Resolving initial penetration cancels downward momentum");
         Object risingTerrain = step(5, -.8, List.of(new BoundingBox(0, 5, 0, 1, 6, 1)));
-        close(value(risingTerrain, "y"), 6, "Terrain placed inside a live cashout lifts the entire body clear");
+        close(
+                value(risingTerrain, "y"),
+                6,
+                "Terrain placed inside a live cashout lifts the entire body clear");
         Object fence = step(5, 0, List.of(new BoundingBox(.375, 4, .375, .625, 5.5, .625)));
-        close(value(fence, "y"), 5.5, "A fence extending above its block catches an overlapping cashout");
+        close(
+                value(fence, "y"),
+                5.5,
+                "A fence extending above its block catches an overlapping cashout");
         Object visualEdge = step(8, -1.4, List.of(new BoundingBox(.995, 6, 0, 1.2, 7, 1)));
-        close(value(visualEdge, "y"), 7, "The full visible block footprint collides at its outer edge");
-        Object touchingCeiling = step(5, 0, List.of(new BoundingBox(0, 6, 0, 1, 7, 1),
-                new BoundingBox(0, 4, 0, 1, 5, 1)));
-        close(value(touchingCeiling, "y"), 5, "Touching a ceiling without overlap does not teleport the body upward");
-        Object cascading = step(5.25, -.8, List.of(new BoundingBox(0, 6.25, 0, 1, 6.75, 1),
-                new BoundingBox(0, 5, 0, 1, 5.5, 1)));
-        close(value(cascading, "y"), 6.75, "Penetration correction rechecks the complete body against higher terrain");
+        close(
+                value(visualEdge, "y"),
+                7,
+                "The full visible block footprint collides at its outer edge");
+        Object touchingCeiling =
+                step(
+                        5,
+                        0,
+                        List.of(
+                                new BoundingBox(0, 6, 0, 1, 7, 1),
+                                new BoundingBox(0, 4, 0, 1, 5, 1)));
+        close(
+                value(touchingCeiling, "y"),
+                5,
+                "Touching a ceiling without overlap does not teleport the body upward");
+        Object cascading =
+                step(
+                        5.25,
+                        -.8,
+                        List.of(
+                                new BoundingBox(0, 6.25, 0, 1, 6.75, 1),
+                                new BoundingBox(0, 5, 0, 1, 5.5, 1)));
+        close(
+                value(cascading, "y"),
+                6.75,
+                "Penetration correction rechecks the complete body against higher terrain");
         Method movement;
         try {
-            movement = physics.getDeclaredMethod("clipMovement", org.bukkit.util.Vector.class,
-                    org.bukkit.util.Vector.class, Collection.class);
+            movement =
+                    physics.getDeclaredMethod(
+                            "clipMovement",
+                            org.bukkit.util.Vector.class,
+                            org.bukkit.util.Vector.class,
+                            Collection.class);
         } catch (NoSuchMethodException missing) {
-            throw new AssertionError("Winch movement must sweep the complete cashout body against terrain", missing);
+            throw new AssertionError(
+                    "Winch movement must sweep the complete cashout body against terrain", missing);
         }
         movement.setAccessible(true);
         var start = new org.bukkit.util.Vector(.5, 5, .5);
         var desired = new org.bukkit.util.Vector(.35, -.2, 0);
         var floor = new BoundingBox(-2, 4, -2, 3, 5, 3);
-        var dragged = (org.bukkit.util.Vector) movement.invoke(null, start, desired, List.of(floor));
-        close(dragged.getX(), .35, "Dragging across a supporting floor permits horizontal movement");
-        close(dragged.getY(), 0, "Dragging toward lower terrain never sinks into the current floor");
+        var dragged =
+                (org.bukkit.util.Vector) movement.invoke(null, start, desired, List.of(floor));
+        close(
+                dragged.getX(),
+                .35,
+                "Dragging across a supporting floor permits horizontal movement");
+        close(
+                dragged.getY(),
+                0,
+                "Dragging toward lower terrain never sinks into the current floor");
         var wall = new BoundingBox(1.2, 5, 0, 1.3, 6, 1);
-        var stopped = (org.bukkit.util.Vector) movement.invoke(null, start,
-                new org.bukkit.util.Vector(.35, 0, 0), List.of(wall));
-        require(stopped.getX() > .19 && stopped.getX() <= .2,
+        var stopped =
+                (org.bukkit.util.Vector)
+                        movement.invoke(
+                                null, start, new org.bukkit.util.Vector(.35, 0, 0), List.of(wall));
+        require(
+                stopped.getX() > .19 && stopped.getX() <= .2,
                 "The complete moving cashout stops at a thin wall before penetrating it");
         var ceiling = new BoundingBox(0, 6.1, 0, 1, 6.2, 1);
-        var lifted = (org.bukkit.util.Vector) movement.invoke(null, start,
-                new org.bukkit.util.Vector(0, .35, 0), List.of(ceiling));
-        require(lifted.getY() > .09 && lifted.getY() <= .1,
+        var lifted =
+                (org.bukkit.util.Vector)
+                        movement.invoke(
+                                null,
+                                start,
+                                new org.bukkit.util.Vector(0, .35, 0),
+                                List.of(ceiling));
+        require(
+                lifted.getY() > .09 && lifted.getY() <= .1,
                 "Upward pulling respects the cashout's full head clearance");
-        var away = (org.bukkit.util.Vector) movement.invoke(null, start,
-                new org.bukkit.util.Vector(-.35, 0, 0), List.of(new BoundingBox(1, 5, 0, 2, 6, 1)));
+        var away =
+                (org.bukkit.util.Vector)
+                        movement.invoke(
+                                null,
+                                start,
+                                new org.bukkit.util.Vector(-.35, 0, 0),
+                                List.of(new BoundingBox(1, 5, 0, 2, 6, 1)));
         close(away.getX(), -.35, "A body touching a wall can be pulled safely away from it");
-        require(start.equals(new org.bukkit.util.Vector(.5, 5, .5))
+        require(
+                start.equals(new org.bukkit.util.Vector(.5, 5, .5))
                         && desired.equals(new org.bukkit.util.Vector(.35, -.2, 0)),
                 "Swept pull calculations never mutate source position or requested direction");
         System.out.println("FinalsCashoutPhysicsCheck: " + checks + " checks passed");

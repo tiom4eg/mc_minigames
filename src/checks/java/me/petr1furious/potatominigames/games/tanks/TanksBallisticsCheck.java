@@ -186,7 +186,7 @@ public final class TanksBallisticsCheck {
                         check(
                                 Math.abs(distance(plane, impact) - .06) < 1e-9,
                                 "normal-distance impact markers keep their existing six-centimeter"
-                                    + " offset");
+                                        + " offset");
                 }
             }
     }

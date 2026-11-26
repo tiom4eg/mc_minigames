@@ -116,9 +116,12 @@ final class AnvilSession extends PartySurvivalSession {
                 || !alive(victim)
                 || !alive(attacker)
                 || victim.equals(attacker)) return;
-        combat.hit(victim,
+        combat.hit(
+                victim,
                 victim.getLocation().toVector().subtract(attacker.getLocation().toVector()),
-                attacker.isSprinting(), 0, Bukkit.getCurrentTick());
+                attacker.isSprinting(),
+                0,
+                Bukkit.getCurrentTick());
     }
 
     void cleanup() {

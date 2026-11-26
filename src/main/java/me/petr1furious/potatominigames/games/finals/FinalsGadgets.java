@@ -118,25 +118,27 @@ final class FinalsGadgets {
     private ItemStack item(Player player, FinalsGadgetState.Kind kind) {
         ItemStack item = new ItemStack(material(kind));
         int available = resources.charges(player.getUniqueId(), kind, context.tick());
-        item.editMeta(meta -> {
-            meta.displayName(I18n.tr(prefix(kind) + ".name").color(NamedTextColor.AQUA));
-            meta.lore(
-                    List.of(
-                            I18n.tr(prefix(kind) + ".lore").color(NamedTextColor.GRAY),
-                            (kind == HEALING_BEAM
-                                            ? text("beam_resource")
-                                            : text(
-                                                    "charges",
-                                                    available,
-                                                    kind.capacity,
-                                                    kind.recharge / 20.0))
-                                    .color(NamedTextColor.YELLOW)));
-            meta.getPersistentDataContainer().set(KEY, PersistentDataType.STRING, kind.name());
-            meta.setEnchantmentGlintOverride(
-                    kind == HEALING_BEAM
-                            ? !resources.beamOverheated(player.getUniqueId())
-                            : available > 0);
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(I18n.tr(prefix(kind) + ".name").color(NamedTextColor.AQUA));
+                    meta.lore(
+                            List.of(
+                                    I18n.tr(prefix(kind) + ".lore").color(NamedTextColor.GRAY),
+                                    (kind == HEALING_BEAM
+                                                    ? text("beam_resource")
+                                                    : text(
+                                                            "charges",
+                                                            available,
+                                                            kind.capacity,
+                                                            kind.recharge / 20.0))
+                                            .color(NamedTextColor.YELLOW)));
+                    meta.getPersistentDataContainer()
+                            .set(KEY, PersistentDataType.STRING, kind.name());
+                    meta.setEnchantmentGlintOverride(
+                            kind == HEALING_BEAM
+                                    ? !resources.beamOverheated(player.getUniqueId())
+                                    : available > 0);
+                });
         return item;
     }
 

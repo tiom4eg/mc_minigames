@@ -171,11 +171,12 @@ final class FinalsGameEvents {
         Set<Player> current = new HashSet<>(players);
         lightPlayers
                 .values()
-                .removeIf(player -> {
-                    if (current.contains(player)) return false;
-                    normalGravity(player);
-                    return true;
-                });
+                .removeIf(
+                        player -> {
+                            if (current.contains(player)) return false;
+                            normalGravity(player);
+                            return true;
+                        });
         for (Player player : players) {
             var attribute = player.getAttribute(Attribute.GRAVITY);
             if (attribute == null) continue;

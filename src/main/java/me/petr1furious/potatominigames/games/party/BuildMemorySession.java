@@ -149,8 +149,10 @@ final class BuildMemorySession extends PartySurvivalSession {
                     p.getInventory().setItem(7, PvpClass.item(Material.IRON_AXE));
                     p.getInventory().setItem(5, PvpClass.item(Material.SHEARS));
                     ItemStack done = new ItemStack(Material.EMERALD);
-                    done.editMeta(meta ->
-                            meta.displayName(I18n.tr("party.rounds.build_memory.ready_item")));
+                    done.editMeta(
+                            meta ->
+                                    meta.displayName(
+                                            I18n.tr("party.rounds.build_memory.ready_item")));
                     p.getInventory().setItem(8, I18n.item(done, p));
                     patterns.get(p.getUniqueId())
                             .inventory()

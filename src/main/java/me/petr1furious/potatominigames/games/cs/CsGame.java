@@ -109,20 +109,21 @@ public final class CsGame implements Minigame {
         for (String action : List.of("buy", "score", "reload", "drop", "pause", "help"))
             root.then(
                     Commands.literal(action)
-                            .executes(ctx -> {
-                                if (!(ctx.getSource().getSender() instanceof Player p)) {
-                                    ctx.getSource()
-                                            .getSender()
-                                            .sendMessage(I18n.tr("cs.error.player"));
-                                    return 0;
-                                }
-                                CsSession session = playing.get(p.getUniqueId());
-                                if (session == null) {
-                                    p.sendMessage(I18n.tr("cs.error.not_playing"));
-                                    return 0;
-                                }
-                                session.command(p, action);
-                                return 1;
-                            }));
+                            .executes(
+                                    ctx -> {
+                                        if (!(ctx.getSource().getSender() instanceof Player p)) {
+                                            ctx.getSource()
+                                                    .getSender()
+                                                    .sendMessage(I18n.tr("cs.error.player"));
+                                            return 0;
+                                        }
+                                        CsSession session = playing.get(p.getUniqueId());
+                                        if (session == null) {
+                                            p.sendMessage(I18n.tr("cs.error.not_playing"));
+                                            return 0;
+                                        }
+                                        session.command(p, action);
+                                        return 1;
+                                    }));
     }
 }

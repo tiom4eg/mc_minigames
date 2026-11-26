@@ -4,9 +4,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import io.papermc.paper.plugin.bootstrap.BootstrapContext;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,20 +23,37 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-/** Registers ordinary vanilla-client data, before the server freezes/synchronizes its registries. */
+/**
+ * Registers ordinary vanilla-client data, before the server freezes/synchronizes its registries.
+ */
 @SuppressWarnings("UnstableApiUsage")
 public final class PillarsSkyBootstrap implements PluginBootstrap {
-    @Override public void bootstrap(BootstrapContext context) {
-        context.getLifecycleManager().registerEventHandler(LifecycleEvents.DATAPACK_DISCOVERY, event -> {
-            try {
-                ClassLoader nativeResources = Class.forName("net.minecraft.SharedConstants", false,
-                        getClass().getClassLoader()).getClassLoader();
-                Path pack = writePack(context.getDataDirectory(), nativeResources);
-                event.registrar().discoverPack(pack, "pillars_sky", config -> config.autoEnableOnServerStart(true));
-            } catch (IOException | ClassNotFoundException failure) {
-                throw new IllegalStateException("Cannot register the Pillars sky datapack; custom skies cannot be presented", failure);
-            }
-        });
+    @Override
+    public void bootstrap(BootstrapContext context) {
+        context.getLifecycleManager()
+                .registerEventHandler(
+                        LifecycleEvents.DATAPACK_DISCOVERY,
+                        event -> {
+                            try {
+                                ClassLoader nativeResources =
+                                        Class.forName(
+                                                        "net.minecraft.SharedConstants",
+                                                        false,
+                                                        getClass().getClassLoader())
+                                                .getClassLoader();
+                                Path pack = writePack(context.getDataDirectory(), nativeResources);
+                                event.registrar()
+                                        .discoverPack(
+                                                pack,
+                                                "pillars_sky",
+                                                config -> config.autoEnableOnServerStart(true));
+                            } catch (IOException | ClassNotFoundException failure) {
+                                throw new IllegalStateException(
+                                        "Cannot register the Pillars sky datapack; custom skies"
+                                                + " cannot be presented",
+                                        failure);
+                            }
+                        });
     }
 
     static Path writePack(Path directory, ClassLoader nativeResources) throws IOException {
@@ -49,7 +68,8 @@ public final class PillarsSkyBootstrap implements PluginBootstrap {
         info.add("min_format", supported);
         info.add("max_format", supported.deepCopy());
         metadata.add("pack", info);
-        JsonObject overworld = resource(nativeResources, "data/minecraft/dimension_type/overworld.json");
+        JsonObject overworld =
+                resource(nativeResources, "data/minecraft/dimension_type/overworld.json");
         JsonObject day = resource(nativeResources, "data/minecraft/timeline/day.json");
         List<String> timelines = new ArrayList<>();
         JsonElement configured = overworld.get("timelines");
@@ -59,7 +79,8 @@ public final class PillarsSkyBootstrap implements PluginBootstrap {
         } else {
             expandTimeline(nativeResources, configured.getAsString(), timelines, new HashSet<>());
         }
-        if (!timelines.contains("minecraft:day")) throw new IOException("The native overworld has no day timeline");
+        if (!timelines.contains("minecraft:day"))
+            throw new IOException("The native overworld has no day timeline");
         Files.createDirectories(directory);
         Path target = directory.resolve("pillars-sky.zip");
         Path temporary = Files.createTempFile(directory, "pillars-sky-", ".zip");
@@ -70,8 +91,11 @@ public final class PillarsSkyBootstrap implements PluginBootstrap {
                     PillarsSky.Profile profile = PillarsSky.palette(index);
                     JsonObject timeline = day.deepCopy();
                     JsonObject tracks = timeline.getAsJsonObject("tracks");
-                    tracks.add("minecraft:visual/sky_color", constant(String.format("#%06x", profile.rgb())));
-                    tracks.add("minecraft:visual/star_brightness", constant(profile.starBrightness()));
+                    tracks.add(
+                            "minecraft:visual/sky_color",
+                            constant(String.format("#%06x", profile.rgb())));
+                    tracks.add(
+                            "minecraft:visual/star_brightness", constant(profile.starBrightness()));
                     // Time-marker names are global registry entries: only vanilla day owns them.
                     timeline.remove("time_markers");
                     JsonObject dimension = overworld.deepCopy();
@@ -105,15 +129,22 @@ public final class PillarsSkyBootstrap implements PluginBootstrap {
         return track;
     }
 
-    private static void expandTimeline(ClassLoader resources, String name, List<String> result,
-                                       Set<String> visiting) throws IOException {
-        if (!name.startsWith("#")) { result.add(name); return; }
+    private static void expandTimeline(
+            ClassLoader resources, String name, List<String> result, Set<String> visiting)
+            throws IOException {
+        if (!name.startsWith("#")) {
+            result.add(name);
+            return;
+        }
         if (!visiting.add(name)) throw new IOException("Cyclic native timeline tag " + name);
         String[] id = name.substring(1).split(":", 2);
         if (id.length != 2) throw new IOException("Invalid native timeline tag " + name);
         JsonObject tag = resource(resources, "data/" + id[0] + "/tags/timeline/" + id[1] + ".json");
         for (JsonElement entry : tag.getAsJsonArray("values")) {
-            String value = entry.isJsonPrimitive() ? entry.getAsString() : entry.getAsJsonObject().get("id").getAsString();
+            String value =
+                    entry.isJsonPrimitive()
+                            ? entry.getAsString()
+                            : entry.getAsJsonObject().get("id").getAsString();
             expandTimeline(resources, value, result, visiting);
         }
         visiting.remove(name);
@@ -122,11 +153,13 @@ public final class PillarsSkyBootstrap implements PluginBootstrap {
     private static JsonObject resource(ClassLoader resources, String name) throws IOException {
         try (InputStream stream = resources.getResourceAsStream(name)) {
             if (stream == null) throw new IOException("Missing native sky resource " + name);
-            return JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+            return JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8))
+                    .getAsJsonObject();
         }
     }
 
-    private static void entry(ZipOutputStream zip, String name, JsonObject json) throws IOException {
+    private static void entry(ZipOutputStream zip, String name, JsonObject json)
+            throws IOException {
         zip.putNextEntry(new ZipEntry(name));
         zip.write(json.toString().getBytes(StandardCharsets.UTF_8));
         zip.closeEntry();

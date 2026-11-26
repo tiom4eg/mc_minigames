@@ -37,37 +37,65 @@ public final class DropTowerChickenShooterCheck {
         UUID id = id(1);
         Location[] position = {new Location(world, 0, 199, 0, 123, -14)};
         boolean[] grounded = {false};
-        Player player = (Player) Proxy.newProxyInstance(Player.class.getClassLoader(),
-                new Class<?>[] {Player.class}, (proxy, method, args) -> switch (method.getName()) {
-                    case "getUniqueId" -> id;
-                    case "getName" -> "Racer";
-                    case "getLocation" -> position[0].clone();
-                    case "getWorld" -> world;
-                    case "getGameMode" -> GameMode.SURVIVAL;
-                    case "isOnline" -> true;
-                    case "isDead" -> false;
-                    case "isOnGround" -> grounded[0];
-                    case "teleport" -> {
-                        position[0] = ((Location) args[0]).clone();
-                        yield true;
-                    }
-                    case "setFallDistance", "setVelocity", "playSound", "sendActionBar", "spawnParticle" -> null;
-                    default -> throw new AssertionError(method);
-                });
+        Player player =
+                (Player)
+                        Proxy.newProxyInstance(
+                                Player.class.getClassLoader(),
+                                new Class<?>[] {Player.class},
+                                (proxy, method, args) ->
+                                        switch (method.getName()) {
+                                            case "getUniqueId" -> id;
+                                            case "getName" -> "Racer";
+                                            case "getLocation" -> position[0].clone();
+                                            case "getWorld" -> world;
+                                            case "getGameMode" -> GameMode.SURVIVAL;
+                                            case "isOnline" -> true;
+                                            case "isDead" -> false;
+                                            case "isOnGround" -> grounded[0];
+                                            case "teleport" -> {
+                                                position[0] = ((Location) args[0]).clone();
+                                                yield true;
+                                            }
+                                            case "setFallDistance",
+                                                    "setVelocity",
+                                                    "playSound",
+                                                    "sendActionBar",
+                                                    "spawnParticle" ->
+                                                    null;
+                                            default -> throw new AssertionError(method);
+                                        });
         Field server = Bukkit.class.getDeclaredField("server");
         server.setAccessible(true);
         Object original = server.get(null);
         try {
-            server.set(null, Proxy.newProxyInstance(Server.class.getClassLoader(),
-                    new Class<?>[] {Server.class}, (proxy, method, args) -> {
-                        if (method.getName().equals("getPlayer") && id.equals(args[0])) return player;
-                        throw new AssertionError(method);
-                    }));
+            server.set(
+                    null,
+                    Proxy.newProxyInstance(
+                            Server.class.getClassLoader(),
+                            new Class<?>[] {Server.class},
+                            (proxy, method, args) -> {
+                                if (method.getName().equals("getPlayer") && id.equals(args[0]))
+                                    return player;
+                                throw new AssertionError(method);
+                            }));
             ParticipantRegistry participants = new ParticipantRegistry();
             participants.add(player);
-            var services = new SessionServices(null, null, participants, null, null, null,
-                    null, null, null, null, null, null);
-            var round = new DropTowerSession(services, null, PartyRoundContext.standalone(services));
+            var services =
+                    new SessionServices(
+                            null,
+                            null,
+                            participants,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null);
+            var round =
+                    new DropTowerSession(services, null, PartyRoundContext.standalone(services));
             round.world = world;
             round.names.put(id, "Racer");
             round.names.put(id(2), "Second racer");
@@ -76,47 +104,83 @@ public final class DropTowerChickenShooterCheck {
             round.buildArena();
             identicalBuiltLanes(map, round.course);
             var spawn = round.spawn(0, 1);
-            check(spawn.getYaw() == 123 && spawn.getPitch() == -14, "Opening spawn keeps the player's view");
+            check(
+                    spawn.getYaw() == 123 && spawn.getPitch() == -14,
+                    "Opening spawn keeps the player's view");
             var start = round.course.pads().getFirst();
-            Location takeoff = new Location(world, start.x() + start.radius() + 1.4,
-                    start.floor() + 1, start.z() + .5, 95, 21);
+            Location takeoff =
+                    new Location(
+                            world,
+                            start.x() + start.radius() + 1.4,
+                            start.floor() + 1,
+                            start.z() + .5,
+                            95,
+                            21);
             grounded[0] = true;
             position[0] = takeoff.clone();
             round.playTick(0);
-            check(position[0].equals(takeoff), "Leaving the lip with the last grounded flag still set permits walking off");
+            check(
+                    position[0].equals(takeoff),
+                    "Leaving the lip with the last grounded flag still set permits walking off");
             grounded[0] = false;
             var first = round.course.pads().get(1);
-            var landing = new Location(world, first.x() + .8, first.floor() + 1,
-                    first.z() + .9, -66, 31);
+            var landing =
+                    new Location(world, first.x() + .8, first.floor() + 1, first.z() + .9, -66, 31);
             position[0] = landing.clone();
             round.playTick(1);
             position[0] = landing.clone().add(0, -40, 0);
             round.playTick(2);
-            check(samePosition(position[0], spawn), "An airborne fly-through cannot save a checkpoint");
+            check(
+                    samePosition(position[0], spawn),
+                    "An airborne fly-through cannot save a checkpoint");
             grounded[0] = true;
             position[0] = landing.clone();
             round.playTick(3);
-            check(position[0].equals(landing), "A successful landing does not reposition or aim the player");
+            check(
+                    position[0].equals(landing),
+                    "A successful landing does not reposition or aim the player");
             position[0] = landing.clone().add(0, -40, 0);
             round.playTick(4);
-            check(samePosition(position[0], new Location(world, first.x() + .5, first.floor() + 1, first.z() + .5)),
+            check(
+                    samePosition(
+                            position[0],
+                            new Location(world, first.x() + .5, first.floor() + 1, first.z() + .5)),
                     "A miss returns to the latest checkpoint");
-            check(position[0].getYaw() == -66 && position[0].getPitch() == 31,
+            check(
+                    position[0].getYaw() == -66 && position[0].getPitch() == 31,
                     "Checkpoint retries keep the player's view");
             Location retry = position[0].clone();
             position[0] = spawn.clone();
             round.playTick(5);
-            check(samePosition(position[0], retry), "Landing back on an earlier pad restores the current checkpoint");
+            check(
+                    samePosition(position[0], retry),
+                    "Landing back on an earlier pad restores the current checkpoint");
             for (int stage = 1; stage < round.course.jumps().size(); stage++) {
                 var bars = round.course.jumps().get(stage).baffles();
                 if (!bars.isEmpty()) {
                     var bar = bars.getFirst();
-                    position[0] = new Location(world, bar.minX() + .5, bar.floor() + 1, bar.minZ() + .5, 72, 34);
+                    position[0] =
+                            new Location(
+                                    world,
+                                    bar.minX() + .5,
+                                    bar.floor() + 1,
+                                    bar.minZ() + .5,
+                                    72,
+                                    34);
                     round.playTick(5 + stage);
                     var current = round.course.pads().get(stage);
-                    check(samePosition(position[0], new Location(world, current.x() + .5, current.floor() + 1,
-                            current.z() + .5)), "A grounded baffle hit restores the current checkpoint");
-                    check(position[0].getYaw() == 72 && position[0].getPitch() == 34, "Baffle retries preserve the view");
+                    check(
+                            samePosition(
+                                    position[0],
+                                    new Location(
+                                            world,
+                                            current.x() + .5,
+                                            current.floor() + 1,
+                                            current.z() + .5)),
+                            "A grounded baffle hit restores the current checkpoint");
+                    check(
+                            position[0].getYaw() == 72 && position[0].getPitch() == 34,
+                            "Baffle retries preserve the view");
                     break;
                 }
                 var next = round.course.pads().get(stage + 1);
@@ -129,8 +193,10 @@ public final class DropTowerChickenShooterCheck {
     }
 
     private static boolean samePosition(Location a, Location b) {
-        return a.getWorld() == b.getWorld() && a.getX() == b.getX()
-                && a.getY() == b.getY() && a.getZ() == b.getZ();
+        return a.getWorld() == b.getWorld()
+                && a.getX() == b.getX()
+                && a.getY() == b.getY()
+                && a.getZ() == b.getZ();
     }
 
     private static void identicalBuiltLanes(PartyArenaCheck.WorldMap map, DropTowerCourse course) {
@@ -141,26 +207,36 @@ public final class DropTowerChickenShooterCheck {
             String[] coords = block.getKey().split(":");
             int x = Integer.parseInt(coords[0]), z = Integer.parseInt(coords[2]);
             if (first.contains(x + .5, z + .5))
-                firstBlocks.put((x - first.x()) + ":" + coords[1] + ":" + (z - first.z()), block.getValue());
+                firstBlocks.put(
+                        (x - first.x()) + ":" + coords[1] + ":" + (z - first.z()),
+                        block.getValue());
             else if (second.contains(x + .5, z + .5))
-                secondBlocks.put((x - second.x()) + ":" + coords[1] + ":" + (z - second.z()), block.getValue());
+                secondBlocks.put(
+                        (x - second.x()) + ":" + coords[1] + ":" + (z - second.z()),
+                        block.getValue());
             else throw new AssertionError("Block outside both lanes at " + block.getKey());
         }
-        check(!firstBlocks.isEmpty() && firstBlocks.equals(secondBlocks),
-                "Both racers must see the same blocks and cues after translating their lane origin");
+        check(
+                !firstBlocks.isEmpty() && firstBlocks.equals(secondBlocks),
+                "Both racers must see the same blocks and cues after translating their lane"
+                        + " origin");
         Set<String> solids = new HashSet<>();
         for (var pad : course.pads())
             for (int dx = -pad.radius(); dx <= pad.radius(); dx++)
                 for (int dz = -pad.radius(); dz <= pad.radius(); dz++)
-                    if (pad.tile(dx, dz)) solids.add((pad.x() + dx) + ":" + pad.floor() + ":" + (pad.z() + dz));
-        check(solids.stream().noneMatch(cell -> firstBlocks.get(cell) == Material.GOLD_BLOCK),
+                    if (pad.tile(dx, dz))
+                        solids.add((pad.x() + dx) + ":" + pad.floor() + ":" + (pad.z() + dz));
+        check(
+                solids.stream().noneMatch(cell -> firstBlocks.get(cell) == Material.GOLD_BLOCK),
                 "Drop Tower platforms must not contain gold direction markers");
         for (var jump : course.jumps())
             for (var baffle : jump.baffles())
                 for (int x = baffle.minX(); x <= baffle.maxX(); x++)
                     for (int z = baffle.minZ(); z <= baffle.maxZ(); z++)
                         solids.add(x + ":" + baffle.floor() + ":" + z);
-        check(firstBlocks.keySet().equals(solids), "The built lane must match the geometry used for route checks");
+        check(
+                firstBlocks.keySet().equals(solids),
+                "The built lane must match the geometry used for route checks");
     }
 
     private static void isolatedLanes() {

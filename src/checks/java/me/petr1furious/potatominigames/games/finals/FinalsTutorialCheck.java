@@ -10,14 +10,18 @@ public final class FinalsTutorialCheck {
                 if (other == expected) continue;
                 var before = progress.step();
                 if (progress.accept(other) || progress.step() != before)
-                    throw new AssertionError("Out-of-order action advanced " + before + ": " + other);
+                    throw new AssertionError(
+                            "Out-of-order action advanced " + before + ": " + other);
                 checks++;
             }
-            if (!progress.accept(expected)) throw new AssertionError("Expected action rejected: " + expected);
-            if (progress.accept(expected)) throw new AssertionError("Duplicate action accepted: " + expected);
+            if (!progress.accept(expected))
+                throw new AssertionError("Expected action rejected: " + expected);
+            if (progress.accept(expected))
+                throw new AssertionError("Duplicate action accepted: " + expected);
             checks += 2;
         }
-        if (progress.step() != FinalsTutorialProgress.Step.DONE) throw new AssertionError("Not completed");
+        if (progress.step() != FinalsTutorialProgress.Step.DONE)
+            throw new AssertionError("Not completed");
         System.out.println("Finals tutorial: " + (checks + 1) + " checks passed");
     }
 }

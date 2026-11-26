@@ -15,12 +15,13 @@ public final class PartyMatchScore {
             throw new IllegalArgumentException("Invalid round");
         if (!recorded.add(roundIndex)) return false;
         result.awards()
-                .forEach((id, points) -> {
-                    int[] s = scores.get(id);
-                    s[0] += points;
-                    if (result.place(id) == 1) s[1]++;
-                    if (result.place(id) == 2) s[2]++;
-                });
+                .forEach(
+                        (id, points) -> {
+                            int[] s = scores.get(id);
+                            s[0] += points;
+                            if (result.place(id) == 1) s[1]++;
+                            if (result.place(id) == 2) s[2]++;
+                        });
         return true;
     }
 

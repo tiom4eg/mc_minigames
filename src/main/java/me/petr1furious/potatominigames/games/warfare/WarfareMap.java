@@ -1,21 +1,22 @@
 package me.petr1furious.potatominigames.games.warfare;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import me.petr1furious.potatominigames.core.team.TeamColor;
 
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.util.Vector;
 
-import me.petr1furious.potatominigames.core.team.TeamColor;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * One arena from {@code maps} in games/warfare.yml. Each game plays in a throwaway copy of the
- * slime template ({@code slime_worlds/<template>.slime}), which keeps the coordinates of the
- * world it was imported from, so the center and beacons are in those coordinates.
+ * slime template ({@code slime_worlds/<template>.slime}), which keeps the coordinates of the world
+ * it was imported from, so the center and beacons are in those coordinates.
  */
-public record WarfareMap(String name, String template, Vector center, int radius, Map<TeamColor, Vector> beacons) {
+public record WarfareMap(
+        String name, String template, Vector center, int radius, Map<TeamColor, Vector> beacons) {
 
     /** The game world's name: one game runs at a time, so one clone per map is enough. */
     public String worldName() {
@@ -34,6 +35,7 @@ public record WarfareMap(String name, String template, Vector center, int radius
 
     /** The template itself (e.g. opened with {@code /swp goto}) or this map's game copy. */
     public boolean isWorldOf(World world) {
-        return world.getName().equalsIgnoreCase(template) || world.getName().equalsIgnoreCase(worldName());
+        return world.getName().equalsIgnoreCase(template)
+                || world.getName().equalsIgnoreCase(worldName());
     }
 }

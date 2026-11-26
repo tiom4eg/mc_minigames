@@ -79,7 +79,8 @@ final class FinalsCashoutPhysics {
                 }
             }
         }
-        Location configuredOrigin = recoveryOrigin == null ? origin.clone() : recoveryOrigin.clone();
+        Location configuredOrigin =
+                recoveryOrigin == null ? origin.clone() : recoveryOrigin.clone();
         Fall initial = collisionStep(origin, 0);
         if (initial != null && initial.y() > origin.getY()) origin.setY(initial.y());
         if (initial == null || !fits(origin) || overlapsOther(origin, slot)) {
@@ -151,10 +152,15 @@ final class FinalsCashoutPhysics {
 
     /** A Winch step moves the real body, click target and objective coordinates together. */
     boolean moveToward(int slot, Location goal, double maxDistance) {
-        if (slot < 0 || slot >= bodies.length || goal == null
-                || !arena.world().equals(goal.getWorld()) || !Double.isFinite(maxDistance)
-                || maxDistance <= 0 || !Double.isFinite(goal.getX())
-                || !Double.isFinite(goal.getY()) || !Double.isFinite(goal.getZ())) return false;
+        if (slot < 0
+                || slot >= bodies.length
+                || goal == null
+                || !arena.world().equals(goal.getWorld())
+                || !Double.isFinite(maxDistance)
+                || maxDistance <= 0
+                || !Double.isFinite(goal.getX())
+                || !Double.isFinite(goal.getY())
+                || !Double.isFinite(goal.getZ())) return false;
         Body body = bodies[slot];
         if (body == null || !body.display.isValid() || !body.interaction.isValid()) return false;
         Vector delta = goal.toVector().subtract(body.position.toVector());
@@ -165,8 +171,7 @@ final class FinalsCashoutPhysics {
         if (terrain == null) return false;
         Body other = bodies[1 - slot];
         if (other != null) terrain.add(bodyBox(other.position));
-        for (BoundingBox box : terrain)
-            if (bodyBox(body.position).overlaps(box)) return false;
+        for (BoundingBox box : terrain) if (bodyBox(body.position).overlaps(box)) return false;
         Vector movement = clipMovement(body.position.toVector(), delta, terrain);
         if (movement.lengthSquared() <= EPSILON * EPSILON) return false;
         Location destination = body.position.clone().add(movement);
@@ -191,8 +196,13 @@ final class FinalsCashoutPhysics {
     }
 
     private static BoundingBox bodyBox(Location point) {
-        return new BoundingBox(point.getX() - HALF, point.getY(), point.getZ() - HALF,
-                point.getX() + HALF, point.getY() + HEIGHT, point.getZ() + HALF);
+        return new BoundingBox(
+                point.getX() - HALF,
+                point.getY(),
+                point.getZ() - HALF,
+                point.getX() + HALF,
+                point.getY() + HEIGHT,
+                point.getZ() + HALF);
     }
 
     /** Clip vertical pressure against support first, then sweep the full resulting 3D step. */
@@ -209,8 +219,14 @@ final class FinalsCashoutPhysics {
         movement.setY(dy);
         double fraction = 1;
         for (BoundingBox box : terrain) {
-            BoundingBox expanded = new BoundingBox(box.getMinX() - HALF, box.getMinY() - HEIGHT,
-                    box.getMinZ() - HALF, box.getMaxX() + HALF, box.getMaxY(), box.getMaxZ() + HALF);
+            BoundingBox expanded =
+                    new BoundingBox(
+                            box.getMinX() - HALF,
+                            box.getMinY() - HEIGHT,
+                            box.getMinZ() - HALF,
+                            box.getMaxX() + HALF,
+                            box.getMaxY(),
+                            box.getMaxZ() + HALF);
             fraction = Math.min(fraction, sweepFraction(start, movement, expanded));
         }
         return movement.multiply(fraction);
@@ -246,16 +262,26 @@ final class FinalsCashoutPhysics {
         int maxX = (int) Math.floor(Math.max(point.getX(), point.getX() + delta.getX()) + HALF);
         int minZ = (int) Math.floor(Math.min(point.getZ(), point.getZ() + delta.getZ()) - HALF);
         int maxZ = (int) Math.floor(Math.max(point.getZ(), point.getZ() + delta.getZ()) + HALF);
-        int minY = Math.max(world.getMinHeight(),
-                (int) Math.floor(Math.min(point.getY(), point.getY() + delta.getY())) - 1);
-        int maxY = Math.min(world.getMaxHeight() - 1,
-                (int) Math.floor(Math.max(point.getY(), point.getY() + delta.getY()) + HEIGHT));
-        for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) {
-            if (!world.isChunkLoaded(x >> 4, z >> 4) && !world.getChunkAt(x >> 4, z >> 4).load()) return null;
-            for (int y = minY; y <= maxY; y++)
-                for (BoundingBox box : world.getBlockAt(x, y, z).getCollisionShape().getBoundingBoxes())
-                    boxes.add(box.clone().shift(x, y, z));
-        }
+        int minY =
+                Math.max(
+                        world.getMinHeight(),
+                        (int) Math.floor(Math.min(point.getY(), point.getY() + delta.getY())) - 1);
+        int maxY =
+                Math.min(
+                        world.getMaxHeight() - 1,
+                        (int)
+                                Math.floor(
+                                        Math.max(point.getY(), point.getY() + delta.getY())
+                                                + HEIGHT));
+        for (int x = minX; x <= maxX; x++)
+            for (int z = minZ; z <= maxZ; z++) {
+                if (!world.isChunkLoaded(x >> 4, z >> 4)
+                        && !world.getChunkAt(x >> 4, z >> 4).load()) return null;
+                for (int y = minY; y <= maxY; y++)
+                    for (BoundingBox box :
+                            world.getBlockAt(x, y, z).getCollisionShape().getBoundingBoxes())
+                        boxes.add(box.clone().shift(x, y, z));
+            }
         return boxes;
     }
 
@@ -320,8 +346,10 @@ final class FinalsCashoutPhysics {
         World world = point.getWorld();
         List<BoundingBox> result = new ArrayList<>();
         int low = Math.max(world.getMinHeight(), (int) Math.floor(point.getY() + velocity) - 1);
-        int high = Math.min(world.getMaxHeight() - 1,
-                (int) Math.floor(point.getY() + HEIGHT + MAX_RISE));
+        int high =
+                Math.min(
+                        world.getMaxHeight() - 1,
+                        (int) Math.floor(point.getY() + HEIGHT + MAX_RISE));
         for (int x = (int) Math.floor(point.getX() - HALF);
                 x <= Math.floor(point.getX() + HALF);
                 x++)
@@ -368,7 +396,8 @@ final class FinalsCashoutPhysics {
     private boolean fits(Location point) {
         return arena.contains(point)
                 && arena.contains(point.clone().add(-HALF + EPSILON, 0, -HALF + EPSILON))
-                && arena.contains(point.clone().add(HALF - EPSILON, HEIGHT - EPSILON, HALF - EPSILON));
+                && arena.contains(
+                        point.clone().add(HALF - EPSILON, HEIGHT - EPSILON, HALF - EPSILON));
     }
 
     private boolean overlapsOther(Location point, int slot) {
@@ -430,7 +459,8 @@ final class FinalsCashoutPhysics {
     private static Location displayPosition(Location point) {
         // Map points retain the editor's facing for player spawns. A block display
         // rotates around its minimum corner, so inheriting that pitch buries it.
-        return new Location(point.getWorld(), point.getX() - HALF, point.getY(), point.getZ() - HALF);
+        return new Location(
+                point.getWorld(), point.getX() - HALF, point.getY(), point.getZ() - HALF);
     }
 
     void clear() {

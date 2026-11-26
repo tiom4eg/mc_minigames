@@ -59,7 +59,8 @@ public final class FinalsMapImportCheck {
         Files.move(extracted.resolve("region/r.0.0.mca"), directory.resolve("region/r.0.0.mca"));
         Path copied = temporary.resolve("directory-copy");
         FinalsMapFiles.copyWorld(directory, copied);
-        require(Files.size(copied.resolve("region/r.0.0.mca")) == REGION_BYTES,
+        require(
+                Files.size(copied.resolve("region/r.0.0.mca")) == REGION_BYTES,
                 "Folder imports retain large regions");
     }
 
@@ -72,14 +73,16 @@ public final class FinalsMapImportCheck {
         }
         Path manyCopy = temporary.resolve("zip64-count-copy");
         FinalsMapFiles.copyWorld(many, manyCopy);
-        require(Files.exists(manyCopy.resolve("region/r.0.0.mca")),
+        require(
+                Files.exists(manyCopy.resolve("region/r.0.0.mca")),
                 "ZIP64 entry counts above 65535 import");
 
         Path archive = worldZip(temporary.resolve("zip64-offsets.zip"));
         promoteZip64(archive);
         Path copy = temporary.resolve("zip64-offsets-copy");
         FinalsMapFiles.copyWorld(archive, copy);
-        require(Files.readString(copy.resolve("level.dat")).equals("data"),
+        require(
+                Files.readString(copy.resolve("level.dat")).equals("data"),
                 "ZIP64 size and offset sentinels import");
 
         Path badOffset = Files.copy(archive, temporary.resolve("zip64-bad-offset.zip"));
@@ -113,7 +116,9 @@ public final class FinalsMapImportCheck {
 
     private static void unsafeArchives(Path temporary) throws Exception {
         for (String entry : new String[] {"../escape", "root/../level.dat", "root\\file"}) {
-            Path path = temporary.resolve("unsafe-" + Integer.toUnsignedString(entry.hashCode()) + ".zip");
+            Path path =
+                    temporary.resolve(
+                            "unsafe-" + Integer.toUnsignedString(entry.hashCode()) + ".zip");
             try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(path))) {
                 entry(zip, "level.dat");
                 entry(zip, "region/r.0.0.mca");
@@ -230,7 +235,8 @@ public final class FinalsMapImportCheck {
         try {
             FinalsMapFiles.copyWorld(archive, destination);
         } catch (IllegalArgumentException | IOException expected) {
-            require(!Files.exists(destination.resolve("level.dat")),
+            require(
+                    !Files.exists(destination.resolve("level.dat")),
                     "Unsafe archives fail before extracting world files");
             return;
         }

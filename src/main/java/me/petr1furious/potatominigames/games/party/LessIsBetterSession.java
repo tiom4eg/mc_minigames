@@ -49,15 +49,17 @@ final class LessIsBetterSession extends PartySurvivalSession {
         for (int x = -14; x <= 14; x++) {
             for (int z = -10; z <= 10; z++) {
                 boolean edge = Math.abs(x) == 14 || Math.abs(z) == 10;
-                Material floor = edge || x == 0 ? Material.SMOOTH_QUARTZ : Material.POLISHED_DEEPSLATE;
+                Material floor =
+                        edge || x == 0 ? Material.SMOOTH_QUARTZ : Material.POLISHED_DEEPSLATE;
                 world.getBlockAt(x, FLOOR, z).setType(floor, false);
                 if (edge) {
                     Side side = sideAtX(x + .5);
-                    Material wall = switch (side) {
-                        case RED -> Material.RED_STAINED_GLASS;
-                        case BLUE -> Material.BLUE_STAINED_GLASS;
-                        case null -> Material.LIGHT_GRAY_STAINED_GLASS;
-                    };
+                    Material wall =
+                            switch (side) {
+                                case RED -> Material.RED_STAINED_GLASS;
+                                case BLUE -> Material.BLUE_STAINED_GLASS;
+                                case null -> Material.LIGHT_GRAY_STAINED_GLASS;
+                            };
                     for (int y = FLOOR + 1; y <= FLOOR + 3; y++)
                         world.getBlockAt(x, y, z).setType(wall, false);
                 }
@@ -85,7 +87,8 @@ final class LessIsBetterSession extends PartySurvivalSession {
     }
 
     static Side platformAt(double x, double y, double z) {
-        if (y < PAD_HEIGHT + 1 || y > PAD_HEIGHT + 2.5 || z < PAD_Z_START || z >= PAD_Z_END) return null;
+        if (y < PAD_HEIGHT + 1 || y > PAD_HEIGHT + 2.5 || z < PAD_Z_START || z >= PAD_Z_END)
+            return null;
         return sideAtX(x);
     }
 
@@ -96,7 +99,9 @@ final class LessIsBetterSession extends PartySurvivalSession {
     }
 
     private Side platformAt(Location location) {
-        return world.equals(location.getWorld()) ? platformAt(location.getX(), location.getY(), location.getZ()) : null;
+        return world.equals(location.getWorld())
+                ? platformAt(location.getX(), location.getY(), location.getZ())
+                : null;
     }
 
     @Override
@@ -146,7 +151,8 @@ final class LessIsBetterSession extends PartySurvivalSession {
 
     private void hideVoters(List<Player> players) {
         if (visibility == null) visibility = new LessIsBetterVisibility(services.plugin());
-        services.sidebar().setHiddenNonCollidingPlayers(players.stream().map(Player::getName).toList());
+        services.sidebar()
+                .setHiddenNonCollidingPlayers(players.stream().map(Player::getName).toList());
         players.forEach(visibility::hide);
     }
 
@@ -176,7 +182,8 @@ final class LessIsBetterSession extends PartySurvivalSession {
     protected void handleMove(PlayerMoveEvent event) {
         if (event.isCancelled() || !playing() || reveal != null) return;
         Side side = platformAt(event.getTo());
-        if (side != platformAt(event.getFrom())) event.getPlayer().sendActionBar(choicePrompt(side));
+        if (side != platformAt(event.getFrom()))
+            event.getPlayer().sendActionBar(choicePrompt(side));
     }
 
     @Override
@@ -195,23 +202,30 @@ final class LessIsBetterSession extends PartySurvivalSession {
                 if (neutralVotes > 0) say(I18n.tr(TEXT + "neutral", neutralVotes));
             } else {
                 hideVoters(players);
-                for (int i = 0; i < players.size(); i++) teleport(players.get(i), spawn(i, players.size()));
-                announceTitle(I18n.tr(TEXT + "ballot", ballot + 1, VOTES), I18n.tr(TEXT + "pick"), 2);
+                for (int i = 0; i < players.size(); i++)
+                    teleport(players.get(i), spawn(i, players.size()));
+                announceTitle(
+                        I18n.tr(TEXT + "ballot", ballot + 1, VOTES), I18n.tr(TEXT + "pick"), 2);
             }
         }
         if (offset == PICK_TICKS) reveal();
         if (offset < PICK_TICKS && offset % 20 == 0) {
             List<Player> players = alivePlayers();
             PartySounds.countdown(players, PICK_TICKS - offset);
-            for (Player player : players) player.sendActionBar(choicePrompt(platformAt(player.getLocation())));
+            for (Player player : players)
+                player.sendActionBar(choicePrompt(platformAt(player.getLocation())));
         }
     }
 
     private void reveal() {
         var eligible = context.eligible();
-        List<Player> players = alivePlayers().stream()
-                .filter(player -> eligible.contains(player.getUniqueId()) && player.getWorld().equals(world))
-                .toList();
+        List<Player> players =
+                alivePlayers().stream()
+                        .filter(
+                                player ->
+                                        eligible.contains(player.getUniqueId())
+                                                && player.getWorld().equals(world))
+                        .toList();
         Map<UUID, Side> choices = new LinkedHashMap<>();
         for (Player player : players) {
             Side side = platformAt(player.getLocation());
@@ -224,17 +238,22 @@ final class LessIsBetterSession extends PartySurvivalSession {
         }
         reveal = votes.reveal(choices, neutralRed, neutralVotes - neutralRed);
         showVoters();
-        Component result = reveal.winner() == null
-                ? I18n.tr(TEXT + (reveal.red() == reveal.blue() ? "tie" : "empty"))
-                : I18n.tr(TEXT + "wins", sideName(reveal.winner()));
+        Component result =
+                reveal.winner() == null
+                        ? I18n.tr(TEXT + (reveal.red() == reveal.blue() ? "tie" : "empty"))
+                        : I18n.tr(TEXT + "wins", sideName(reveal.winner()));
         announceTitle(result, tally(), 2);
         for (Player player : players) {
             Side choice = reveal.choices().get(player.getUniqueId());
             boolean scored = choice != null && choice == reveal.winner();
-            player.sendActionBar(I18n.tr(TEXT + (scored ? "point" : choice == null ? "no_pick" : "no_point"))
-                    .color(scored ? NamedTextColor.GREEN : NamedTextColor.GRAY));
-            player.playSound(player.getLocation(),
-                    scored ? Sound.ENTITY_EXPERIENCE_ORB_PICKUP : Sound.BLOCK_NOTE_BLOCK_HAT, .7f, 1.1f);
+            player.sendActionBar(
+                    I18n.tr(TEXT + (scored ? "point" : choice == null ? "no_pick" : "no_point"))
+                            .color(scored ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+            player.playSound(
+                    player.getLocation(),
+                    scored ? Sound.ENTITY_EXPERIENCE_ORB_PICKUP : Sound.BLOCK_NOTE_BLOCK_HAT,
+                    .7f,
+                    1.1f);
         }
     }
 
@@ -250,7 +269,10 @@ final class LessIsBetterSession extends PartySurvivalSession {
     Component status() {
         if (reveal != null) return tally();
         long offset = elapsed() % BALLOT_TICKS;
-        return I18n.tr(TEXT + "status", elapsed() / BALLOT_TICKS + 1, VOTES,
+        return I18n.tr(
+                TEXT + "status",
+                elapsed() / BALLOT_TICKS + 1,
+                VOTES,
                 (PICK_TICKS - offset + 19) / 20);
     }
 

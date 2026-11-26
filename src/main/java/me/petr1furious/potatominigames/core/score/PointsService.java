@@ -1,20 +1,19 @@
 package me.petr1furious.potatominigames.core.score;
 
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
-
 /** Persistent standings per game in {@code data/points.yml}. */
 public final class PointsService {
-    public record Entry(UUID playerId, String name, int points) {
-    }
+    public record Entry(UUID playerId, String name, int points) {}
 
     private final JavaPlugin plugin;
     private final File file;

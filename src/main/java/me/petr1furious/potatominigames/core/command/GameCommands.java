@@ -1,6 +1,5 @@
 package me.petr1furious.potatominigames.core.command;
 
-import me.petr1furious.potatominigames.i18n.I18n;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -31,6 +30,7 @@ import me.petr1furious.potatominigames.core.team.TeamColor;
 import me.petr1furious.potatominigames.core.team.TeamService;
 import me.petr1furious.potatominigames.core.text.Messages;
 import me.petr1furious.potatominigames.games.party.PvpDuelKits;
+import me.petr1furious.potatominigames.i18n.I18n;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
@@ -86,8 +86,10 @@ public final class GameCommands {
         } catch (CommandSyntaxException exception) {
             ctx.getSource()
                     .getSender()
-                    .sendMessage(MessageComponentSerializer.message().deserialize(exception.getRawMessage())
-                            .colorIfAbsent(NamedTextColor.RED));
+                    .sendMessage(
+                            MessageComponentSerializer.message()
+                                    .deserialize(exception.getRawMessage())
+                                    .colorIfAbsent(NamedTextColor.RED));
             return 0;
         }
     }
@@ -116,66 +118,82 @@ public final class GameCommands {
         root.then(
                 Commands.literal("stop")
                         .requires(GameCommands::isAdmin)
-                        .executes(ctx ->
-                                run(
-                                        ctx,
-                                        c -> {
-                                            ActiveSession session = requireOwnSession(game);
-                                            session.stopNow(EndReason.ABORTED);
-                                            messages.broadcast(
-                                                    I18n.tr("core.session.stopped", session.displayName()).color(NamedTextColor.RED));
-                                        })));
+                        .executes(
+                                ctx ->
+                                        run(
+                                                ctx,
+                                                c -> {
+                                                    ActiveSession session = requireOwnSession(game);
+                                                    session.stopNow(EndReason.ABORTED);
+                                                    messages.broadcast(
+                                                            I18n.tr(
+                                                                            "core.session.stopped",
+                                                                            session.displayName())
+                                                                    .color(NamedTextColor.RED));
+                                                })));
 
         // Admin-only; players spectate through /play.
         root.then(
                 Commands.literal("join")
                         .requires(GameCommands::isAdmin)
-                        .executes(ctx ->
-                                run(ctx, c -> requireOwnSession(game).join(requirePlayer(c))))
+                        .executes(
+                                ctx ->
+                                        run(
+                                                ctx,
+                                                c ->
+                                                        requireOwnSession(game)
+                                                                .join(requirePlayer(c))))
                         .then(
                                 Commands.argument("players", ArgumentTypes.players())
-                                        .executes(ctx ->
-                                                run(
-                                                        ctx,
-                                                        c -> {
-                                                            ActiveSession session =
-                                                                    requireOwnSession(game);
-                                                            for (Player target :
-                                                                    c.getArgument(
-                                                                                    "players",
-                                                                                    PlayerSelectorArgumentResolver
-                                                                                            .class)
-                                                                            .resolve(
-                                                                                    c
-                                                                                            .getSource())) {
-                                                                session.join(target);
-                                                            }
-                                                        }))));
+                                        .executes(
+                                                ctx ->
+                                                        run(
+                                                                ctx,
+                                                                c -> {
+                                                                    ActiveSession session =
+                                                                            requireOwnSession(game);
+                                                                    for (Player target :
+                                                                            c.getArgument(
+                                                                                            "players",
+                                                                                            PlayerSelectorArgumentResolver
+                                                                                                    .class)
+                                                                                    .resolve(
+                                                                                            c
+                                                                                                    .getSource())) {
+                                                                        session.join(target);
+                                                                    }
+                                                                }))));
 
         root.then(
                 Commands.literal("leave")
-                        .executes(ctx ->
-                                run(ctx, c -> requireOwnSession(game).leave(requirePlayer(c))))
+                        .executes(
+                                ctx ->
+                                        run(
+                                                ctx,
+                                                c ->
+                                                        requireOwnSession(game)
+                                                                .leave(requirePlayer(c))))
                         .then(
                                 Commands.argument("players", ArgumentTypes.players())
                                         .requires(GameCommands::isAdmin)
-                                        .executes(ctx ->
-                                                run(
-                                                        ctx,
-                                                        c -> {
-                                                            ActiveSession session =
-                                                                    requireOwnSession(game);
-                                                            for (Player target :
-                                                                    c.getArgument(
-                                                                                    "players",
-                                                                                    PlayerSelectorArgumentResolver
-                                                                                            .class)
-                                                                            .resolve(
-                                                                                    c
-                                                                                            .getSource())) {
-                                                                session.leave(target);
-                                                            }
-                                                        }))));
+                                        .executes(
+                                                ctx ->
+                                                        run(
+                                                                ctx,
+                                                                c -> {
+                                                                    ActiveSession session =
+                                                                            requireOwnSession(game);
+                                                                    for (Player target :
+                                                                            c.getArgument(
+                                                                                            "players",
+                                                                                            PlayerSelectorArgumentResolver
+                                                                                                    .class)
+                                                                                    .resolve(
+                                                                                            c
+                                                                                                    .getSource())) {
+                                                                        session.leave(target);
+                                                                    }
+                                                                }))));
 
         root.then(Commands.literal("list").executes(ctx -> run(ctx, c -> sendList(c, game))));
 
@@ -185,59 +203,104 @@ public final class GameCommands {
                         .then(
                                 Commands.literal("reset")
                                         .requires(GameCommands::isAdmin)
-                                        .executes(ctx ->
-                                                run(
-                                                        ctx,
-                                                        c -> {
-                                                            points.reset(game.id());
-                                                            c.getSource()
-                                                                    .getSender()
-                                                                    .sendMessage(
-                                                                            messages.success(
-                                                                                    I18n.tr("core.points.reset", game.displayName())));
-                                                        }))));
+                                        .executes(
+                                                ctx ->
+                                                        run(
+                                                                ctx,
+                                                                c -> {
+                                                                    points.reset(game.id());
+                                                                    c.getSource()
+                                                                            .getSender()
+                                                                            .sendMessage(
+                                                                                    messages
+                                                                                            .success(
+                                                                                                    I18n
+                                                                                                            .tr(
+                                                                                                                    "core.points.reset",
+                                                                                                                    game
+                                                                                                                            .displayName())));
+                                                                }))));
 
         if (game.id().equals("party")) {
-            root.then(Commands.literal("duel")
-                    .requires(GameCommands::isAdmin)
-                    .then(Commands.argument("classA", IntegerArgumentType.integer(-1, PvpDuelKits.classCount()))
-                            .suggests(GameCommands::suggestPvpClasses)
-                            .then(Commands.argument("classB", IntegerArgumentType.integer(-1, PvpDuelKits.classCount()))
-                                    .suggests(GameCommands::suggestPvpClasses)
-                                    .executes(ctx -> run(ctx, c -> launchPvpDuel(c, game))))));
-            root.then(Commands.literal("classes").executes(ctx -> run(ctx, c -> {
-                var sender = c.getSource().getSender();
-                sender.sendMessage(I18n.tr("party.duels.duel.class_list").color(NamedTextColor.GOLD));
-                for (Component label : PvpDuelKits.classList()) sender.sendMessage(label.color(NamedTextColor.GREEN));
-            })));
+            root.then(
+                    Commands.literal("duel")
+                            .requires(GameCommands::isAdmin)
+                            .then(
+                                    Commands.argument(
+                                                    "classA",
+                                                    IntegerArgumentType.integer(
+                                                            -1, PvpDuelKits.classCount()))
+                                            .suggests(GameCommands::suggestPvpClasses)
+                                            .then(
+                                                    Commands.argument(
+                                                                    "classB",
+                                                                    IntegerArgumentType.integer(
+                                                                            -1,
+                                                                            PvpDuelKits
+                                                                                    .classCount()))
+                                                            .suggests(
+                                                                    GameCommands::suggestPvpClasses)
+                                                            .executes(
+                                                                    ctx ->
+                                                                            run(
+                                                                                    ctx,
+                                                                                    c ->
+                                                                                            launchPvpDuel(
+                                                                                                    c,
+                                                                                                    game))))));
+            root.then(
+                    Commands.literal("classes")
+                            .executes(
+                                    ctx ->
+                                            run(
+                                                    ctx,
+                                                    c -> {
+                                                        var sender = c.getSource().getSender();
+                                                        sender.sendMessage(
+                                                                I18n.tr(
+                                                                                "party.duels.duel.class_list")
+                                                                        .color(
+                                                                                NamedTextColor
+                                                                                        .GOLD));
+                                                        for (Component label :
+                                                                PvpDuelKits.classList())
+                                                            sender.sendMessage(
+                                                                    label.color(
+                                                                            NamedTextColor.GREEN));
+                                                    })));
             root.then(
                     Commands.literal("points")
                             .then(
                                     Commands.literal("party_games")
-                                            .executes(ctx ->
-                                                    run(
-                                                            ctx,
-                                                            c ->
-                                                                    sendPoints(
-                                                                            c,
-                                                                            game,
-                                                                            "party_games")))
+                                            .executes(
+                                                    ctx ->
+                                                            run(
+                                                                    ctx,
+                                                                    c ->
+                                                                            sendPoints(
+                                                                                    c,
+                                                                                    game,
+                                                                                    "party_games")))
                                             .then(
                                                     Commands.literal("reset")
                                                             .requires(GameCommands::isAdmin)
-                                                            .executes(ctx ->
-                                                                    run(
-                                                                            ctx,
-                                                                            c -> {
-                                                                                points.reset(
-                                                                                        "party_games");
-                                                                                c.getSource()
-                                                                                        .getSender()
-                                                                                        .sendMessage(
-                                                                                                messages
-                                                                                                        .success(
-                                                                                                                I18n.tr("core.points.party_reset")));
-                                                                            })))));
+                                                            .executes(
+                                                                    ctx ->
+                                                                            run(
+                                                                                    ctx,
+                                                                                    c -> {
+                                                                                        points
+                                                                                                .reset(
+                                                                                                        "party_games");
+                                                                                        c.getSource()
+                                                                                                .getSender()
+                                                                                                .sendMessage(
+                                                                                                        messages
+                                                                                                                .success(
+                                                                                                                        I18n
+                                                                                                                                .tr(
+                                                                                                                                        "core.points.party_reset")));
+                                                                                    })))));
         }
 
         if (game.usesTeams()) {
@@ -259,18 +322,20 @@ public final class GameCommands {
         root.then(
                 Commands.literal("reload")
                         .requires(GameCommands::isAdmin)
-                        .executes(ctx ->
-                                run(
-                                        ctx,
-                                        c -> {
-                                            configs.reloadAll();
-                                            teams.reload();
-                                            c.getSource()
-                                                    .getSender()
-                                                    .sendMessage(
-                                                            messages.success(
-                                                                    I18n.tr("core.config.reloaded")));
-                                        })));
+                        .executes(
+                                ctx ->
+                                        run(
+                                                ctx,
+                                                c -> {
+                                                    configs.reloadAll();
+                                                    teams.reload();
+                                                    c.getSource()
+                                                            .getSender()
+                                                            .sendMessage(
+                                                                    messages.success(
+                                                                            I18n.tr(
+                                                                                    "core.config.reloaded")));
+                                                })));
 
         game.extendCommands(root);
         return root.build();
@@ -278,41 +343,74 @@ public final class GameCommands {
 
     private ActiveSession requireOwnSession(Minigame game) throws CommandFailure {
         return sessions.sessionOf(game)
-                .orElseThrow(() -> new CommandFailure(I18n.tr("core.session.no_active_game", game.displayName())));
+                .orElseThrow(
+                        () ->
+                                new CommandFailure(
+                                        I18n.tr(
+                                                "core.session.no_active_game",
+                                                game.displayName())));
     }
 
-    private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestPvpClasses(
-            CommandContext<CommandSourceStack> ctx, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
+    private static java.util.concurrent.CompletableFuture<
+                    com.mojang.brigadier.suggestion.Suggestions>
+            suggestPvpClasses(
+                    CommandContext<CommandSourceStack> ctx,
+                    com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
         String prefix = builder.getRemaining();
         for (int number = -1; number <= PvpDuelKits.classCount(); number++) {
             if (number == 0 || !Integer.toString(number).startsWith(prefix)) continue;
-            builder.suggest(number, new com.mojang.brigadier.LiteralMessage(I18n.plain(PvpDuelKits.label(number),
-                    ctx.getSource().getSender() instanceof Player viewer ? viewer.locale() : java.util.Locale.ENGLISH)));
+            builder.suggest(
+                    number,
+                    new com.mojang.brigadier.LiteralMessage(
+                            I18n.plain(
+                                    PvpDuelKits.label(number),
+                                    ctx.getSource().getSender() instanceof Player viewer
+                                            ? viewer.locale()
+                                            : java.util.Locale.ENGLISH)));
         }
         return builder.buildFuture();
     }
 
-    private void launchPvpDuel(CommandContext<CommandSourceStack> ctx, Minigame game) throws CommandFailure {
-        List<Player> roster = org.bukkit.Bukkit.getOnlinePlayers().stream()
-                .filter(player -> !sessions.isPlaying(player))
-                .sorted(java.util.Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
-                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-        if (roster.size() != 2) throw new CommandFailure(I18n.tr("party.duels.duel.free_players", roster.size()));
+    private void launchPvpDuel(CommandContext<CommandSourceStack> ctx, Minigame game)
+            throws CommandFailure {
+        List<Player> roster =
+                org.bukkit.Bukkit.getOnlinePlayers().stream()
+                        .filter(player -> !sessions.isPlaying(player))
+                        .sorted(
+                                java.util.Comparator.comparing(
+                                        Player::getName, String.CASE_INSENSITIVE_ORDER))
+                        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (roster.size() != 2)
+            throw new CommandFailure(I18n.tr("party.duels.duel.free_players", roster.size()));
         if (ctx.getSource().getExecutor() instanceof Player author) {
-            if (sessions.isPlaying(author)) throw new CommandFailure(I18n.tr("party.duels.duel.author_busy"));
-            if (roster.getLast().getUniqueId().equals(author.getUniqueId())) java.util.Collections.reverse(roster);
+            if (sessions.isPlaying(author))
+                throw new CommandFailure(I18n.tr("party.duels.duel.author_busy"));
+            if (roster.getLast().getUniqueId().equals(author.getUniqueId()))
+                java.util.Collections.reverse(roster);
         }
         Player a = roster.getFirst(), b = roster.getLast();
         PvpDuelKits setup;
         try {
-            setup = new PvpDuelKits(IntegerArgumentType.getInteger(ctx, "classA"), IntegerArgumentType.getInteger(ctx, "classB"),
-                    a.getUniqueId(), b.getUniqueId());
+            setup =
+                    new PvpDuelKits(
+                            IntegerArgumentType.getInteger(ctx, "classA"),
+                            IntegerArgumentType.getInteger(ctx, "classB"),
+                            a.getUniqueId(),
+                            b.getUniqueId());
         } catch (IllegalArgumentException failure) {
             throw new CommandFailure(I18n.message(failure));
         }
         sessions.start(game, "pvp", roster, Map.of(), false, setup.options());
-        ctx.getSource().getSender().sendMessage(I18n.tr("party.duels.duel.started", a.getName(), PvpDuelKits.label(setup.classA()),
-                b.getName(), PvpDuelKits.label(setup.classB())).color(NamedTextColor.GOLD));
+        ctx.getSource()
+                .getSender()
+                .sendMessage(
+                        I18n.tr(
+                                        "party.duels.duel.started",
+                                        a.getName(),
+                                        PvpDuelKits.label(setup.classA()),
+                                        b.getName(),
+                                        PvpDuelKits.label(setup.classB()))
+                                .color(NamedTextColor.GOLD));
     }
 
     /** {@code start [mode] [players] [option]}; mode suggestions remain live for player presets. */
@@ -336,53 +434,61 @@ public final class GameCommands {
             Minigame game,
             boolean modeArgument,
             boolean restart) {
-        node.executes(ctx ->
-                run(
-                        ctx,
-                        c ->
-                                launch(
-                                        c,
-                                        game,
-                                        modeArgument ? c.getArgument("mode", String.class) : null,
-                                        false,
-                                        null,
-                                        restart)));
+        node.executes(
+                ctx ->
+                        run(
+                                ctx,
+                                c ->
+                                        launch(
+                                                c,
+                                                game,
+                                                modeArgument
+                                                        ? c.getArgument("mode", String.class)
+                                                        : null,
+                                                false,
+                                                null,
+                                                restart)));
         var players =
                 Commands.argument("players", ArgumentTypes.players())
-                        .executes(ctx ->
-                                run(
-                                        ctx,
-                                        c ->
-                                                launch(
-                                                        c,
-                                                        game,
-                                                        modeArgument
-                                                                ? c.getArgument(
-                                                                        "mode", String.class)
-                                                                : null,
-                                                        true,
-                                                        null,
-                                                        restart)));
+                        .executes(
+                                ctx ->
+                                        run(
+                                                ctx,
+                                                c ->
+                                                        launch(
+                                                                c,
+                                                                game,
+                                                                modeArgument
+                                                                        ? c.getArgument(
+                                                                                "mode",
+                                                                                String.class)
+                                                                        : null,
+                                                                true,
+                                                                null,
+                                                                restart)));
         StartOption option = game.startOption();
         if (option != null) {
             players.then(
                     Commands.argument(option.key(), StringArgumentType.word())
                             .suggests(Suggest.dynamic(() -> option.values().get()))
-                            .executes(ctx ->
-                                    run(
-                                            ctx,
-                                            c ->
-                                                    launch(
-                                                            c,
-                                                            game,
-                                                            modeArgument
-                                                                    ? c.getArgument(
-                                                                            "mode", String.class)
-                                                                    : null,
-                                                            true,
-                                                            c.getArgument(
-                                                                    option.key(), String.class),
-                                                            restart))));
+                            .executes(
+                                    ctx ->
+                                            run(
+                                                    ctx,
+                                                    c ->
+                                                            launch(
+                                                                    c,
+                                                                    game,
+                                                                    modeArgument
+                                                                            ? c.getArgument(
+                                                                                    "mode",
+                                                                                    String.class)
+                                                                            : null,
+                                                                    true,
+                                                                    c.getArgument(
+                                                                            option.key(),
+                                                                            String.class),
+                                                                    restart))));
         }
         node.then(players);
     }
@@ -407,33 +513,39 @@ public final class GameCommands {
 
     private void addTestTail(
             ArgumentBuilder<CommandSourceStack, ?> node, Minigame game, boolean modeArgument) {
-        node.executes(ctx ->
-                run(
-                        ctx,
-                        c ->
-                                launchTest(
-                                        c,
-                                        game,
-                                        modeArgument ? c.getArgument("mode", String.class) : null,
-                                        null)));
+        node.executes(
+                ctx ->
+                        run(
+                                ctx,
+                                c ->
+                                        launchTest(
+                                                c,
+                                                game,
+                                                modeArgument
+                                                        ? c.getArgument("mode", String.class)
+                                                        : null,
+                                                null)));
         StartOption option = game.startOption();
         if (option != null) {
             node.then(
                     Commands.argument(option.key(), StringArgumentType.word())
                             .suggests(Suggest.dynamic(() -> option.values().get()))
-                            .executes(ctx ->
-                                    run(
-                                            ctx,
-                                            c ->
-                                                    launchTest(
-                                                            c,
-                                                            game,
-                                                            modeArgument
-                                                                    ? c.getArgument(
-                                                                            "mode", String.class)
-                                                                    : null,
-                                                            c.getArgument(
-                                                                    option.key(), String.class)))));
+                            .executes(
+                                    ctx ->
+                                            run(
+                                                    ctx,
+                                                    c ->
+                                                            launchTest(
+                                                                    c,
+                                                                    game,
+                                                                    modeArgument
+                                                                            ? c.getArgument(
+                                                                                    "mode",
+                                                                                    String.class)
+                                                                            : null,
+                                                                    c.getArgument(
+                                                                            option.key(),
+                                                                            String.class)))));
         }
     }
 
@@ -520,7 +632,10 @@ public final class GameCommands {
         }
         if (firstArgument && game.showModes()) {
             throw new CommandFailure(
-                    I18n.tr("core.command.unknown_mode_player", raw, String.join(", ", game.modes())));
+                    I18n.tr(
+                            "core.command.unknown_mode_player",
+                            raw,
+                            String.join(", ", game.modes())));
         }
         throw new CommandFailure(I18n.tr("core.command.player_offline", raw));
     }
@@ -560,8 +675,13 @@ public final class GameCommands {
             }
         }
         throw new CommandFailure(
-                values.isEmpty() ? I18n.tr("core.command.option_unavailable", option.key(), raw)
-                        : I18n.tr("core.command.unknown_option", option.key(), raw, String.join(", ", values)));
+                values.isEmpty()
+                        ? I18n.tr("core.command.option_unavailable", option.key(), raw)
+                        : I18n.tr(
+                                "core.command.unknown_option",
+                                option.key(),
+                                raw,
+                                String.join(", ", values)));
     }
 
     private static String usage(Minigame game) {
@@ -595,22 +715,36 @@ public final class GameCommands {
         var running = sessions.sessionOf(game);
         if (running.isEmpty()) {
             sender.sendMessage(
-                    I18n.tr("core.command.not_running", game.displayName(),
-                            Component.text(sessions.playCommand(game, game.defaultMode()), NamedTextColor.GOLD))
+                    I18n.tr(
+                                    "core.command.not_running",
+                                    game.displayName(),
+                                    Component.text(
+                                            sessions.playCommand(game, game.defaultMode()),
+                                            NamedTextColor.GOLD))
                             .color(NamedTextColor.GRAY));
             if (isAdmin(ctx.getSource())) {
                 sender.sendMessage(
-                        (game.showModes() ? I18n.tr("core.command.start_modes",
-                                Component.text(usage(game), NamedTextColor.GOLD), String.join(", ", game.modes()))
-                                : I18n.tr("core.command.start", Component.text(usage(game), NamedTextColor.GOLD)))
+                        (game.showModes()
+                                        ? I18n.tr(
+                                                "core.command.start_modes",
+                                                Component.text(usage(game), NamedTextColor.GOLD),
+                                                String.join(", ", game.modes()))
+                                        : I18n.tr(
+                                                "core.command.start",
+                                                Component.text(usage(game), NamedTextColor.GOLD)))
                                 .color(NamedTextColor.GRAY));
             }
             return;
         }
         ActiveSession session = running.get();
         sender.sendMessage(
-                I18n.tr("core.command.session_status", session.displayName(), session.phase().displayName(),
-                        session.participants().size(), session.spectatorIds().size()).color(NamedTextColor.GRAY));
+                I18n.tr(
+                                "core.command.session_status",
+                                session.displayName(),
+                                session.phase().displayName(),
+                                session.participants().size(),
+                                session.spectatorIds().size())
+                        .color(NamedTextColor.GRAY));
     }
 
     private void sendList(CommandContext<CommandSourceStack> ctx, Minigame game)
@@ -623,7 +757,11 @@ public final class GameCommands {
             } else {
                 ctx.getSource()
                         .getSender()
-                        .sendMessage(messages.info(I18n.tr("core.session.no_running_game", game.displayName())));
+                        .sendMessage(
+                                messages.info(
+                                        I18n.tr(
+                                                "core.session.no_running_game",
+                                                game.displayName())));
             }
             return;
         }
@@ -642,8 +780,13 @@ public final class GameCommands {
         ctx.getSource()
                 .getSender()
                 .sendMessage(
-                        I18n.tr("core.command.players", names.size(),
-                                Component.join(JoinConfiguration.separator(Component.text(", ")), names)).color(NamedTextColor.GRAY));
+                        I18n.tr(
+                                        "core.command.players",
+                                        names.size(),
+                                        Component.join(
+                                                JoinConfiguration.separator(Component.text(", ")),
+                                                names))
+                                .color(NamedTextColor.GRAY));
     }
 
     private void sendPoints(CommandContext<CommandSourceStack> ctx, Minigame game) {
@@ -659,8 +802,12 @@ public final class GameCommands {
             return;
         }
         sender.sendMessage(
-                I18n.tr(scoreKey.equals("party_games") ? "core.points.party_standings" : "core.points.standings",
-                        game.displayName()).color(NamedTextColor.GRAY));
+                I18n.tr(
+                                scoreKey.equals("party_games")
+                                        ? "core.points.party_standings"
+                                        : "core.points.standings",
+                                game.displayName())
+                        .color(NamedTextColor.GRAY));
         int place = 1;
         for (PointsService.Entry entry : standings) {
             sender.sendMessage(
@@ -685,47 +832,51 @@ public final class GameCommands {
                                 .then(
                                         Commands.argument("color", StringArgumentType.word())
                                                 .suggests(Suggest.strings(teamColors))
-                                                .executes(ctx ->
-                                                        run(
-                                                                ctx,
-                                                                c ->
-                                                                        teamJoin(
-                                                                                game,
-                                                                                requirePlayer(c),
-                                                                                c.getArgument(
-                                                                                        "color",
-                                                                                        String
-                                                                                                .class),
-                                                                                c)))
+                                                .executes(
+                                                        ctx ->
+                                                                run(
+                                                                        ctx,
+                                                                        c ->
+                                                                                teamJoin(
+                                                                                        game,
+                                                                                        requirePlayer(
+                                                                                                c),
+                                                                                        c
+                                                                                                .getArgument(
+                                                                                                        "color",
+                                                                                                        String
+                                                                                                                .class),
+                                                                                        c)))
                                                 .then(
                                                         Commands.argument(
                                                                         "players",
                                                                         ArgumentTypes.players())
                                                                 .requires(GameCommands::isAdmin)
-                                                                .executes(ctx ->
-                                                                        run(
-                                                                                ctx,
-                                                                                c -> {
-                                                                                    for (Player
-                                                                                            target :
-                                                                                                    c.getArgument(
-                                                                                                                    "players",
-                                                                                                                    PlayerSelectorArgumentResolver
-                                                                                                                            .class)
-                                                                                                            .resolve(
-                                                                                                                    c
-                                                                                                                            .getSource())) {
-                                                                                        teamJoin(
-                                                                                                game,
-                                                                                                target,
-                                                                                                c
-                                                                                                        .getArgument(
-                                                                                                                "color",
-                                                                                                                String
-                                                                                                                        .class),
-                                                                                                c);
-                                                                                    }
-                                                                                })))))
+                                                                .executes(
+                                                                        ctx ->
+                                                                                run(
+                                                                                        ctx,
+                                                                                        c -> {
+                                                                                            for (Player
+                                                                                                    target :
+                                                                                                            c.getArgument(
+                                                                                                                            "players",
+                                                                                                                            PlayerSelectorArgumentResolver
+                                                                                                                                    .class)
+                                                                                                                    .resolve(
+                                                                                                                            c
+                                                                                                                                    .getSource())) {
+                                                                                                teamJoin(
+                                                                                                        game,
+                                                                                                        target,
+                                                                                                        c
+                                                                                                                .getArgument(
+                                                                                                                        "color",
+                                                                                                                        String
+                                                                                                                                .class),
+                                                                                                        c);
+                                                                                            }
+                                                                                        })))))
                 .then(
                         Commands.literal("leave")
                                 .requires(GameCommands::isAdmin)
@@ -733,54 +884,67 @@ public final class GameCommands {
                                 .then(
                                         Commands.argument("players", ArgumentTypes.players())
                                                 .requires(GameCommands::isAdmin)
-                                                .executes(ctx ->
-                                                        run(
-                                                                ctx,
-                                                                c -> {
-                                                                    for (Player target :
-                                                                            c.getArgument(
-                                                                                            "players",
-                                                                                            PlayerSelectorArgumentResolver
-                                                                                                    .class)
-                                                                                    .resolve(
-                                                                                            c
-                                                                                                    .getSource())) {
-                                                                        teamLeave(game, target);
-                                                                    }
-                                                                }))))
+                                                .executes(
+                                                        ctx ->
+                                                                run(
+                                                                        ctx,
+                                                                        c -> {
+                                                                            for (Player target :
+                                                                                    c.getArgument(
+                                                                                                    "players",
+                                                                                                    PlayerSelectorArgumentResolver
+                                                                                                            .class)
+                                                                                            .resolve(
+                                                                                                    c
+                                                                                                            .getSource())) {
+                                                                                teamLeave(
+                                                                                        game,
+                                                                                        target);
+                                                                            }
+                                                                        }))))
                 .then(
                         Commands.literal("reset")
                                 .requires(GameCommands::isAdmin)
-                                .executes(ctx ->
-                                        run(
-                                                ctx,
-                                                c -> {
-                                                    teams.resetStanding(game.id());
-                                                    c.getSource()
-                                                            .getSender()
-                                                            .sendMessage(
-                                                                    messages.success(
-                                                                            I18n.tr("core.team.saved_cleared", game.displayName())));
-                                                })))
+                                .executes(
+                                        ctx ->
+                                                run(
+                                                        ctx,
+                                                        c -> {
+                                                            teams.resetStanding(game.id());
+                                                            c.getSource()
+                                                                    .getSender()
+                                                                    .sendMessage(
+                                                                            messages.success(
+                                                                                    I18n.tr(
+                                                                                            "core.team.saved_cleared",
+                                                                                            game
+                                                                                                    .displayName())));
+                                                        })))
                 .then(
                         Commands.literal("cycle")
                                 .requires(GameCommands::isAdmin)
-                                .executes(ctx ->
-                                        run(
-                                                ctx,
-                                                c -> {
-                                                    Player player = requirePlayer(c);
-                                                    TeamColor next =
-                                                            teams.cycle(
-                                                                    game.id(),
-                                                                    player.getUniqueId());
-                                                    applyTeamChange(game, player, next);
-                                                    c.getSource()
-                                                            .getSender()
-                                                            .sendMessage(
-                                                                    I18n.tr("core.team.you_joined", next.displayNameComponent())
-                                                                            .color(NamedTextColor.GREEN));
-                                                })))
+                                .executes(
+                                        ctx ->
+                                                run(
+                                                        ctx,
+                                                        c -> {
+                                                            Player player = requirePlayer(c);
+                                                            TeamColor next =
+                                                                    teams.cycle(
+                                                                            game.id(),
+                                                                            player.getUniqueId());
+                                                            applyTeamChange(game, player, next);
+                                                            c.getSource()
+                                                                    .getSender()
+                                                                    .sendMessage(
+                                                                            I18n.tr(
+                                                                                            "core.team.you_joined",
+                                                                                            next
+                                                                                                    .displayNameComponent())
+                                                                                    .color(
+                                                                                            NamedTextColor
+                                                                                                    .GREEN));
+                                                        })))
                 .then(
                         Commands.literal("swap")
                                 .requires(GameCommands::isAdmin)
@@ -790,60 +954,66 @@ public final class GameCommands {
                                                         Commands.argument(
                                                                         "second",
                                                                         ArgumentTypes.player())
-                                                                .executes(ctx ->
-                                                                        run(
-                                                                                ctx,
-                                                                                c -> {
-                                                                                    Player first =
-                                                                                            c.getArgument(
-                                                                                                            "first",
-                                                                                                            PlayerSelectorArgumentResolver
-                                                                                                                    .class)
-                                                                                                    .resolve(
-                                                                                                            c
-                                                                                                                    .getSource())
-                                                                                                    .getFirst();
-                                                                                    Player second =
-                                                                                            c.getArgument(
-                                                                                                            "second",
-                                                                                                            PlayerSelectorArgumentResolver
-                                                                                                                    .class)
-                                                                                                    .resolve(
-                                                                                                            c
-                                                                                                                    .getSource())
-                                                                                                    .getFirst();
-                                                                                    teams.swap(
-                                                                                            game
-                                                                                                    .id(),
-                                                                                            first
-                                                                                                    .getUniqueId(),
-                                                                                            second
-                                                                                                    .getUniqueId());
-                                                                                    applyTeamChange(
-                                                                                            game,
-                                                                                            first,
+                                                                .executes(
+                                                                        ctx ->
+                                                                                run(
+                                                                                        ctx,
+                                                                                        c -> {
+                                                                                            Player
+                                                                                                    first =
+                                                                                                            c.getArgument(
+                                                                                                                            "first",
+                                                                                                                            PlayerSelectorArgumentResolver
+                                                                                                                                    .class)
+                                                                                                                    .resolve(
+                                                                                                                            c
+                                                                                                                                    .getSource())
+                                                                                                                    .getFirst();
+                                                                                            Player
+                                                                                                    second =
+                                                                                                            c.getArgument(
+                                                                                                                            "second",
+                                                                                                                            PlayerSelectorArgumentResolver
+                                                                                                                                    .class)
+                                                                                                                    .resolve(
+                                                                                                                            c
+                                                                                                                                    .getSource())
+                                                                                                                    .getFirst();
                                                                                             teams
-                                                                                                    .standingTeam(
+                                                                                                    .swap(
                                                                                                             game
                                                                                                                     .id(),
                                                                                                             first
-                                                                                                                    .getUniqueId()));
-                                                                                    applyTeamChange(
-                                                                                            game,
-                                                                                            second,
-                                                                                            teams
-                                                                                                    .standingTeam(
-                                                                                                            game
-                                                                                                                    .id(),
+                                                                                                                    .getUniqueId(),
                                                                                                             second
-                                                                                                                    .getUniqueId()));
-                                                                                    c.getSource()
-                                                                                            .getSender()
-                                                                                            .sendMessage(
-                                                                                                    messages
-                                                                                                            .success(
-                                                                                                                    I18n.tr("core.team.swapped")));
-                                                                                })))));
+                                                                                                                    .getUniqueId());
+                                                                                            applyTeamChange(
+                                                                                                    game,
+                                                                                                    first,
+                                                                                                    teams
+                                                                                                            .standingTeam(
+                                                                                                                    game
+                                                                                                                            .id(),
+                                                                                                                    first
+                                                                                                                            .getUniqueId()));
+                                                                                            applyTeamChange(
+                                                                                                    game,
+                                                                                                    second,
+                                                                                                    teams
+                                                                                                            .standingTeam(
+                                                                                                                    game
+                                                                                                                            .id(),
+                                                                                                                    second
+                                                                                                                            .getUniqueId()));
+                                                                                            c.getSource()
+                                                                                                    .getSender()
+                                                                                                    .sendMessage(
+                                                                                                            messages
+                                                                                                                    .success(
+                                                                                                                            I18n
+                                                                                                                                    .tr(
+                                                                                                                                            "core.team.swapped")));
+                                                                                        })))));
     }
 
     /** Saved colours for admin-started games; queued games use /play team picks. */
@@ -857,25 +1027,33 @@ public final class GameCommands {
         teams.assign(game.id(), player.getUniqueId(), color);
         applyTeamChange(game, player, color);
         messages.broadcast(
-                I18n.tr("core.team.joined", Component.text(player.getName(), NamedTextColor.AQUA),
-                        color.displayNameComponent(), game.displayName()).color(NamedTextColor.GREEN));
+                I18n.tr(
+                                "core.team.joined",
+                                Component.text(player.getName(), NamedTextColor.AQUA),
+                                color.displayNameComponent(),
+                                game.displayName())
+                        .color(NamedTextColor.GREEN));
     }
 
     private void teamLeave(Minigame game, Player player) {
         teams.unassign(game.id(), player.getUniqueId());
         messages.broadcast(
-                I18n.tr("core.team.left", Component.text(player.getName(), NamedTextColor.AQUA),
-                        game.displayName()).color(NamedTextColor.YELLOW));
+                I18n.tr(
+                                "core.team.left",
+                                Component.text(player.getName(), NamedTextColor.AQUA),
+                                game.displayName())
+                        .color(NamedTextColor.YELLOW));
     }
 
     private void applyTeamChange(Minigame game, Player player, TeamColor color) {
         sessions.sessionOf(game)
-                .ifPresent(session -> {
-                    session.participants()
-                            .find(player.getUniqueId())
-                            .ifPresent(participant -> participant.setTeam(color));
-                    session.gameSession().onTeamChange(player, color);
-                });
+                .ifPresent(
+                        session -> {
+                            session.participants()
+                                    .find(player.getUniqueId())
+                                    .ifPresent(participant -> participant.setTeam(color));
+                            session.gameSession().onTeamChange(player, color);
+                        });
     }
 
     private void sendTeamList(CommandContext<CommandSourceStack> ctx, Minigame game) {
@@ -890,14 +1068,19 @@ public final class GameCommands {
             for (var entry : byTeam.entrySet()) {
                 List<Component> names =
                         entry.getValue().stream()
-                                .map(participant ->
-                                        Component.text(participant.name(), NamedTextColor.WHITE))
+                                .map(
+                                        participant ->
+                                                Component.text(
+                                                        participant.name(), NamedTextColor.WHITE))
                                 .collect(java.util.stream.Collectors.toList());
                 sender.sendMessage(
                         Component.text()
                                 .append(entry.getKey().displayNameComponent())
                                 .append(Component.text(": ", NamedTextColor.GRAY))
-                                .append(Component.join(JoinConfiguration.separator(Component.text(", ")), names))
+                                .append(
+                                        Component.join(
+                                                JoinConfiguration.separator(Component.text(", ")),
+                                                names))
                                 .build());
             }
             return;
@@ -911,7 +1094,10 @@ public final class GameCommands {
         if (byTeam.isEmpty()) {
             sender.sendMessage(
                     messages.info(
-                            I18n.tr("core.team.no_saved", game.displayName(), "/" + game.id() + " team join <color>")));
+                            I18n.tr(
+                                    "core.team.no_saved",
+                                    game.displayName(),
+                                    "/" + game.id() + " team join <color>")));
             return;
         }
         var names = teams.nameLookup(teams.standingTeams(game.id()).keySet());
@@ -924,7 +1110,10 @@ public final class GameCommands {
                     Component.text()
                             .append(entry.getKey().displayNameComponent())
                             .append(Component.text(": ", NamedTextColor.GRAY))
-                            .append(Component.join(JoinConfiguration.separator(Component.text(", ")), members))
+                            .append(
+                                    Component.join(
+                                            JoinConfiguration.separator(Component.text(", ")),
+                                            members))
                             .build());
         }
     }
@@ -936,24 +1125,32 @@ public final class GameCommands {
                 .then(
                         Commands.argument("gadget", StringArgumentType.word())
                                 .suggests(Suggest.dynamic(gadgets::ids))
-                                .executes(ctx ->
-                                        run(ctx, c -> giveGadget(c, List.of(requirePlayer(c)), 1)))
+                                .executes(
+                                        ctx ->
+                                                run(
+                                                        ctx,
+                                                        c ->
+                                                                giveGadget(
+                                                                        c,
+                                                                        List.of(requirePlayer(c)),
+                                                                        1)))
                                 .then(
                                         Commands.argument("players", ArgumentTypes.players())
-                                                .executes(ctx ->
-                                                        run(
-                                                                ctx,
-                                                                c ->
-                                                                        giveGadget(
-                                                                                c,
-                                                                                c.getArgument(
-                                                                                                "players",
-                                                                                                PlayerSelectorArgumentResolver
-                                                                                                        .class)
-                                                                                        .resolve(
-                                                                                                c
-                                                                                                        .getSource()),
-                                                                                1)))
+                                                .executes(
+                                                        ctx ->
+                                                                run(
+                                                                        ctx,
+                                                                        c ->
+                                                                                giveGadget(
+                                                                                        c,
+                                                                                        c.getArgument(
+                                                                                                        "players",
+                                                                                                        PlayerSelectorArgumentResolver
+                                                                                                                .class)
+                                                                                                .resolve(
+                                                                                                        c
+                                                                                                                .getSource()),
+                                                                                        1)))
                                                 .then(
                                                         Commands.argument(
                                                                         "count",
@@ -961,24 +1158,25 @@ public final class GameCommands {
                                                                                 .arguments
                                                                                 .IntegerArgumentType
                                                                                 .integer(1, 64))
-                                                                .executes(ctx ->
-                                                                        run(
-                                                                                ctx,
-                                                                                c ->
-                                                                                        giveGadget(
-                                                                                                c,
-                                                                                                c.getArgument(
-                                                                                                                "players",
-                                                                                                                PlayerSelectorArgumentResolver
-                                                                                                                        .class)
-                                                                                                        .resolve(
-                                                                                                                c
-                                                                                                                        .getSource()),
-                                                                                                c
-                                                                                                        .getArgument(
-                                                                                                                "count",
-                                                                                                                Integer
-                                                                                                                        .class)))))));
+                                                                .executes(
+                                                                        ctx ->
+                                                                                run(
+                                                                                        ctx,
+                                                                                        c ->
+                                                                                                giveGadget(
+                                                                                                        c,
+                                                                                                        c.getArgument(
+                                                                                                                        "players",
+                                                                                                                        PlayerSelectorArgumentResolver
+                                                                                                                                .class)
+                                                                                                                .resolve(
+                                                                                                                        c
+                                                                                                                                .getSource()),
+                                                                                                        c
+                                                                                                                .getArgument(
+                                                                                                                        "count",
+                                                                                                                        Integer
+                                                                                                                                .class)))))));
     }
 
     private void giveGadget(CommandContext<CommandSourceStack> ctx, List<Player> targets, int count)
@@ -995,6 +1193,10 @@ public final class GameCommands {
                 .getSender()
                 .sendMessage(
                         messages.success(
-                                I18n.tr("core.command.gadget_given", gadgetId, count, targets.size())));
+                                I18n.tr(
+                                        "core.command.gadget_given",
+                                        gadgetId,
+                                        count,
+                                        targets.size())));
     }
 }

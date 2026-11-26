@@ -311,11 +311,12 @@ final class MagicCombat {
             case COMBUSTION -> {
                 List<Player> victims =
                         players.get().stream()
-                                .filter(p ->
-                                        enemy(caster, p)
-                                                && near(p, caster.getLocation(), 10)
-                                                && p.getFireTicks() > 0
-                                                && caster.hasLineOfSight(p))
+                                .filter(
+                                        p ->
+                                                enemy(caster, p)
+                                                        && near(p, caster.getLocation(), 10)
+                                                        && p.getFireTicks() > 0
+                                                        && caster.hasLineOfSight(p))
                                 .toList();
                 if (victims.isEmpty()) return false;
                 for (Player p : victims)
@@ -543,16 +544,20 @@ final class MagicCombat {
             previous = current.getLocation().add(0, 1, 0);
             next =
                     players.get().stream()
-                            .filter(p ->
-                                    enemy(caster, p)
-                                            && !visited.contains(p.getUniqueId())
-                                            && near(p, current.getLocation(), 8)
-                                            && clearLine(
-                                                    current.getLocation().add(0, 1, 0),
-                                                    p.getLocation().add(0, 1, 0)))
+                            .filter(
+                                    p ->
+                                            enemy(caster, p)
+                                                    && !visited.contains(p.getUniqueId())
+                                                    && near(p, current.getLocation(), 8)
+                                                    && clearLine(
+                                                            current.getLocation().add(0, 1, 0),
+                                                            p.getLocation().add(0, 1, 0)))
                             .min(
-                                    Comparator.comparingDouble(p ->
-                                            p.getLocation().distanceSquared(current.getLocation())))
+                                    Comparator.comparingDouble(
+                                            p ->
+                                                    p.getLocation()
+                                                            .distanceSquared(
+                                                                    current.getLocation())))
                             .orElse(null);
         }
         return true;
@@ -560,18 +565,21 @@ final class MagicCombat {
 
     private void dispel(Player caster) {
         Location at = caster.getLocation();
-        bolts.removeIf(b ->
-                b.owner != caster
-                        && b.at.distanceSquared(at) <= 49
-                        && clearLine(caster.getEyeLocation(), b.at));
-        pending.removeIf(p ->
-                p.owner() != caster
-                        && p.point().distanceSquared(at) <= 49
-                        && clearLine(caster.getEyeLocation(), p.point()));
-        zones.removeIf(z ->
-                z.owner() != caster
-                        && z.point().distanceSquared(at) <= 49
-                        && clearLine(caster.getEyeLocation(), z.point()));
+        bolts.removeIf(
+                b ->
+                        b.owner != caster
+                                && b.at.distanceSquared(at) <= 49
+                                && clearLine(caster.getEyeLocation(), b.at));
+        pending.removeIf(
+                p ->
+                        p.owner() != caster
+                                && p.point().distanceSquared(at) <= 49
+                                && clearLine(caster.getEyeLocation(), p.point()));
+        zones.removeIf(
+                z ->
+                        z.owner() != caster
+                                && z.point().distanceSquared(at) <= 49
+                                && clearLine(caster.getEyeLocation(), z.point()));
         ring(at, 7, MagicSpell.School.STORM.color, null);
         for (Player p : players.get())
             if (enemy(caster, p) && near(p, at, 5) && caster.hasLineOfSight(p))

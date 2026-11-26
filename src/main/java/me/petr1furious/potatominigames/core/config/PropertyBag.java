@@ -1,16 +1,18 @@
 package me.petr1furious.potatominigames.core.config;
 
+import org.bukkit.configuration.ConfigurationSection;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.bukkit.configuration.ConfigurationSection;
-
 /** Typed config properties, settable with {@code config <path> <value>}. */
 public final class PropertyBag {
     public enum SetResult {
-        SUCCESS, UNKNOWN_PROPERTY, PARSE_ERROR
+        SUCCESS,
+        UNKNOWN_PROPERTY,
+        PARSE_ERROR
     }
 
     private final String id;

@@ -53,10 +53,12 @@ final class FinalsSession implements GameSession {
     private boolean applyingMeleeDamage;
     private final FinalsBulletKnockback bulletKnockback = new FinalsBulletKnockback();
     private final FinalsHitHealth hitHealth = new FinalsHitHealth(this::fighting, () -> this.tick);
-    private final FinalsRegeneration regeneration = new FinalsRegeneration(this::fighting, () -> this.tick);
+    private final FinalsRegeneration regeneration =
+            new FinalsRegeneration(this::fighting, () -> this.tick);
     private Location damageOrigin;
 
-    private record OriginalVitals(double maxHealth, double scale, float walkSpeed, float flySpeed) {}
+    private record OriginalVitals(
+            double maxHealth, double scale, float walkSpeed, float flySpeed) {}
 
     private final Map<UUID, OriginalVitals> originalVitals = new HashMap<>();
     private final Map<UUID, FinalsClass> classes = new HashMap<>();
@@ -127,8 +129,12 @@ final class FinalsSession implements GameSession {
         this(services, config, maps, loadouts, false);
     }
 
-    FinalsSession(SessionServices services, FinalsConfig config, FinalsMaps maps,
-            FinalsLoadouts loadouts, boolean tutorial) {
+    FinalsSession(
+            SessionServices services,
+            FinalsConfig config,
+            FinalsMaps maps,
+            FinalsLoadouts loadouts,
+            boolean tutorial) {
         this.services = services;
         this.config = config;
         this.maps = maps;
@@ -155,7 +161,9 @@ final class FinalsSession implements GameSession {
     }
 
     boolean isGameMaster(Player player) {
-        return running() && gameMasterOnline && player.getUniqueId().equals(gameMaster)
+        return running()
+                && gameMasterOnline
+                && player.getUniqueId().equals(gameMaster)
                 && !withdrawn.contains(gameMaster);
     }
 
@@ -170,14 +178,38 @@ final class FinalsSession implements GameSession {
     private FinalsGameEvents.Context gameEventsContext() {
         FinalsCombatContext combat = combatContext();
         return new FinalsGameEvents.Context() {
-            public org.bukkit.plugin.java.JavaPlugin plugin() { return services.plugin(); }
-            public World world() { return world; }
-            public long tick() { return tick; }
-            public Collection<Player> players() { return combat.players(); }
-            public boolean active(Player player) { return fighting(player) && !protectedSpawn(player); }
-            public boolean inside(Location point) { return combat.inside(point); }
-            public boolean destructible(Block block) { return combat.destructible(block); }
-            public void breakBlock(Block block) { combat.breakBlock(block); }
+            public org.bukkit.plugin.java.JavaPlugin plugin() {
+                return services.plugin();
+            }
+
+            public World world() {
+                return world;
+            }
+
+            public long tick() {
+                return tick;
+            }
+
+            public Collection<Player> players() {
+                return combat.players();
+            }
+
+            public boolean active(Player player) {
+                return fighting(player) && !protectedSpawn(player);
+            }
+
+            public boolean inside(Location point) {
+                return combat.inside(point);
+            }
+
+            public boolean destructible(Block block) {
+                return combat.destructible(block);
+            }
+
+            public void breakBlock(Block block) {
+                combat.breakBlock(block);
+            }
+
             public void damage(Player target, double amount, Location origin) {
                 if (!gameEventsReady() || !active(target) || amount <= 0) return;
                 boolean previous = applyingCombatDamage;
@@ -195,6 +227,7 @@ final class FinalsSession implements GameSession {
                     damageOrigin = previousOrigin;
                 }
             }
+
             public void announce(String key, Object... arguments) {
                 services.messages().broadcast(text(key, arguments));
             }
@@ -224,11 +257,19 @@ final class FinalsSession implements GameSession {
         for (int team = 0; team < 2; team++)
             lines.add(text("score", teamName(team), state == null ? 0 : state.score(team)));
         if (state != null) {
-            lines.add(text("match_time", TimeFormat.clock(Math.max(0, (state.matchDeadline() - tick + 19) / 20))));
+            lines.add(
+                    text(
+                            "match_time",
+                            TimeFormat.clock(
+                                    Math.max(0, (state.matchDeadline() - tick + 19) / 20))));
             lines.add(text("phase." + state.phase().name().toLowerCase(Locale.ROOT)));
         }
         if (gameEvents != null && gameEvents.activeKind() != null)
-            lines.add(text("event.status", I18n.tr(gameEvents.activeKind().nameKey()), gameEvents.remainingSeconds()));
+            lines.add(
+                    text(
+                            "event.status",
+                            I18n.tr(gameEvents.activeKind().nameKey()),
+                            gameEvents.remainingSeconds()));
         lines.add(text("gm.sidebar"));
         services.sidebar().update(player, text("name"), lines);
         if (bar != null) player.showBossBar(bar);
@@ -324,12 +365,19 @@ final class FinalsSession implements GameSession {
                 applyDamage(target, source, amount, origin, true, true, false);
             }
 
-            public void damageReflectedBullet(Player target, Player source, double amount, Location origin) {
+            public void damageReflectedBullet(
+                    Player target, Player source, double amount, Location origin) {
                 applyDamage(target, source, amount, origin, false, true, false);
             }
 
-            private void applyDamage(Player target, Player source, double amount, Location origin,
-                    boolean bullet, boolean ranged, boolean melee) {
+            private void applyDamage(
+                    Player target,
+                    Player source,
+                    double amount,
+                    Location origin,
+                    boolean bullet,
+                    boolean ranged,
+                    boolean melee) {
                 if (amount <= 0
                         || !fighting(target)
                         || !fighting(source)
@@ -348,8 +396,8 @@ final class FinalsSession implements GameSession {
                 damageOrigin = origin == null ? source.getLocation() : origin.clone();
                 try {
                     target.setNoDamageTicks(0);
-                    bulletKnockback.damage(target, source, ranged,
-                            () -> target.damage(amount, source));
+                    bulletKnockback.damage(
+                            target, source, ranged, () -> target.damage(amount, source));
                 } finally {
                     applyingCombatDamage = previous;
                     applyingBulletDamage = previousBullet;
@@ -367,35 +415,57 @@ final class FinalsSession implements GameSession {
                 return tick < gadgetSicknessUntil.getOrDefault(player.getUniqueId(), 0L);
             }
 
-            public boolean attackDevice(Player source, Location eye, Vector direction, double reach, double damage) {
-                return gadgets != null && gadgets.attackDevice(source, eye, direction, reach, damage);
+            public boolean attackDevice(
+                    Player source, Location eye, Vector direction, double reach, double damage) {
+                return gadgets != null
+                        && gadgets.attackDevice(source, eye, direction, reach, damage);
             }
 
-            public double deviceDistance(Player source, Location eye, Vector direction, double reach) {
-                return gadgets == null ? Double.POSITIVE_INFINITY
+            public double deviceDistance(
+                    Player source, Location eye, Vector direction, double reach) {
+                return gadgets == null
+                        ? Double.POSITIVE_INFINITY
                         : gadgets.deviceDistance(source, eye, direction, reach);
             }
 
-            public boolean tryPullCashout(Player source, Location eye, Vector direction, double reach) {
-                if (!canObjective(source) || cashouts == null || !world.equals(eye.getWorld())) return false;
+            public boolean tryPullCashout(
+                    Player source, Location eye, Vector direction, double reach) {
+                if (!canObjective(source) || cashouts == null || !world.equals(eye.getWorld()))
+                    return false;
                 int slot = cashouts.aimedStation(source, reach);
                 if (slot < 0) return false;
                 return cashouts.moveToward(slot, pullGoal(source, direction), .35);
             }
 
-            public boolean tryPullCashbox(Player source, Location eye, Vector direction, double reach) {
-                if (!canObjective(source) || state.phase() != FinalsState.Phase.CASHBOX_AVAILABLE
-                        || cashbox == null || !cashbox.isValid() || !world.equals(eye.getWorld())) return false;
-                var hit = cashbox.getBoundingBox().clone().expand(.2).rayTrace(eye.toVector(), direction, reach);
+            public boolean tryPullCashbox(
+                    Player source, Location eye, Vector direction, double reach) {
+                if (!canObjective(source)
+                        || state.phase() != FinalsState.Phase.CASHBOX_AVAILABLE
+                        || cashbox == null
+                        || !cashbox.isValid()
+                        || !world.equals(eye.getWorld())) return false;
+                var hit =
+                        cashbox.getBoundingBox()
+                                .clone()
+                                .expand(.2)
+                                .rayTrace(eye.toVector(), direction, reach);
                 if (hit == null) return false;
                 double distance = hit.getHitPosition().distance(eye.toVector());
-                var wall = world.rayTraceBlocks(eye, direction, reach, FluidCollisionMode.NEVER, true);
-                if (wall != null && wall.getHitPosition().distance(eye.toVector()) + 1e-7 < distance) return false;
-                Vector movement = pullGoal(source, direction).add(0, .4, 0).toVector()
-                        .subtract(cashbox.getLocation().toVector());
+                var wall =
+                        world.rayTraceBlocks(eye, direction, reach, FluidCollisionMode.NEVER, true);
+                if (wall != null
+                        && wall.getHitPosition().distance(eye.toVector()) + 1e-7 < distance)
+                    return false;
+                Vector movement =
+                        pullGoal(source, direction)
+                                .add(0, .4, 0)
+                                .toVector()
+                                .subtract(cashbox.getLocation().toVector());
                 double length = movement.length();
-                cashbox.setVelocity(length < 1e-8 ? new Vector()
-                        : movement.multiply(Math.min(.45, length) / length));
+                cashbox.setVelocity(
+                        length < 1e-8
+                                ? new Vector()
+                                : movement.multiply(Math.min(.45, length) / length));
                 cashboxThrower = null;
                 cashboxPreviousCenter = null;
                 return true;
@@ -407,13 +477,18 @@ final class FinalsSession implements GameSession {
 
             public boolean awaitingRespawn(Player player) {
                 UUID id = player.getUniqueId();
-                return running() && connected.contains(id) && teamWipes.dead(id)
-                        && respawnAt.containsKey(id) && teamWipes.wave(id) == null && !withdrawn.contains(id);
+                return running()
+                        && connected.contains(id)
+                        && teamWipes.dead(id)
+                        && respawnAt.containsKey(id)
+                        && teamWipes.wave(id) == null
+                        && !withdrawn.contains(id);
             }
 
             public Location deathLocation(UUID id) {
                 Location location = deathLocations.get(id);
-                if (revives != null && revives.location(id) != null) location = revives.location(id);
+                if (revives != null && revives.location(id) != null)
+                    location = revives.location(id);
                 return location == null ? null : location.clone();
             }
 
@@ -422,8 +497,11 @@ final class FinalsSession implements GameSession {
                     return revives != null && revives.defibrillate(reviver, teammate.getUniqueId());
                 UUID id = teammate.getUniqueId();
                 Location point = deathLocation(id);
-                if (!canAct(reviver) || !awaitingRespawn(teammate) || !friendly(teammate, reviver)
-                        || point == null || !near(reviver, point, 4)) return false;
+                if (!canAct(reviver)
+                        || !awaitingRespawn(teammate)
+                        || !friendly(teammate, reviver)
+                        || point == null
+                        || !near(reviver, point, 4)) return false;
                 teamRespawnPositions.put(id, safeRevivePoint(id, point));
                 spawn(teammate, false);
                 if (respawnAt.containsKey(id)) return false;
@@ -446,45 +524,87 @@ final class FinalsSession implements GameSession {
     }
 
     private boolean downed(UUID id) {
-        return revivalMode && teamWipes.dead(id) && teamWipes.wave(id) == null
-                && respawnAt.containsKey(id) && !withdrawn.contains(id);
+        return revivalMode
+                && teamWipes.dead(id)
+                && teamWipes.wave(id) == null
+                && respawnAt.containsKey(id)
+                && !withdrawn.contains(id);
     }
 
     private boolean reviveOccupied(Player player) {
-        return revives != null && (revives.busy(player.getUniqueId()) || revives.carrying(player.getUniqueId()));
+        return revives != null
+                && (revives.busy(player.getUniqueId()) || revives.carrying(player.getUniqueId()));
     }
 
     private boolean canRevive(Player player) {
         UUID id = player.getUniqueId();
-        return fighting(player) && !protectedSpawn(player) && !id.equals(state.carrier())
+        return fighting(player)
+                && !protectedSpawn(player)
+                && !id.equals(state.carrier())
                 && !state.stealDeadlines().containsKey(id)
                 && (loadouts == null || !FinalsLoadouts.viewing(player));
     }
 
     private FinalsRevives.Context reviveContext() {
         return new FinalsRevives.Context() {
-            public org.bukkit.plugin.java.JavaPlugin plugin() { return services.plugin(); }
-            public World world() { return world; }
-            public long tick() { return tick; }
-            public Collection<Player> players() { return feedbackPlayers(); }
-            public boolean canAct(Player player) { return canRevive(player); }
-            public boolean downed(UUID id) { return FinalsSession.this.downed(id); }
+            public org.bukkit.plugin.java.JavaPlugin plugin() {
+                return services.plugin();
+            }
+
+            public World world() {
+                return world;
+            }
+
+            public long tick() {
+                return tick;
+            }
+
+            public Collection<Player> players() {
+                return feedbackPlayers();
+            }
+
+            public boolean canAct(Player player) {
+                return canRevive(player);
+            }
+
+            public boolean downed(UUID id) {
+                return FinalsSession.this.downed(id);
+            }
+
             public boolean friendly(Player player, UUID target) {
                 return roster.containsKey(player.getUniqueId())
                         && Objects.equals(roster.get(player.getUniqueId()), roster.get(target));
             }
-            public boolean inside(Location point) { return safeObjectiveLocation(point); }
-            public Location fallback(UUID id) { return arena.spawn(roster.get(id), spawnIndex(id)); }
-            public Location recovery(UUID id) { return recoveryPoint(id); }
-            public boolean safeRecovery(Location point) { return supportedRecovery(point); }
+
+            public boolean inside(Location point) {
+                return safeObjectiveLocation(point);
+            }
+
+            public Location fallback(UUID id) {
+                return arena.spawn(roster.get(id), spawnIndex(id));
+            }
+
+            public Location recovery(UUID id) {
+                return recoveryPoint(id);
+            }
+
+            public boolean safeRecovery(Location point) {
+                return supportedRecovery(point);
+            }
+
             public void begin(Player player) {
                 if (weapons != null) weapons.stopFiring(player.getUniqueId());
                 if (gadgets != null) gadgets.reveal(player);
             }
-            public boolean complete(UUID target, Player reviver, Location point, boolean defibrillator) {
+
+            public boolean complete(
+                    UUID target, Player reviver, Location point, boolean defibrillator) {
                 UUID source = reviver.getUniqueId();
-                if (!running() || !downed(target) || !connected.contains(target)
-                        || withdrawn.contains(source) || !friendly(reviver, target)
+                if (!running()
+                        || !downed(target)
+                        || !connected.contains(target)
+                        || withdrawn.contains(source)
+                        || !friendly(reviver, target)
                         || (!defibrillator && !canRevive(reviver))) return false;
                 Player player = Bukkit.getPlayer(target);
                 if (player == null || !player.isOnline()) return false;
@@ -492,7 +612,8 @@ final class FinalsSession implements GameSession {
                 spawn(player, false);
                 if (respawnAt.containsKey(target)) return false;
                 if (defibrillator) {
-                    player.setHealth(Math.max(.5, player.getAttribute(Attribute.MAX_HEALTH).getValue() / 2));
+                    player.setHealth(
+                            Math.max(.5, player.getAttribute(Attribute.MAX_HEALTH).getValue() / 2));
                     gadgetSicknessUntil.put(target, tick + 100);
                 }
                 player.sendMessage(text("revived", reviver.displayName()));
@@ -504,9 +625,16 @@ final class FinalsSession implements GameSession {
     private Location safeRevivePoint(UUID id, Location point) {
         if (point != null && world.equals(point.getWorld())) {
             for (int depth = 0; depth <= 4; depth++) {
-                Location candidate = new Location(world, point.getBlockX() + .5,
-                        point.getBlockY() - depth, point.getBlockZ() + .5, point.getYaw(), point.getPitch());
-                if (!arena.contains(candidate) || !arena.contains(candidate.clone().add(0, 1, 0))) continue;
+                Location candidate =
+                        new Location(
+                                world,
+                                point.getBlockX() + .5,
+                                point.getBlockY() - depth,
+                                point.getBlockZ() + .5,
+                                point.getYaw(),
+                                point.getPitch());
+                if (!arena.contains(candidate) || !arena.contains(candidate.clone().add(0, 1, 0)))
+                    continue;
                 try {
                     FinalsMaps.validateStanding(world, FinalsMapData.Point.of(candidate));
                     return candidate;
@@ -519,16 +647,29 @@ final class FinalsSession implements GameSession {
     }
 
     private void requestDownedLoadout(UUID id) {
-        if (!running() || preparing || loadouts == null || state == null || state.isFinished()
-                || !connected.contains(id) || withdrawn.contains(id) || !respawnAt.containsKey(id)) return;
+        if (!running()
+                || preparing
+                || loadouts == null
+                || state == null
+                || state.isFinished()
+                || !connected.contains(id)
+                || withdrawn.contains(id)
+                || !respawnAt.containsKey(id)) return;
         Player player = Bukkit.getPlayer(id);
-        if (player != null && player.isOnline() && !player.isDead() && !FinalsLoadouts.viewing(player))
-            loadouts.open(player);
+        if (player != null
+                && player.isOnline()
+                && !player.isDead()
+                && !FinalsLoadouts.viewing(player)) loadouts.open(player);
     }
 
     private void requestRespawn(UUID id) {
-        if (!running() || !revivalMode || state == null || state.isFinished()
-                || !connected.contains(id) || withdrawn.contains(id) || !teamWipes.dead(id)) return;
+        if (!running()
+                || !revivalMode
+                || state == null
+                || state.isFinished()
+                || !connected.contains(id)
+                || withdrawn.contains(id)
+                || !teamWipes.dead(id)) return;
         FinalsTeamWipes.Wave wave = teamWipes.wave(id);
         if (wave != null) {
             if (tick >= wave.deadline()) prepareTeamRespawns();
@@ -537,7 +678,8 @@ final class FinalsSession implements GameSession {
         Long ready = respawnAt.get(id);
         if (ready == null || tick < ready) return;
         Player player = Bukkit.getPlayer(id);
-        if (player != null && player.isOnline()
+        if (player != null
+                && player.isOnline()
                 && (loadouts == null || !FinalsLoadouts.viewing(player))) spawn(player);
     }
 
@@ -647,9 +789,12 @@ final class FinalsSession implements GameSession {
             connected.add(participant.id());
             participant.setTeam(color(team));
         }
-        revivalMode = (roster.size() == 4 || roster.size() == 6)
-                && roster.values().stream().filter(team -> team == 0).count() == roster.size() / 2
-                && roster.values().stream().filter(team -> team == 1).count() == roster.size() / 2;
+        revivalMode =
+                (roster.size() == 4 || roster.size() == 6)
+                        && roster.values().stream().filter(team -> team == 0).count()
+                                == roster.size() / 2
+                        && roster.values().stream().filter(team -> team == 1).count()
+                                == roster.size() / 2;
         countdownEnd = Math.clamp(config.countdownSeconds.get(), 18, 60) * 20L;
         if (tutorial != null) countdownEnd = 1;
         respawnTicks = Math.clamp(config.respawnSeconds.get(), 3, 15) * 20;
@@ -664,11 +809,16 @@ final class FinalsSession implements GameSession {
                         value,
                         Math.clamp(config.targetScore.get(), value, 10000000));
         if (tutorial != null) rules = new FinalsState.Rules(100, 200, 100, 72000, 10000, 1000000);
-        arena = tutorial != null
-                ? new FinalsTutorialArena(services.worlds().createVoid("finals_tutorial_" + roster.keySet().iterator().next()))
-                : maps == null
-                        ? new FinalsArena(services.worlds().createVoid("finals"))
-                        : maps.open(services, services.option("map"));
+        arena =
+                tutorial != null
+                        ? new FinalsTutorialArena(
+                                services.worlds()
+                                        .createVoid(
+                                                "finals_tutorial_"
+                                                        + roster.keySet().iterator().next()))
+                        : maps == null
+                                ? new FinalsArena(services.worlds().createVoid("finals"))
+                                : maps.open(services, services.option("map"));
         preparing = true;
         services.messages().broadcast(text("map.preparing"));
         arena.buildAsync(services.plugin(), this::prepared, this::preparationFailed);
@@ -707,8 +857,9 @@ final class FinalsSession implements GameSession {
         if (revivalMode) {
             revives = new FinalsRevives(reviveContext());
         }
-        respawnInput = new FinalsRespawnInput(
-                services.plugin(), this::requestRespawn, this::requestDownedLoadout);
+        respawnInput =
+                new FinalsRespawnInput(
+                        services.plugin(), this::requestRespawn, this::requestDownedLoadout);
         dropInput =
                 new FinalsDropInput(
                         services.plugin(),
@@ -729,8 +880,14 @@ final class FinalsSession implements GameSession {
             } else if (isGameMaster(player)) spawnGameMaster(player);
         }
         if (tutorial == null) {
-            services.messages().broadcast(text("rules", rules.cashoutValue(), rules.targetScore(),
-                    rules.cashoutTicks() / 20, rules.stealTicks() / 20));
+            services.messages()
+                    .broadcast(
+                            text(
+                                    "rules",
+                                    rules.cashoutValue(),
+                                    rules.targetScore(),
+                                    rules.cashoutTicks() / 20,
+                                    rules.stealTicks() / 20));
             services.messages().broadcast(text("controls"));
             if (services.isTest()) services.messages().broadcast(text("practice"));
         }
@@ -791,11 +948,15 @@ final class FinalsSession implements GameSession {
                         : (rules.cashoutTicks() + 19) / 20,
                 players,
                 roster,
-                player -> revives != null && revives.location(player.getUniqueId()) != null
-                        ? revives.location(player.getUniqueId())
-                        : deathLocations.getOrDefault(player.getUniqueId(), player.getLocation()),
-                player -> downed(player.getUniqueId()), cashboxHighlightPoint(),
-                state == null ? null : state.carrier(), hitHealth::visible);
+                player ->
+                        revives != null && revives.location(player.getUniqueId()) != null
+                                ? revives.location(player.getUniqueId())
+                                : deathLocations.getOrDefault(
+                                        player.getUniqueId(), player.getLocation()),
+                player -> downed(player.getUniqueId()),
+                cashboxHighlightPoint(),
+                state == null ? null : state.carrier(),
+                hitHealth::visible);
     }
 
     private Location cashboxHighlightPoint() {
@@ -828,7 +989,8 @@ final class FinalsSession implements GameSession {
                 players.add(master);
             }
         }
-        tabList.update(world, players, roster, classes, kills.snapshot(), respawnAt.keySet(), gameMaster);
+        tabList.update(
+                world, players, roster, classes, kills.snapshot(), respawnAt.keySet(), gameMaster);
     }
 
     private boolean canObjective(Player player) {
@@ -872,11 +1034,18 @@ final class FinalsSession implements GameSession {
         int team = roster.get(id);
         if (state != null) return arena.spawn(team, spawnIndex(id));
         // Pick once per team so loadout changes and countdown rejoins keep the same anchor.
-        return startingSpawns.computeIfAbsent(team, ignored -> {
-            List<Location> candidates = arena.spawnLocations(team);
-            return candidates.get(java.util.concurrent.ThreadLocalRandom.current()
-                    .nextInt(candidates.size())).clone();
-        }).clone();
+        return startingSpawns
+                .computeIfAbsent(
+                        team,
+                        ignored -> {
+                            List<Location> candidates = arena.spawnLocations(team);
+                            return candidates
+                                    .get(
+                                            java.util.concurrent.ThreadLocalRandom.current()
+                                                    .nextInt(candidates.size()))
+                                    .clone();
+                        })
+                .clone();
     }
 
     private void spawn(Player player) {
@@ -888,15 +1057,16 @@ final class FinalsSession implements GameSession {
         if (preparing || !roster.containsKey(id) || teamWipes.locked(id, tick)) return;
         if (teamWipes.wave(id) != null) prepareTeamRespawns();
         boolean respawning = respawnAt.containsKey(id);
-        if (respawning && loadouts != null && FinalsLoadouts.viewing(player)) player.closeInventory();
+        if (respawning && loadouts != null && FinalsLoadouts.viewing(player))
+            player.closeInventory();
         forceRespawn(player);
         release(player);
         rememberVitals(player);
         FinalsLoadouts.Choice selected =
                 loadouts == null ? FinalsLoadouts.Choice.defaults() : loadouts.choice(id);
         // A revive continues the same life/kit; queued edits wait for a real respawn.
-        FinalsLoadouts.Choice choice = applySelectedLoadout
-                ? selected : equippedLoadouts.getOrDefault(id, selected);
+        FinalsLoadouts.Choice choice =
+                applySelectedLoadout ? selected : equippedLoadouts.getOrDefault(id, selected);
         classes.put(id, choice.playerClass());
         player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(choice.playerClass().health());
         player.getAttribute(Attribute.SCALE).setBaseValue(choice.playerClass().scale());
@@ -950,7 +1120,8 @@ final class FinalsSession implements GameSession {
         gadgetSicknessUntil.remove(id);
         if (revives != null) revives.remove(id);
         if (respawnInput != null) respawnInput.track(player);
-        if (respawning) objectiveSound(player.getLocation(), "minecraft:entity.enderman.teleport", 1.2f);
+        if (respawning)
+            objectiveSound(player.getLocation(), "minecraft:entity.enderman.teleport", 1.2f);
         if (dropInput != null) dropInput.track(player);
         if (state == null) freeze(player);
         services.sidebar().setNameColor(player, color(roster.get(id)));
@@ -965,10 +1136,11 @@ final class FinalsSession implements GameSession {
 
     private ItemStack cashboxItem(Player viewer) {
         ItemStack item = new ItemStack(Material.GOLD_BLOCK);
-        item.editMeta(meta -> {
-            meta.displayName(text("item.cashbox"));
-            meta.lore(List.of(text("item.cashbox_lore")));
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(text("item.cashbox"));
+                    meta.lore(List.of(text("item.cashbox_lore")));
+                });
         return viewer == null ? item : I18n.item(item, viewer);
     }
 
@@ -1040,7 +1212,9 @@ final class FinalsSession implements GameSession {
     }
 
     private boolean safeObjectiveLocation(Location point) {
-        return arena != null && point != null && arena.contains(point)
+        return arena != null
+                && point != null
+                && arena.contains(point)
                 && (arena.deathHeight() == null || point.getY() >= arena.deathHeight());
     }
 
@@ -1059,14 +1233,17 @@ final class FinalsSession implements GameSession {
         Location point = lastGrounded.get(id);
         if (supportedRecovery(point)) return point.clone();
         Integer team = roster.get(id);
-        if (team != null) for (Location spawn : arena.spawnLocations(team))
-            if (supportedRecovery(spawn)) return spawn.clone();
+        if (team != null)
+            for (Location spawn : arena.spawnLocations(team))
+                if (supportedRecovery(spawn)) return spawn.clone();
         return arena.vault().clone().add(0, 1, 0);
     }
 
     private Location cashboxReturnPoint() {
-        Location anchor = supportedRecovery(cashboxRecovery) ? cashboxRecovery
-                : arena.vault().clone().add(0, 1, 0);
+        Location anchor =
+                supportedRecovery(cashboxRecovery)
+                        ? cashboxRecovery
+                        : arena.vault().clone().add(0, 1, 0);
         return anchor.clone().add(0, .25, 0);
     }
 
@@ -1081,13 +1258,25 @@ final class FinalsSession implements GameSession {
         double distance = movement.length();
         double limit = distance;
         if (distance > 1e-8) {
-            var wall = world.rayTraceBlocks(previous.toLocation(world), movement.clone().normalize(),
-                    distance, FluidCollisionMode.NEVER, true);
+            var wall =
+                    world.rayTraceBlocks(
+                            previous.toLocation(world),
+                            movement.clone().normalize(),
+                            distance,
+                            FluidCollisionMode.NEVER,
+                            true);
             if (wall != null) limit = Math.max(0, wall.getHitPosition().distance(previous) - 1e-7);
         }
-        int station = FinalsCashboxFlight.hit(previous, current,
-                new Vector(bounds.getWidthX() / 2, bounds.getHeight() / 2, bounds.getWidthZ() / 2),
-                List.of(arena.station(0).toVector(), arena.station(1).toVector()), limit);
+        int station =
+                FinalsCashboxFlight.hit(
+                        previous,
+                        current,
+                        new Vector(
+                                bounds.getWidthX() / 2,
+                                bounds.getHeight() / 2,
+                                bounds.getWidthZ() / 2),
+                        List.of(arena.station(0).toVector(), arena.station(1).toVector()),
+                        limit);
         UUID thrower = cashboxThrower;
         if (station < 0 || !state.depositThrown(thrower, station, tick)) return false;
         removeCashbox();
@@ -1100,32 +1289,47 @@ final class FinalsSession implements GameSession {
 
     private void announceDeposit(UUID player, int station) {
         updateCashoutMusic();
-        services.messages().broadcast(text("deposited", teamName(roster.get(player)), station == 0 ? "A" : "B"));
-        var title = net.kyori.adventure.title.Title.title(
-                text("cashout.started.title", teamName(roster.get(player))),
-                text("cashout.started.subtitle", station == 0 ? "A" : "B"),
-                net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(150),
-                        java.time.Duration.ofMillis(1800), java.time.Duration.ofMillis(350)));
+        services.messages()
+                .broadcast(
+                        text("deposited", teamName(roster.get(player)), station == 0 ? "A" : "B"));
+        var title =
+                net.kyori.adventure.title.Title.title(
+                        text("cashout.started.title", teamName(roster.get(player))),
+                        text("cashout.started.subtitle", station == 0 ? "A" : "B"),
+                        net.kyori.adventure.title.Title.Times.times(
+                                java.time.Duration.ofMillis(150),
+                                java.time.Duration.ofMillis(1800),
+                                java.time.Duration.ofMillis(350)));
         for (Player contestant : feedbackPlayers()) {
             contestant.showTitle(title);
-            contestant.playSound(contestant.getLocation(), "minecraft:block.beacon.activate", .8f, 1.1f);
+            contestant.playSound(
+                    contestant.getLocation(), "minecraft:block.beacon.activate", .8f, 1.1f);
         }
     }
 
     private Collection<Player> feedbackPlayers() {
-        return services.participants() == null ? List.of()
+        return services.participants() == null
+                ? List.of()
                 : services.participants().onlinePlayers().stream()
-                        .filter(player -> connected.contains(player.getUniqueId())).toList();
+                        .filter(player -> connected.contains(player.getUniqueId()))
+                        .toList();
     }
 
     private void updateCashoutMusic() {
-        if (done || cashouts == null || state == null || state.phase() != FinalsState.Phase.CASHOUT) {
+        if (done
+                || cashouts == null
+                || state == null
+                || state.phase() != FinalsState.Phase.CASHOUT) {
             cashoutMusic.clear();
             return;
         }
-        cashoutMusic.update(cashouts.soundSource(state.station()),
+        cashoutMusic.update(
+                cashouts.soundSource(state.station()),
                 services.participants().onlinePlayers().stream()
-                        .filter(player -> connected.contains(player.getUniqueId()) || isGameMaster(player))
+                        .filter(
+                                player ->
+                                        connected.contains(player.getUniqueId())
+                                                || isGameMaster(player))
                         .toList());
     }
 
@@ -1209,7 +1413,8 @@ final class FinalsSession implements GameSession {
             announceCashout(0);
             announceCashout(1);
             if (tutorial != null)
-                for (Player player : services.participants().onlinePlayers()) tutorial.start(player, tick);
+                for (Player player : services.participants().onlinePlayers())
+                    tutorial.start(player, tick);
             services.messages()
                     .playSound(
                             services.participants().onlinePlayers(),
@@ -1218,7 +1423,8 @@ final class FinalsSession implements GameSession {
                             1.6f);
         }
         if (state == null) {
-            if (mapJumpPads != null) mapJumpPads.updateGlows(services.participants().onlinePlayers());
+            if (mapJumpPads != null)
+                mapJumpPads.updateGlows(services.participants().onlinePlayers());
             if (tick % 2 == 0) updateHighlights();
             if (tick % 5 == 0) updateTabList();
             if (tick % 20 == 0) updateHud();
@@ -1256,11 +1462,15 @@ final class FinalsSession implements GameSession {
                 else interruptSteal(player);
             } else if (state.completeSteal(id, tick)) {
                 services.messages().broadcast(text("stolen", teamName(roster.get(id))));
-                objectiveSound(arena.station(state.station()), "minecraft:block.enchantment_table.use", 1.1f);
+                objectiveSound(
+                        arena.station(state.station()),
+                        "minecraft:block.enchantment_table.use",
+                        1.1f);
             }
         }
         if (weapons != null) weapons.tick();
-        if (mapJumpPads != null) mapJumpPads.tick(services.participants().onlinePlayers(), this::fighting, tick);
+        if (mapJumpPads != null)
+            mapJumpPads.tick(services.participants().onlinePlayers(), this::fighting, tick);
         if (revives != null) revives.tick();
         if (gadgets != null) gadgets.tick();
         if (gameEvents != null) gameEvents.tick();
@@ -1310,21 +1520,26 @@ final class FinalsSession implements GameSession {
         }
         if (tick % 20 == 0) {
             ordnance.values()
-                    .removeIf(entity -> {
-                        if (!entity.isValid()) return true;
-                        if (entity instanceof Projectile && entity.getTicksLived() > 200) {
-                            entity.remove();
-                            return true;
-                        }
-                        return false;
-                    });
+                    .removeIf(
+                            entity -> {
+                                if (!entity.isValid()) return true;
+                                if (entity instanceof Projectile && entity.getTicksLived() > 200) {
+                                    entity.remove();
+                                    return true;
+                                }
+                                return false;
+                            });
             updateHud();
         }
     }
 
     private void prepareTeamRespawns() {
         for (FinalsTeamWipes.Wave wave : teamWipes.due(tick)) {
-            Location shared = arena.spawn(wave.team(), java.util.concurrent.ThreadLocalRandom.current().nextInt(3)).clone();
+            Location shared =
+                    arena.spawn(
+                                    wave.team(),
+                                    java.util.concurrent.ThreadLocalRandom.current().nextInt(3))
+                            .clone();
             for (UUID member : wave.members()) {
                 if (withdrawn.contains(member)) continue;
                 teamRespawnPositions.put(member, shared.clone());
@@ -1336,9 +1551,12 @@ final class FinalsSession implements GameSession {
 
     private void tutorialEnemyCashout(Player learner) {
         UUID opponent = UUID.randomUUID();
-        FinalsState.Rules practiceRules = new FinalsState.Rules(100, 1800, 100, 72000, 10000, 1000000);
+        FinalsState.Rules practiceRules =
+                new FinalsState.Rules(100, 1800, 100, 72000, 10000, 1000000);
         long opened = Math.max(0, tick - 100);
-        state = new FinalsState(Map.of(learner.getUniqueId(), 0, opponent, 1), opened, practiceRules);
+        state =
+                new FinalsState(
+                        Map.of(learner.getUniqueId(), 0, opponent, 1), opened, practiceRules);
         state.activateVault(opponent, opened);
         state.pickUp(opponent, tick);
         state.deposit(opponent, 0, tick);
@@ -1372,7 +1590,10 @@ final class FinalsSession implements GameSession {
                                         rules.cashoutValue(),
                                         state.score(team)));
                 if (completedStation >= 0)
-                    objectiveSound(arena.station(completedStation), "minecraft:entity.player.levelup", 1.2f);
+                    objectiveSound(
+                            arena.station(completedStation),
+                            "minecraft:entity.player.levelup",
+                            1.2f);
             }
         }
         if (paid && !state.isFinished()) {
@@ -1488,7 +1709,8 @@ final class FinalsSession implements GameSession {
             }
         if (gameMasterOnline) {
             Player master = Bukkit.getPlayer(gameMaster);
-            if (master != null && FinalsEventCommands.isMenu(master.getOpenInventory().getTopInventory()))
+            if (master != null
+                    && FinalsEventCommands.isMenu(master.getOpenInventory().getTopInventory()))
                 master.closeInventory();
         }
         removeCashbox();
@@ -1530,9 +1752,20 @@ final class FinalsSession implements GameSession {
             bar.progress(tutorial.fraction());
             bar.color(BossBar.Color.GREEN);
             for (Player player : services.participants().onlinePlayers()) {
-                services.sidebar().update(player, text("tutorial.name"), List.of(tutorial.title(),
-                        text("loadout.current", classes.getOrDefault(player.getUniqueId(), FinalsClass.MEDIUM).display()),
-                        text("tutorial.help_command"), text("tutorial.leave_command")));
+                services.sidebar()
+                        .update(
+                                player,
+                                text("tutorial.name"),
+                                List.of(
+                                        tutorial.title(),
+                                        text(
+                                                "loadout.current",
+                                                classes.getOrDefault(
+                                                                player.getUniqueId(),
+                                                                FinalsClass.MEDIUM)
+                                                        .display()),
+                                        text("tutorial.help_command"),
+                                        text("tutorial.leave_command")));
                 player.showBossBar(bar);
             }
             return;
@@ -1606,8 +1839,7 @@ final class FinalsSession implements GameSession {
                     lines.add(text("distance", (int) player.getLocation().distance(target)));
                 }
             }
-            if (respawnAt.containsKey(id))
-                lines.add(respawnStatus(id));
+            if (respawnAt.containsKey(id)) lines.add(respawnStatus(id));
             else if (protectedSpawn(player)) lines.add(text("protected"));
             services.sidebar().update(player, text("name"), lines);
             player.showBossBar(bar);
@@ -1648,7 +1880,8 @@ final class FinalsSession implements GameSession {
             Component status;
             Long deadline = state.stealDeadlines().get(id);
             if (respawnAt.containsKey(id)) status = respawnStatus(id);
-            else if (revives != null && revives.status(player) != null) status = revives.status(player);
+            else if (revives != null && revives.status(player) != null)
+                status = revives.status(player);
             else if (deadline != null) {
                 int progress =
                         (int)
@@ -1664,7 +1897,8 @@ final class FinalsSession implements GameSession {
                                 "▰".repeat(progress) + "▱".repeat(10 - progress),
                                 Math.max(0, (deadline - tick + 19) / 20));
             } else if (protectedSpawn(player)) status = text("protected");
-            else if (gadgets != null && gadgets.usingHealingBeam(player)) status = gadgets.hud(player);
+            else if (gadgets != null && gadgets.usingHealingBeam(player))
+                status = gadgets.hud(player);
             else if (id.equals(state.carrier())) status = text("carrying");
             else if (weapons != null && player.getInventory().getHeldItemSlot() == 0)
                 status = weapons.hud(player);
@@ -1678,7 +1912,8 @@ final class FinalsSession implements GameSession {
 
     private Component respawnStatus(UUID id) {
         long remaining = Math.max(0, (respawnAt.getOrDefault(id, tick) - tick + 19) / 20);
-        if (downed(id)) return remaining == 0 ? text("respawn.ready") : text("respawn.unlock", remaining);
+        if (downed(id))
+            return remaining == 0 ? text("respawn.ready") : text("respawn.unlock", remaining);
         return text("respawn", remaining);
     }
 
@@ -1713,7 +1948,9 @@ final class FinalsSession implements GameSession {
             return;
         }
         if (revives != null) {
-            boolean right = event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK;
+            boolean right =
+                    event.getAction() == Action.RIGHT_CLICK_AIR
+                            || event.getAction() == Action.RIGHT_CLICK_BLOCK;
             if (right && gadgets != null && gadgets.usingDefibrillator(player)) {
                 event.setCancelled(true);
                 gadgets.interact(event);
@@ -1732,7 +1969,8 @@ final class FinalsSession implements GameSession {
         }
         var block = event.getClickedBlock();
         if (block != null) event.setUseInteractedBlock(Event.Result.DENY);
-        if (block != null && event.getAction() == Action.LEFT_CLICK_BLOCK
+        if (block != null
+                && event.getAction() == Action.LEFT_CLICK_BLOCK
                 && canBreakGlass(player, block)) {
             event.setUseInteractedBlock(Event.Result.ALLOW);
             // Paper's block-dig path also requires this result, even with an empty hand.
@@ -1772,8 +2010,10 @@ final class FinalsSession implements GameSession {
 
     @Override
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
-        if (event.getRightClicked() instanceof Player && event.getHand() == EquipmentSlot.HAND
-                && gadgets != null && gadgets.interactHealingTarget(event.getPlayer())) {
+        if (event.getRightClicked() instanceof Player
+                && event.getHand() == EquipmentSlot.HAND
+                && gadgets != null
+                && gadgets.interactHealingTarget(event.getPlayer())) {
             event.setCancelled(true);
             return;
         }
@@ -1781,7 +2021,8 @@ final class FinalsSession implements GameSession {
             event.setCancelled(true);
             if (event.getHand() == EquipmentSlot.HAND) {
                 Player player = event.getPlayer();
-                if (gadgets != null && gadgets.usingDefibrillator(player)) gadgets.interactStatue(player);
+                if (gadgets != null && gadgets.usingDefibrillator(player))
+                    gadgets.interactStatue(player);
                 else revives.interact(player);
             }
             return;
@@ -1830,7 +2071,9 @@ final class FinalsSession implements GameSession {
     @Override
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         Player source = attacker(event.getDamager());
-        if (!applyingCombatDamage && event.getDamager() instanceof Player player && reviveOccupied(player)) {
+        if (!applyingCombatDamage
+                && event.getDamager() instanceof Player player
+                && reviveOccupied(player)) {
             revives.interrupt(player.getUniqueId());
             event.setCancelled(true);
             return;
@@ -1838,9 +2081,11 @@ final class FinalsSession implements GameSession {
         if (!(event.getEntity() instanceof Player victim)) {
             if (source != null) {
                 event.setCancelled(true);
-                if (!applyingCombatDamage && event.getDamager() instanceof Player
-                        && fighting(source) && !protectedSpawn(source) && weapons != null)
-                    weapons.melee(event);
+                if (!applyingCombatDamage
+                        && event.getDamager() instanceof Player
+                        && fighting(source)
+                        && !protectedSpawn(source)
+                        && weapons != null) weapons.melee(event);
             }
             return;
         }
@@ -1859,19 +2104,32 @@ final class FinalsSession implements GameSession {
             return;
         }
         if (event.isCancelled()) return;
-        if (gadgets != null && gadgets.blocksDamage(victim, source,
-                damageOrigin == null ? source.getLocation() : damageOrigin)) {
+        if (gadgets != null
+                && gadgets.blocksDamage(
+                        victim,
+                        source,
+                        damageOrigin == null ? source.getLocation() : damageOrigin)) {
             event.setCancelled(true);
             return;
         }
         double incoming = event.getDamage();
-        boolean reflect = applyingBulletDamage && incoming > 0 && weapons != null
-                && weapons.canReflectBullet(victim, source, damageOrigin);
+        boolean reflect =
+                applyingBulletDamage
+                        && incoming > 0
+                        && weapons != null
+                        && weapons.canReflectBullet(victim, source, damageOrigin);
         if (weapons != null)
-            event.setDamage(incoming * weapons.incomingMultiplier(victim, source,
-                    applyingRangedDamage || event.getDamager() instanceof Projectile,
-                    applyingMeleeDamage || !applyingCombatDamage && event.getDamager() instanceof Player,
-                    damageOrigin));
+            event.setDamage(
+                    incoming
+                            * weapons.incomingMultiplier(
+                                    victim,
+                                    source,
+                                    applyingRangedDamage
+                                            || event.getDamager() instanceof Projectile,
+                                    applyingMeleeDamage
+                                            || !applyingCombatDamage
+                                                    && event.getDamager() instanceof Player,
+                                    damageOrigin));
         if (reflect) weapons.reflectBullet(victim, source, incoming);
         if (event.getFinalDamage() > 0) {
             interruptSteal(victim);
@@ -1916,8 +2174,10 @@ final class FinalsSession implements GameSession {
             if (credited != null && (!connected.contains(credited) || withdrawn.contains(credited)))
                 credited = null;
             if (kills.death(id, credited, roster)) {
-                services.messages().broadcast(text("kill", killer.displayName(), player.displayName()));
-                killer.playSound(killer.getLocation(), "minecraft:entity.experience_orb.pickup", .8f, 1.4f);
+                services.messages()
+                        .broadcast(text("kill", killer.displayName(), player.displayName()));
+                killer.playSound(
+                        killer.getLocation(), "minecraft:entity.experience_orb.pickup", .8f, 1.4f);
             }
         }
         dropCashbox(player);
@@ -1937,7 +2197,8 @@ final class FinalsSession implements GameSession {
                 for (UUID member : wave.members()) respawnAt.put(member, wave.deadline());
                 if (revives != null) for (UUID member : wave.members()) revives.remove(member);
                 for (Player teammate : feedbackPlayers()) {
-                    if (wave.members().contains(teammate.getUniqueId())) teammate.sendMessage(text("team_wipe", 16));
+                    if (wave.members().contains(teammate.getUniqueId()))
+                        teammate.sendMessage(text("team_wipe", 16));
                 }
             } else if (revivalMode && revives != null) revives.down(player, deathLocations.get(id));
         }
@@ -1946,7 +2207,10 @@ final class FinalsSession implements GameSession {
 
     @Override
     public void onPlayerRespawn(PlayerRespawnEvent event) {
-        if (running() && !preparing && (connected.contains(event.getPlayer().getUniqueId()) || isGameMaster(event.getPlayer())))
+        if (running()
+                && !preparing
+                && (connected.contains(event.getPlayer().getUniqueId())
+                        || isGameMaster(event.getPlayer())))
             event.setRespawnLocation(arena.center().add(0, 10, 0));
     }
 
@@ -1961,14 +2225,15 @@ final class FinalsSession implements GameSession {
 
     private void clearOrdnance(UUID owner) {
         ordnance.values()
-                .removeIf(entity -> {
-                    Player source = attacker(entity);
-                    if (source != null && source.getUniqueId().equals(owner)) {
-                        entity.remove();
-                        return true;
-                    }
-                    return !entity.isValid();
-                });
+                .removeIf(
+                        entity -> {
+                            Player source = attacker(entity);
+                            if (source != null && source.getUniqueId().equals(owner)) {
+                                entity.remove();
+                                return true;
+                            }
+                            return !entity.isValid();
+                        });
     }
 
     @Override
@@ -1994,25 +2259,34 @@ final class FinalsSession implements GameSession {
 
     private boolean canBreakGlass(Player player, Block block) {
         Material material = block.getType();
-        boolean glass = material == Material.GLASS || material == Material.GLASS_PANE
-                || material == Material.TINTED_GLASS
-                || material.name().endsWith("_STAINED_GLASS")
-                || material.name().endsWith("_STAINED_GLASS_PANE");
-        return glass && canObjective(player) && arena.isCover(block)
-            && player.getInventory().getItemInMainHand().getType() == Material.AIR;
+        boolean glass =
+                material == Material.GLASS
+                        || material == Material.GLASS_PANE
+                        || material == Material.TINTED_GLASS
+                        || material.name().endsWith("_STAINED_GLASS")
+                        || material.name().endsWith("_STAINED_GLASS_PANE");
+        return glass
+                && canObjective(player)
+                && arena.isCover(block)
+                && player.getInventory().getItemInMainHand().getType() == Material.AIR;
     }
 
     private boolean interactMapControl(PlayerInteractEvent event, Block block) {
         boolean physical = event.getAction() == Action.PHYSICAL;
         String material = block.getType().name();
-        boolean control = physical ? material.endsWith("_PRESSURE_PLATE")
-                : event.getAction() == Action.RIGHT_CLICK_BLOCK
-                        && (material.endsWith("_BUTTON") || material.endsWith("_FENCE_GATE"));
+        boolean control =
+                physical
+                        ? material.endsWith("_PRESSURE_PLATE")
+                        : event.getAction() == Action.RIGHT_CLICK_BLOCK
+                                && (material.endsWith("_BUTTON")
+                                        || material.endsWith("_FENCE_GATE"));
         if (!control) return false;
         event.setCancelled(true);
         Player player = event.getPlayer();
-        if (!canObjective(player) || !arena.contains(block.getLocation())
-                || !physical && !near(player, block.getLocation().add(.5, .5, .5), 4.5)) return true;
+        if (!canObjective(player)
+                || !arena.contains(block.getLocation())
+                || !physical && !near(player, block.getLocation().add(.5, .5, .5), 4.5))
+            return true;
         // Let vanilla handle gate direction, button release ticks and redstone updates,
         // while keeping the held weapon/gadget from activating on the same click.
         event.setUseInteractedBlock(Event.Result.ALLOW);
@@ -2026,13 +2300,17 @@ final class FinalsSession implements GameSession {
         if (!(data instanceof Door) && !(data instanceof TrapDoor)) return false;
         event.setCancelled(true);
         Player player = event.getPlayer();
-        if (!canObjective(player) || !arena.contains(block.getLocation())
+        if (!canObjective(player)
+                || !arena.contains(block.getLocation())
                 || !near(player, block.getLocation().add(.5, .5, .5), 4.5)) return true;
         Block otherHalf = null;
         Door otherData = null;
         if (data instanceof Door door) {
-            otherHalf = block.getRelative(door.getHalf() == Bisected.Half.BOTTOM ? BlockFace.UP : BlockFace.DOWN);
-            if (!arena.contains(otherHalf.getLocation()) || otherHalf.getType() != block.getType()
+            otherHalf =
+                    block.getRelative(
+                            door.getHalf() == Bisected.Half.BOTTOM ? BlockFace.UP : BlockFace.DOWN);
+            if (!arena.contains(otherHalf.getLocation())
+                    || otherHalf.getType() != block.getType()
                     || !(otherHalf.getBlockData() instanceof Door matching)) return true;
             otherData = matching;
         }
@@ -2046,10 +2324,17 @@ final class FinalsSession implements GameSession {
         }
         if (weapons != null) weapons.stopFiring(player.getUniqueId());
         String material = block.getType().name();
-        String family = material.contains("IRON") ? "iron" : material.contains("COPPER") ? "copper" : "wooden";
+        String family =
+                material.contains("IRON")
+                        ? "iron"
+                        : material.contains("COPPER") ? "copper" : "wooden";
         String kind = data instanceof Door ? "door" : "trapdoor";
-        block.getWorld().playSound(block.getLocation(),
-                "minecraft:block." + family + "_" + kind + (open ? ".open" : ".close"), .8f, 1f);
+        block.getWorld()
+                .playSound(
+                        block.getLocation(),
+                        "minecraft:block." + family + "_" + kind + (open ? ".open" : ".close"),
+                        .8f,
+                        1f);
         return true;
     }
 
@@ -2098,7 +2383,8 @@ final class FinalsSession implements GameSession {
 
     @Override
     public void onInventoryClick(InventoryClickEvent event) {
-        if (revives != null && event.getWhoClicked() instanceof Player player) revives.interrupt(player.getUniqueId());
+        if (revives != null && event.getWhoClicked() instanceof Player player)
+            revives.interrupt(player.getUniqueId());
         event.setCancelled(true);
     }
 
@@ -2109,8 +2395,10 @@ final class FinalsSession implements GameSession {
 
     @Override
     public void onInventoryOpen(InventoryOpenEvent event) {
-        if (revives != null && event.getPlayer() instanceof Player player) revives.interrupt(player.getUniqueId());
-        if (!FinalsLoadouts.isMenu(event.getInventory()) && !FinalsEventCommands.isMenu(event.getInventory())) event.setCancelled(true);
+        if (revives != null && event.getPlayer() instanceof Player player)
+            revives.interrupt(player.getUniqueId());
+        if (!FinalsLoadouts.isMenu(event.getInventory())
+                && !FinalsEventCommands.isMenu(event.getInventory())) event.setCancelled(true);
         else if (weapons != null) weapons.stopFiring(event.getPlayer().getUniqueId());
     }
 
@@ -2136,8 +2424,10 @@ final class FinalsSession implements GameSession {
             to.setPitch(event.getTo().getPitch());
             event.setTo(to);
             event.getPlayer().setVelocity(new Vector());
-        } else if (active(event.getPlayer()) && (!arena.contains(event.getTo())
-                || (arena.deathHeight() != null && event.getTo().getY() < arena.deathHeight()))) {
+        } else if (active(event.getPlayer())
+                && (!arena.contains(event.getTo())
+                        || (arena.deathHeight() != null
+                                && event.getTo().getY() < arena.deathHeight()))) {
             // Protected floor prevents accidental void deaths; escaping the bounds costs a life.
             dropCashbox(event.getPlayer());
             event.getPlayer().setHealth(0);
@@ -2158,7 +2448,8 @@ final class FinalsSession implements GameSession {
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         if (internalTeleport || !running()) return;
         if (isGameMaster(event.getPlayer())) {
-            if (preparing || event.getTo() == null || !arena.contains(event.getTo())) event.setCancelled(true);
+            if (preparing || event.getTo() == null || !arena.contains(event.getTo()))
+                event.setCancelled(true);
         } else if (connected.contains(event.getPlayer().getUniqueId())) event.setCancelled(true);
     }
 
@@ -2239,8 +2530,10 @@ final class FinalsSession implements GameSession {
         if (gadgets != null) gadgets.forget(id);
         clearOrdnance(id);
         restoreVitals(player);
-        if (permanent || (!teamWipes.dead(id) && teamWipes.wave(id) == null
-                && !teamRespawnPositions.containsKey(id))) {
+        if (permanent
+                || (!teamWipes.dead(id)
+                        && teamWipes.wave(id) == null
+                        && !teamRespawnPositions.containsKey(id))) {
             deathLocations.remove(id);
             respawnAt.remove(id);
         }

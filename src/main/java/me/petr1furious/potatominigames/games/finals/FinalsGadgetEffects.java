@@ -97,10 +97,11 @@ final class FinalsGadgetEffects {
         if (kind != BREACH_CHARGE) return false;
         List<Device> owned =
                 devices.stream()
-                        .filter(d ->
-                                d.owner.equals(player.getUniqueId())
-                                        && d.kind == BREACH_CHARGE
-                                        && context.tick() >= d.arms)
+                        .filter(
+                                d ->
+                                        d.owner.equals(player.getUniqueId())
+                                                && d.kind == BREACH_CHARGE
+                                                && context.tick() >= d.arms)
                         .toList();
         if (owned.isEmpty()) return false;
         for (Device device : owned) {
@@ -172,9 +173,10 @@ final class FinalsGadgetEffects {
                 // Fire consumes gas; smoke extinguishes fire. Keep every owner's area effects
                 // bounded.
                 if (kind == PYRO_GRENADE || kind == SMOKE_GRENADE)
-                    clouds.removeIf(c ->
-                            c.kind == (kind == PYRO_GRENADE ? GAS_GRENADE : PYRO_GRENADE)
-                                    && c.center.distanceSquared(center) < 36);
+                    clouds.removeIf(
+                            c ->
+                                    c.kind == (kind == PYRO_GRENADE ? GAS_GRENADE : PYRO_GRENADE)
+                                            && c.center.distanceSquared(center) < 36);
                 List<Cloud> owned =
                         clouds.stream()
                                 .filter(c -> c.owner.equals(source.getUniqueId()) && c.kind == kind)
@@ -487,10 +489,11 @@ final class FinalsGadgetEffects {
             if (now % 4 == 0) line(eye, target.getEyeLocation(), Particle.CRIT);
         }
         for (Device device : List.copyOf(devices)) tickDevice(device);
-        clouds.removeIf(cloud ->
-                now >= cloud.expires
-                        || owner(cloud.owner) == null
-                        || !context.active(owner(cloud.owner)));
+        clouds.removeIf(
+                cloud ->
+                        now >= cloud.expires
+                                || owner(cloud.owner) == null
+                                || !context.active(owner(cloud.owner)));
         if (now % 4 == 0) {
             for (Cloud cloud : List.copyOf(clouds)) tickCloud(cloud);
             refreshSmoke();
@@ -653,13 +656,14 @@ final class FinalsGadgetEffects {
                         || context.friendly(viewer, target)) continue;
                 boolean blocked =
                         clouds.stream()
-                                .anyMatch(c ->
-                                        c.kind == SMOKE_GRENADE
-                                                && segmentSphere(
-                                                        viewer.getEyeLocation().toVector(),
-                                                        target.getEyeLocation().toVector(),
-                                                        c.center.toVector(),
-                                                        3.5));
+                                .anyMatch(
+                                        c ->
+                                                c.kind == SMOKE_GRENADE
+                                                        && segmentSphere(
+                                                                viewer.getEyeLocation().toVector(),
+                                                                target.getEyeLocation().toVector(),
+                                                                c.center.toVector(),
+                                                                3.5));
                 if (!blocked) continue;
                 ViewKey key = new ViewKey(viewer.getUniqueId(), target.getUniqueId());
                 HiddenView old = smokeViews.get(key);

@@ -126,10 +126,11 @@ final class FinalsDropInput {
                                     if ((kind.equals("DROP_ITEM") || kind.equals("DROP_ALL_ITEMS"))
                                             && queued.compareAndSet(false, true)) {
                                         try {
-                                            dispatch.accept(() -> {
-                                                queued.set(false);
-                                                if (!closed) drop.run();
-                                            });
+                                            dispatch.accept(
+                                                    () -> {
+                                                        queued.set(false);
+                                                        if (!closed) drop.run();
+                                                    });
                                         } catch (RuntimeException error) {
                                             queued.set(false);
                                             // Shutdown can reject scheduling; never disrupt vanilla
@@ -159,32 +160,38 @@ final class FinalsDropInput {
                             });
             Method add =
                     pipelineType.getMethod("addBefore", String.class, String.class, handlerType);
-            loop.execute(() -> {
-                if (closed) return;
-                try {
-                    add.invoke(pipeline, "packet_handler", name, handler);
-                } catch (ReflectiveOperationException error) {
-                    closed = true;
-                    Bukkit.getLogger()
-                            .warning(
-                                    "Could not attach Finals empty-hand Q input: "
-                                            + error.getMessage());
-                }
-            });
+            loop.execute(
+                    () -> {
+                        if (closed) return;
+                        try {
+                            add.invoke(pipeline, "packet_handler", name, handler);
+                        } catch (ReflectiveOperationException error) {
+                            closed = true;
+                            Bukkit.getLogger()
+                                    .warning(
+                                            "Could not attach Finals empty-hand Q input: "
+                                                    + error.getMessage());
+                        }
+                    });
         }
 
         @Override
         public void close() {
             closed = true;
             try {
-                loop.execute(() -> {
-                    try {
-                        if (pipelineType.getMethod("get", String.class).invoke(pipeline, name)
-                                != null)
-                            pipelineType.getMethod("remove", String.class).invoke(pipeline, name);
-                    } catch (ReflectiveOperationException ignored) {
-                    }
-                });
+                loop.execute(
+                        () -> {
+                            try {
+                                if (pipelineType
+                                                .getMethod("get", String.class)
+                                                .invoke(pipeline, name)
+                                        != null)
+                                    pipelineType
+                                            .getMethod("remove", String.class)
+                                            .invoke(pipeline, name);
+                            } catch (ReflectiveOperationException ignored) {
+                            }
+                        });
             } catch (java.util.concurrent.RejectedExecutionException ignored) {
                 // A closed connection has already discarded its pipeline; queued callbacks stay
                 // disabled.

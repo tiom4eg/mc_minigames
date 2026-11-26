@@ -24,9 +24,12 @@ import java.util.UUID;
 
 final class DropTowerSession extends PartySurvivalSession {
     private static final String KEY = "party.drop_and_shoot.drop.";
-    private static final List<Material> BAND_FLOORS = List.of(
-            Material.PRISMARINE_BRICKS, Material.LAPIS_BLOCK, Material.PURPUR_BLOCK,
-            Material.POLISHED_BLACKSTONE_BRICKS);
+    private static final List<Material> BAND_FLOORS =
+            List.of(
+                    Material.PRISMARINE_BRICKS,
+                    Material.LAPIS_BLOCK,
+                    Material.PURPUR_BLOCK,
+                    Material.POLISHED_BLACKSTONE_BRICKS);
     final DropTowerCourse course = DropTowerCourse.generate(random);
     private final Map<UUID, Lane> lanes = new LinkedHashMap<>();
     private ParkourRace race;
@@ -60,10 +63,14 @@ final class DropTowerSession extends PartySurvivalSession {
         boolean finish = stage == DropTowerCourse.JUMPS;
         int radius = pad.radius();
         boolean gap = !finish && course.jumps().get(stage).kind().isGap();
-        Material floor = finish ? Material.LIME_CONCRETE
-                : gap ? Material.ORANGE_CONCRETE : BAND_FLOORS.get(stage / 5);
-        Material light = finish ? Material.VERDANT_FROGLIGHT
-                : gap ? Material.SHROOMLIGHT : Material.SEA_LANTERN;
+        Material floor =
+                finish
+                        ? Material.LIME_CONCRETE
+                        : gap ? Material.ORANGE_CONCRETE : BAND_FLOORS.get(stage / 5);
+        Material light =
+                finish
+                        ? Material.VERDANT_FROGLIGHT
+                        : gap ? Material.SHROOMLIGHT : Material.SEA_LANTERN;
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
                 if (!pad.tile(x, z)) continue;
@@ -76,8 +83,12 @@ final class DropTowerSession extends PartySurvivalSession {
     private Location checkpoint(Lane lane, int stage, Location view) {
         var pad = course.pads().get(stage);
         return new Location(
-                world, lane.x() + pad.x() + .5, pad.floor() + 1, lane.z() + pad.z() + .5,
-                view.getYaw(), view.getPitch());
+                world,
+                lane.x() + pad.x() + .5,
+                pad.floor() + 1,
+                lane.z() + pad.z() + .5,
+                view.getYaw(),
+                view.getPitch());
     }
 
     @Override
@@ -137,24 +148,44 @@ final class DropTowerSession extends PartySurvivalSession {
             Pad target = course.pads().get(stage + 1);
             boolean inLane = lane.contains(at.getX(), at.getZ());
             boolean grounded = player.isOnGround();
-            boolean caught = grounded && course.jumps().get(stage).baffles().stream()
-                    .anyMatch(baffle -> baffle.caught(x, y, z));
-            if (inLane && grounded && target.landed(x, y, z) && race.reach(id, stage + 1, elapsed)) {
+            boolean caught =
+                    grounded
+                            && course.jumps().get(stage).baffles().stream()
+                                    .anyMatch(baffle -> baffle.caught(x, y, z));
+            if (inLane
+                    && grounded
+                    && target.landed(x, y, z)
+                    && race.reach(id, stage + 1, elapsed)) {
                 player.playSound(at, "minecraft:block.note_block.pling", .8f, 1 + stage * .05f);
                 if (race.finished(id)) {
                     player.sendMessage(text(I18n.tr(KEY + "finish", seconds(elapsed))));
                     spectate(player);
                 } else {
-                    player.sendActionBar(I18n.tr(
-                            KEY + "landed", stage + 1, DropTowerCourse.JUMPS, hint(stage + 1)));
+                    player.sendActionBar(
+                            I18n.tr(
+                                    KEY + "landed",
+                                    stage + 1,
+                                    DropTowerCourse.JUMPS,
+                                    hint(stage + 1)));
                 }
-            } else if (!inLane || target.missed(y) || caught || grounded && onWrongPad(stage, x, y, z)) {
+            } else if (!inLane
+                    || target.missed(y)
+                    || caught
+                    || grounded && onWrongPad(stage, x, y, z)) {
                 teleport(player, checkpoint(lane, stage, at));
                 player.sendActionBar(I18n.tr(KEY + (caught ? "bar_retry" : "retry"), hint(stage)));
                 player.playSound(at, "minecraft:block.note_block.bass", .6f, 1);
             } else if (elapsed % 10 == 0) {
-                player.spawnParticle(Particle.END_ROD, lane.x() + target.x() + .5,
-                        target.floor() + 1.45, lane.z() + target.z() + .5, 5, .2, .16, .2, .005);
+                player.spawnParticle(
+                        Particle.END_ROD,
+                        lane.x() + target.x() + .5,
+                        target.floor() + 1.45,
+                        lane.z() + target.z() + .5,
+                        5,
+                        .2,
+                        .16,
+                        .2,
+                        .005);
             }
         }
         if (context.eligible().stream().allMatch(race::finished)) {

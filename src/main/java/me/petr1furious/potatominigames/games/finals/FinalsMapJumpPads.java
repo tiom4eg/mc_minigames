@@ -1,14 +1,15 @@
 package me.petr1furious.potatominigames.games.finals;
 
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
-import org.bukkit.entity.Player;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
-import org.bukkit.Material;
-import org.bukkit.Color;
-import org.bukkit.util.Vector;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -19,9 +20,20 @@ import java.util.function.Predicate;
 /** Permanent map pads; targeted flights use velocity so normal block collision still applies. */
 public final class FinalsMapJumpPads {
     public record Pad(Location origin, Location target) {
-        public Pad { origin = origin.clone(); target = target == null ? null : target.clone(); }
-        @Override public Location origin() { return origin.clone(); }
-        @Override public Location target() { return target == null ? null : target.clone(); }
+        public Pad {
+            origin = origin.clone();
+            target = target == null ? null : target.clone();
+        }
+
+        @Override
+        public Location origin() {
+            return origin.clone();
+        }
+
+        @Override
+        public Location target() {
+            return target == null ? null : target.clone();
+        }
     }
 
     static final double UP_SPEED = FinalsGadgets.JUMP_PAD_SPEED * 3;
@@ -41,22 +53,30 @@ public final class FinalsMapJumpPads {
         Location last;
         int stalled;
         Vector velocity;
+
         Flight(Location start, Location target, long now) {
-            this.start = start.clone(); this.target = target.clone(); last = start.clone();
+            this.start = start.clone();
+            this.target = target.clone();
+            last = start.clone();
             duration = duration(start, target);
             started = now;
             deadline = now + duration * 4L + 100;
         }
     }
 
-    FinalsMapJumpPads(FinalsMapArena arena) { this(arena, null); }
+    FinalsMapJumpPads(FinalsMapArena arena) {
+        this(arena, null);
+    }
 
     FinalsMapJumpPads(FinalsMapArena arena, JavaPlugin plugin) {
         pads = List.copyOf(arena.jumpPads());
         this.plugin = plugin;
     }
 
-    void start() { showing = true; refreshOutlines(); }
+    void start() {
+        showing = true;
+        refreshOutlines();
+    }
 
     private void refreshOutlines() {
         for (int i = 0; i < pads.size(); i++) {
@@ -67,19 +87,32 @@ public final class FinalsMapJumpPads {
             outlines.remove(i);
             Location at = pads.get(i).origin().add(-.5, .01, -.5);
             if (!at.getWorld().isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) continue;
-            outlines.put(i, at.getWorld().spawn(at, BlockDisplay.class, display -> {
-                display.setVisibleByDefault(false);
-                display.setPersistent(false); display.setGravity(false); display.setInvulnerable(true);
-                display.setBlock(Material.LIME_STAINED_GLASS.createBlockData());
-                display.setTransformationMatrix(new org.joml.Matrix4f().scale(1, .06f, 1));
-                display.setGlowing(true); display.setGlowColorOverride(Color.AQUA);
-                display.setBrightness(new Display.Brightness(15, 15)); display.setViewRange(4);
-            }));
+            outlines.put(
+                    i,
+                    at.getWorld()
+                            .spawn(
+                                    at,
+                                    BlockDisplay.class,
+                                    display -> {
+                                        display.setVisibleByDefault(false);
+                                        display.setPersistent(false);
+                                        display.setGravity(false);
+                                        display.setInvulnerable(true);
+                                        display.setBlock(
+                                                Material.LIME_STAINED_GLASS.createBlockData());
+                                        display.setTransformationMatrix(
+                                                new org.joml.Matrix4f().scale(1, .06f, 1));
+                                        display.setGlowing(true);
+                                        display.setGlowColorOverride(Color.AQUA);
+                                        display.setBrightness(new Display.Brightness(15, 15));
+                                        display.setViewRange(4);
+                                    }));
         }
     }
 
     static boolean glowVisible(Pad pad, Location viewer) {
-        return pad.target() != null && pad.origin().getWorld().equals(viewer.getWorld())
+        return pad.target() != null
+                && pad.origin().getWorld().equals(viewer.getWorld())
                 && pad.origin().distanceSquared(viewer) <= 16 * 16;
     }
 
@@ -91,19 +124,27 @@ public final class FinalsMapJumpPads {
             present.add(player.getUniqueId());
             viewers.put(player.getUniqueId(), player);
             Location location = player.getLocation();
-            outlines.forEach((index, outline) -> {
-                if (!outline.isValid()) return;
-                boolean visible = glowVisible(pads.get(index), location);
-                if (visible && !player.canSee(outline)) player.showEntity(plugin, outline);
-                else if (!visible && player.canSee(outline)) player.hideEntity(plugin, outline);
-            });
+            outlines.forEach(
+                    (index, outline) -> {
+                        if (!outline.isValid()) return;
+                        boolean visible = glowVisible(pads.get(index), location);
+                        if (visible && !player.canSee(outline)) player.showEntity(plugin, outline);
+                        else if (!visible && player.canSee(outline))
+                            player.hideEntity(plugin, outline);
+                    });
         }
-        viewers.entrySet().removeIf(entry -> {
-            if (present.contains(entry.getKey())) return false;
-            if (entry.getValue().isOnline())
-                outlines.values().forEach(outline -> entry.getValue().hideEntity(plugin, outline));
-            return true;
-        });
+        viewers.entrySet()
+                .removeIf(
+                        entry -> {
+                            if (present.contains(entry.getKey())) return false;
+                            if (entry.getValue().isOnline())
+                                outlines.values()
+                                        .forEach(
+                                                outline ->
+                                                        entry.getValue()
+                                                                .hideEntity(plugin, outline));
+                            return true;
+                        });
     }
 
     static double rise(Location start, Location target) {
@@ -112,13 +153,17 @@ public final class FinalsMapJumpPads {
     }
 
     static int duration(Location start, Location target) {
-        int original = Math.max(8, (int) Math.ceil((start.distance(target) + 4 * rise(start, target)) / 1.5));
+        int original =
+                Math.max(
+                        8,
+                        (int) Math.ceil((start.distance(target) + 4 * rise(start, target)) / 1.5));
         return (int) Math.ceil(original / 1.5);
     }
 
     static Location arc(Location start, Location target, double progress) {
         double t = Math.clamp(progress, 0, 1);
-        return start.clone().add(target.toVector().subtract(start.toVector()).multiply(t))
+        return start.clone()
+                .add(target.toVector().subtract(start.toVector()).multiply(t))
                 .add(0, 4 * rise(start, target) * t * (1 - t), 0);
     }
 
@@ -129,17 +174,25 @@ public final class FinalsMapJumpPads {
         var present = new java.util.HashSet<UUID>();
         for (Player player : players) {
             UUID id = player.getUniqueId();
-            if (!active.test(player)) { flights.remove(id); continue; }
+            if (!active.test(player)) {
+                flights.remove(id);
+                continue;
+            }
             present.add(id);
             Flight flight = flights.get(id);
-            if (flight != null) { advance(player, flight, now); continue; }
+            if (flight != null) {
+                advance(player, flight, now);
+                continue;
+            }
             if (cooldowns.containsKey(id)) continue;
             Location at = player.getLocation();
             for (Pad pad : pads) {
                 Location origin = pad.origin();
-                if (!at.getWorld().equals(origin.getWorld()) || Math.abs(at.getX() - origin.getX()) > .65
+                if (!at.getWorld().equals(origin.getWorld())
+                        || Math.abs(at.getX() - origin.getX()) > .65
                         || Math.abs(at.getZ() - origin.getZ()) > .65
-                        || at.getY() < origin.getY() - .1 || at.getY() > origin.getY() + .65) continue;
+                        || at.getY() < origin.getY() - .1
+                        || at.getY() > origin.getY() + .65) continue;
                 player.setFallDistance(0);
                 cooldowns.put(id, now + 20);
                 if (pad.target() == null) player.setVelocity(player.getVelocity().setY(UP_SPEED));
@@ -159,7 +212,9 @@ public final class FinalsMapJumpPads {
     private void advance(Player player, Flight flight, long now) {
         Location at = player.getLocation();
         boolean sameWorld = at.getWorld().equals(flight.start.getWorld());
-        if (!sameWorld || now >= flight.deadline || (now > flight.started && at.distanceSquared(flight.last) > 64)) {
+        if (!sameWorld
+                || now >= flight.deadline
+                || (now > flight.started && at.distanceSquared(flight.last) > 64)) {
             flights.remove(player.getUniqueId());
             return;
         }
@@ -191,8 +246,11 @@ public final class FinalsMapJumpPads {
     }
 
     void clear() {
-        flights.clear(); cooldowns.clear();
-        showing = false; outlines.values().forEach(BlockDisplay::remove); outlines.clear();
+        flights.clear();
+        cooldowns.clear();
+        showing = false;
+        outlines.values().forEach(BlockDisplay::remove);
+        outlines.clear();
         viewers.clear();
     }
 }

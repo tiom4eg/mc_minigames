@@ -1,24 +1,14 @@
 package me.petr1furious.potatominigames.games.bingo;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
-import java.util.List;
-
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
+import static me.petr1furious.potatominigames.core.command.GameCommands.requirePlayer;
+import static me.petr1furious.potatominigames.core.command.GameCommands.run;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
 import me.petr1furious.potatominigames.core.command.CommandFailure;
-import me.petr1furious.potatominigames.core.command.GameCommands;
 import me.petr1furious.potatominigames.core.config.ConfigRegistry;
 import me.petr1furious.potatominigames.core.game.GameSession;
 import me.petr1furious.potatominigames.core.game.Minigame;
@@ -29,9 +19,17 @@ import me.petr1furious.potatominigames.games.bingo.board.BoardUiService;
 import me.petr1furious.potatominigames.games.bingo.board.DependencyCostService;
 import me.petr1furious.potatominigames.games.bingo.board.ItemPoolService;
 import me.petr1furious.potatominigames.games.bingo.model.GameMode;
+import me.petr1furious.potatominigames.i18n.I18n;
 
-import static me.petr1furious.potatominigames.core.command.GameCommands.run;
-import static me.petr1furious.potatominigames.core.command.GameCommands.requirePlayer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.List;
 
 public final class BingoGame implements Minigame {
     private final BingoConfig config;
@@ -94,12 +92,13 @@ public final class BingoGame implements Minigame {
 
     @Override
     public Component description(String mode) {
-        return I18n.tr(switch (mode) {
-            case "butfast" -> "bingo.description.butfast";
-            case "collectall" -> "bingo.description.collectall";
-            case "lockout" -> "bingo.description.lockout";
-            default -> "bingo.description.default";
-        });
+        return I18n.tr(
+                switch (mode) {
+                    case "butfast" -> "bingo.description.butfast";
+                    case "collectall" -> "bingo.description.collectall";
+                    case "lockout" -> "bingo.description.lockout";
+                    default -> "bingo.description.default";
+                });
     }
 
     @Override
@@ -124,8 +123,15 @@ public final class BingoGame implements Minigame {
 
     @Override
     public GameSession createSession(SessionServices services, String mode) {
-        activeSession = new BingoSession(services, config, itemPool, boardService, boardUi, kit,
-                GameMode.fromKey(mode));
+        activeSession =
+                new BingoSession(
+                        services,
+                        config,
+                        itemPool,
+                        boardService,
+                        boardUi,
+                        kit,
+                        GameMode.fromKey(mode));
         return activeSession;
     }
 
@@ -136,14 +142,22 @@ public final class BingoGame implements Minigame {
 
     @Override
     public void extendCommands(LiteralArgumentBuilder<CommandSourceStack> root) {
-        root.then(Commands.literal("returncard")
-                .executes(ctx -> run(ctx, c -> {
-                    Player player = requirePlayer(c);
-                    if (activeSession == null) {
-                        throw new CommandFailure(I18n.tr("bingo.not_active"));
-                    }
-                    activeSession.returnCard(player);
-                    player.sendMessage(I18n.tr("bingo.card.returned").color(NamedTextColor.GREEN));
-                })));
+        root.then(
+                Commands.literal("returncard")
+                        .executes(
+                                ctx ->
+                                        run(
+                                                ctx,
+                                                c -> {
+                                                    Player player = requirePlayer(c);
+                                                    if (activeSession == null) {
+                                                        throw new CommandFailure(
+                                                                I18n.tr("bingo.not_active"));
+                                                    }
+                                                    activeSession.returnCard(player);
+                                                    player.sendMessage(
+                                                            I18n.tr("bingo.card.returned")
+                                                                    .color(NamedTextColor.GREEN));
+                                                })));
     }
 }

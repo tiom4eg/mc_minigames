@@ -46,13 +46,16 @@ public final class TanksSessionCheck {
         check(model.actor(id).shell() == TanksRules.Shell.AP, "slot one selects AP");
         check(!session.allowLateJoin(), "roster locked");
         var driver = model.actor(id);
-        check(TanksSession.sidebarLines(driver, false, true, 1, 1).isEmpty(),
+        check(
+                TanksSession.sidebarLines(driver, false, true, 1, 1).isEmpty(),
                 "zoom clears the side of the target");
         var battleLines = TanksSession.sidebarLines(driver, false, false, 1, 1);
-        check(!battleLines.contains(TanksSession.tr("hud.help"))
+        check(
+                !battleLines.contains(TanksSession.tr("hud.help"))
                         && !battleLines.contains(TanksSession.tr("hud.kills", 0)),
                 "combat sidebar omits tutorial and scoreboard statistics");
-        check(TanksSession.sidebarLines(driver, true, false, 1, 1)
+        check(
+                TanksSession.sidebarLines(driver, true, false, 1, 1)
                         .contains(TanksSession.tr("hud.help")),
                 "preparation retains the controls reference");
         check(session.returnToLobbyAfterGame(), "returns to lobby");
@@ -203,11 +206,12 @@ public final class TanksSessionCheck {
                                 });
         Method policy =
                 Arrays.stream(TanksSession.class.getDeclaredMethods())
-                        .filter(method ->
-                                method.getName().equals("configureArenaView")
-                                        && Arrays.equals(
-                                                method.getParameterTypes(),
-                                                new Class<?>[] {World.class}))
+                        .filter(
+                                method ->
+                                        method.getName().equals("configureArenaView")
+                                                && Arrays.equals(
+                                                        method.getParameterTypes(),
+                                                        new Class<?>[] {World.class}))
                         .findFirst()
                         .orElse(null);
         if (policy != null) {

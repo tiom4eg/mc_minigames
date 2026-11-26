@@ -1,6 +1,7 @@
 package me.petr1furious.potatominigames.core.session;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 
 public enum GamePhase {

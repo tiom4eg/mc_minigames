@@ -1,5 +1,10 @@
 package me.petr1furious.potatominigames.core.team;
 
+import me.petr1furious.potatominigames.core.player.Participant;
+import me.petr1furious.potatominigames.core.player.ParticipantRegistry;
+
+import net.kyori.adventure.text.Component;
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -7,19 +12,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import net.kyori.adventure.text.Component;
-
-import me.petr1furious.potatominigames.core.player.Participant;
-import me.petr1furious.potatominigames.core.player.ParticipantRegistry;
-
 /** Saved per-game colours ({@link TeamRegistry}) and the current session's teams. */
 public final class TeamService {
     private final TeamRegistry registry;
     private ParticipantRegistry participants;
+
     /** Queue picks; they override everything. */
     private Map<UUID, TeamColor> queuePicks = Map.of();
+
     /** Saved colours apply only to admin-started games. */
     private boolean useStanding = true;
+
     /** Colours this game and mode can use; picks and saved colours outside it are ignored. */
     private List<TeamColor> allowed = List.of(TeamColor.values());
 
@@ -39,7 +42,8 @@ public final class TeamService {
         this.participants = null;
     }
 
-    public void configureStart(Map<UUID, TeamColor> picks, boolean standingColours, List<TeamColor> colours) {
+    public void configureStart(
+            Map<UUID, TeamColor> picks, boolean standingColours, List<TeamColor> colours) {
         this.queuePicks = Map.copyOf(picks);
         this.useStanding = standingColours;
         this.allowed = colours.isEmpty() ? List.of(TeamColor.values()) : List.copyOf(colours);
@@ -75,9 +79,10 @@ public final class TeamService {
     /** Persisted like an explicit pick. */
     public TeamColor cycle(String gameId, UUID playerId) {
         TeamColor current = standingTeam(gameId, playerId);
-        TeamColor next = current == null
-                ? TeamColor.values()[0]
-                : TeamColor.values()[(current.ordinal() + 1) % TeamColor.values().length];
+        TeamColor next =
+                current == null
+                        ? TeamColor.values()[0]
+                        : TeamColor.values()[(current.ordinal() + 1) % TeamColor.values().length];
         assign(gameId, playerId, next);
         return next;
     }
@@ -98,8 +103,8 @@ public final class TeamService {
     }
 
     /**
-     * Queue pick, else saved colour (admin-started games only), else the least-populated
-     * colour. Auto-picked colours are not persisted.
+     * Queue pick, else saved colour (admin-started games only), else the least-populated colour.
+     * Auto-picked colours are not persisted.
      */
     public TeamColor resolveForStart(String gameId, Participant participant) {
         TeamColor picked = queuePicks.get(participant.id());

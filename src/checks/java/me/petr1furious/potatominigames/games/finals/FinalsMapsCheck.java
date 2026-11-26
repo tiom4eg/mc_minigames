@@ -3,6 +3,7 @@ package me.petr1furious.potatominigames.games.finals;
 import static me.petr1furious.potatominigames.games.finals.FinalsMapData.*;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -48,25 +49,45 @@ public final class FinalsMapsCheck {
     }
 
     private static void timeOfDayPersistence() throws Exception {
-        YamlConfiguration input = new YamlConfiguration(); draft().write(input);
+        YamlConfiguration input = new YamlConfiguration();
+        draft().write(input);
         input.set("time-of-day", 18000);
         Draft configured = Draft.read(input);
-        YamlConfiguration output = new YamlConfiguration(); configured.write(output);
-        require(output.getInt("time-of-day", -1) == 18000, "Each map preserves its selected time of day");
+        YamlConfiguration output = new YamlConfiguration();
+        configured.write(output);
+        require(
+                output.getInt("time-of-day", -1) == 18000,
+                "Each map preserves its selected time of day");
         configured.deathHeight = 64.5;
         Saved savedA = Saved.from(configured, "a.slime");
-        Draft other = draft(); other.timeOfDay = 1000;
+        Draft other = draft();
+        other.timeOfDay = 1000;
         Saved savedB = Saved.from(other, "b.slime");
         FakeWorld shared = new FakeWorld("editor");
         FinalsMapArena a = new FinalsImportedArena(shared.world, savedA, (FinalsMapSnapshot) null);
         FinalsMapArena b = new FinalsImportedArena(shared.world, savedB, (FinalsMapSnapshot) null);
-        require(a.timeOfDay() == 18000 && b.timeOfDay() == 1000 && a.deathHeight() == 64.5 && b.deathHeight() == null,
-                "Actual arenas backed by the same world use only their own time and death settings");
-        Draft copy = configured.copy(); copy.timeOfDay = null; copy.write(output);
-        require(Draft.read(output).timeOfDay == null && savedA.timeOfDay() == 18000 && configured.timeOfDay == 18000,
-                "Resetting a draft time removes its override without changing a saved map or another draft");
-        FinalsMapArena legacy = new FinalsImportedArena(shared.world, Saved.from(draft(), "old.slime"), (FinalsMapSnapshot) null);
-        require(legacy.timeOfDay() == 6000 && legacy.deathHeight() == null, "Existing maps preserve noon and no custom death floor");
+        require(
+                a.timeOfDay() == 18000
+                        && b.timeOfDay() == 1000
+                        && a.deathHeight() == 64.5
+                        && b.deathHeight() == null,
+                "Actual arenas backed by the same world use only their own time and death"
+                        + " settings");
+        Draft copy = configured.copy();
+        copy.timeOfDay = null;
+        copy.write(output);
+        require(
+                Draft.read(output).timeOfDay == null
+                        && savedA.timeOfDay() == 18000
+                        && configured.timeOfDay == 18000,
+                "Resetting a draft time removes its override without changing a saved map or"
+                        + " another draft");
+        FinalsMapArena legacy =
+                new FinalsImportedArena(
+                        shared.world, Saved.from(draft(), "old.slime"), (FinalsMapSnapshot) null);
+        require(
+                legacy.timeOfDay() == 6000 && legacy.deathHeight() == null,
+                "Existing maps preserve noon and no custom death floor");
         for (Object invalid : List.of(-1, 24000, 1.5, "night", Double.NaN)) {
             output.set("time-of-day", invalid);
             fails(() -> Draft.read(output), "Invalid persisted time rejected: " + invalid);
@@ -77,24 +98,36 @@ public final class FinalsMapsCheck {
         Draft a = draft(), b = draft();
         a.deathHeight = 64.5;
         Saved savedA = Saved.from(a, "a.slime"), savedB = Saved.from(b, "b.slime");
-        require(a.world.equals(b.world) && savedA.deathHeight() == 64.5 && savedB.deathHeight() == null,
+        require(
+                a.world.equals(b.world)
+                        && savedA.deathHeight() == 64.5
+                        && savedB.deathHeight() == null,
                 "Maps sharing an editor world retain independent death heights");
         YamlConfiguration yaml = new YamlConfiguration();
-        a.write(yaml.createSection("a")); b.write(yaml.createSection("b"));
-        YamlConfiguration restored = new YamlConfiguration(); restored.loadFromString(yaml.saveToString());
-        require(Draft.read(restored.getConfigurationSection("a")).deathHeight == 64.5
+        a.write(yaml.createSection("a"));
+        b.write(yaml.createSection("b"));
+        YamlConfiguration restored = new YamlConfiguration();
+        restored.loadFromString(yaml.saveToString());
+        require(
+                Draft.read(restored.getConfigurationSection("a")).deathHeight == 64.5
                         && Draft.read(restored.getConfigurationSection("b")).deathHeight == null,
                 "Per-map death heights remain isolated after YAML round-trip");
-        Draft edited = a.copy(); edited.deathHeight = -10d;
-        require(a.deathHeight == 64.5 && savedA.deathHeight() == 64.5,
+        Draft edited = a.copy();
+        edited.deathHeight = -10d;
+        require(
+                a.deathHeight == 64.5 && savedA.deathHeight() == 64.5,
                 "Unsaved edits cannot change a published map's death height");
-        edited.deathHeight = null; edited.write(yaml.getConfigurationSection("a"));
-        require(Draft.read(yaml.getConfigurationSection("a")).deathHeight == null,
+        edited.deathHeight = null;
+        edited.write(yaml.getConfigurationSection("a"));
+        require(
+                Draft.read(yaml.getConfigurationSection("a")).deathHeight == null,
                 "Turning death height off removes its persisted setting");
         edited.deathHeight = Double.NaN;
         fails(() -> Saved.from(edited, "bad.slime"), "Non-finite saved death height is rejected");
         yaml.getConfigurationSection("a").set("death-height", "bad");
-        fails(() -> Draft.read(yaml.getConfigurationSection("a")), "Invalid persisted death height is rejected");
+        fails(
+                () -> Draft.read(yaml.getConfigurationSection("a")),
+                "Invalid persisted death height is rejected");
     }
 
     private static void jumpPadPersistence() throws Exception {
@@ -109,17 +142,29 @@ public final class FinalsMapsCheck {
         draft.write(yaml);
         YamlConfiguration loaded = new YamlConfiguration();
         loaded.loadFromString(yaml.saveToString());
-        require(Saved.from(Draft.read(loaded), "pads.slime").equals(saved), "Both pad types and targets round-trip with saved maps");
-        Draft copy = draft.copy(); copy.jumpPads.clear();
-        require(draft.jumpPads.size() == 2 && saved.jumpPads().size() == 2, "Draft pad edits cannot alter saved pads");
-        draft.jumpPads.removeLast(); draft.write(yaml);
-        require(Draft.read(yaml).jumpPads.size() == 1, "Removed pad entries do not survive YAML rewrite");
+        require(
+                Saved.from(Draft.read(loaded), "pads.slime").equals(saved),
+                "Both pad types and targets round-trip with saved maps");
+        Draft copy = draft.copy();
+        copy.jumpPads.clear();
+        require(
+                draft.jumpPads.size() == 2 && saved.jumpPads().size() == 2,
+                "Draft pad edits cannot alter saved pads");
+        draft.jumpPads.removeLast();
+        draft.write(yaml);
+        require(
+                Draft.read(yaml).jumpPads.size() == 1,
+                "Removed pad entries do not survive YAML rewrite");
         draft.jumpPads.add(draft.jumpPads.getFirst());
         fails(() -> Saved.from(draft, "pads.slime"), "Duplicate pads cannot be saved");
         draft.jumpPads.clear();
         draft.jumpPads.add(new JumpPad(origin, true, new Point(100, 65, 100, 0, 0)));
-        fails(() -> Saved.from(draft, "pads.slime"), "Targets outside the playable selection cannot be saved");
-        require(Saved.from(draft(), "old.slime").jumpPads().isEmpty(), "Existing maps remain compatible without pads");
+        fails(
+                () -> Saved.from(draft, "pads.slime"),
+                "Targets outside the playable selection cannot be saved");
+        require(
+                Saved.from(draft(), "old.slime").jumpPads().isEmpty(),
+                "Existing maps remain compatible without pads");
     }
 
     private static void cashoutPersistence() throws Exception {
@@ -307,8 +352,7 @@ public final class FinalsMapsCheck {
                 "A single selected block has valid geometry");
         Bounds wide = new Bounds(Integer.MIN_VALUE, 0, 0, -2, 0, 0);
         require(
-                wide.volume() == 2_147_483_647L
-                        && wide.size().getBlockX() == Integer.MAX_VALUE,
+                wide.volume() == 2_147_483_647L && wide.size().getBlockX() == Integer.MAX_VALUE,
                 "Representable axes preserve their exact size without integer overflow");
         require(
                 new Bounds(0, 0, 0, Integer.MAX_VALUE - 1, Integer.MAX_VALUE - 1, 0).volume()
@@ -397,17 +441,25 @@ public final class FinalsMapsCheck {
         } catch (IllegalArgumentException failure) {
             String message = I18n.plain(I18n.message(failure), Locale.ENGLISH);
             for (String coordinate : List.of("-18", "80", "64", "17"))
-                require(message.contains(coordinate), "Every invalid point appears in the error: " + coordinate);
+                require(
+                        message.contains(coordinate),
+                        "Every invalid point appears in the error: " + coordinate);
             for (String label : List.of("red_spawn:2", "blue_spawn:1", "vault:2", "cashout:3")) {
                 String[] parts = label.split(":");
                 require(
-                        message.contains(I18n.plain(I18n.tr("finals.map.point." + parts[0], parts[1]), Locale.ENGLISH)),
+                        message.contains(
+                                I18n.plain(
+                                        I18n.tr("finals.map.point." + parts[0], parts[1]),
+                                        Locale.ENGLISH)),
                         "Invalid point labels retain their original 1-based indices: " + label);
             }
             require(message.lines().count() >= 5, "Invalid points are listed on separate lines");
             String russian = I18n.plain(I18n.message(failure), Locale.forLanguageTag("ru"));
             require(
-                    russian.contains(I18n.plain(I18n.tr("finals.map.point.red_spawn", 2), Locale.forLanguageTag("ru")))
+                    russian.contains(
+                                    I18n.plain(
+                                            I18n.tr("finals.map.point.red_spawn", 2),
+                                            Locale.forLanguageTag("ru")))
                             && !russian.contains("potatominigames."),
                     "Nested point labels remain localized for the recipient");
         }
@@ -423,7 +475,8 @@ public final class FinalsMapsCheck {
                         && draft.second.equals(new Point(-16.25, 319, 16.75, -90, 20)),
                 "Full-height selection preserves each corner's X/Z and facing");
         require(
-                Bounds.between(draft.first, draft.second).equals(new Bounds(-17, -64, -17, 16, 319, 16)),
+                Bounds.between(draft.first, draft.second)
+                        .equals(new Bounds(-17, -64, -17, 16, 319, 16)),
                 "Same-height horizontal corners include every world layer in either X/Z order");
         YamlConfiguration written = new YamlConfiguration();
         draft.write(written);
@@ -431,12 +484,15 @@ public final class FinalsMapsCheck {
         loaded.loadFromString(written.saveToString());
         Draft restored = Draft.read(loaded);
         require(
-                restored.first.equals(draft.first) && restored.second.equals(draft.second)
+                restored.first.equals(draft.first)
+                        && restored.second.equals(draft.second)
                         && Saved.from(restored, "full-height.nbt").bounds().volume() == 443_904,
                 "Full-height corners and inclusive geometry survive YAML round trips");
         Draft partial = new Draft();
         partial.fullHeight(-64, 320);
-        require(partial.first == null && partial.second == null, "Height normalization cannot create missing corners");
+        require(
+                partial.first == null && partial.second == null,
+                "Height normalization cannot create missing corners");
         partial.second = new Point(2.5, 64, 3.5, 20, 10);
         partial.fullHeight(0, 256);
         require(
@@ -507,10 +563,12 @@ public final class FinalsMapsCheck {
         require(a.isCover(first.block(6, 66, 6)), "Interior cover is destructible");
         first.blocks.put(new Cell(0, 66, -12), Material.STONE);
         require(a.isCover(first.block(0, 66, -12)), "Cashout headroom can be destroyed");
-        require(first.block(0, 65, -12).getType() == Material.AIR,
+        require(
+                first.block(0, 65, -12).getType() == Material.AIR,
                 "Cashout selection does not write a physical gold marker");
         a.moveStation(0, new Location(first.world, .5, 67, -11.5));
-        require(a.stationAt(first.block(0, 67, -12)) == 0
+        require(
+                a.stationAt(first.block(0, 67, -12)) == 0
                         && a.stationAt(first.block(0, 65, -12)) == -1,
                 "Cashout interaction coordinates follow the simulated entity height");
         first.blocks.put(new Cell(6, 66, 6), Material.AIR);
@@ -544,14 +602,15 @@ public final class FinalsMapsCheck {
                             com.sun.nio.file.ExtendedOpenOption.NOSHARE_DELETE)) {
                 Thread releaser =
                         Thread.ofPlatform()
-                                .start(() -> {
-                                    try {
-                                        Thread.sleep(50);
-                                        lock.close();
-                                    } catch (Throwable error) {
-                                        releaseFailure.set(error);
-                                    }
-                                });
+                                .start(
+                                        () -> {
+                                            try {
+                                                Thread.sleep(50);
+                                                lock.close();
+                                            } catch (Throwable error) {
+                                                releaseFailure.set(error);
+                                            }
+                                        });
                 try {
                     FinalsMapFiles.replace(pending, registry);
                 } finally {

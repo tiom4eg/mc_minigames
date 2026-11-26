@@ -1,19 +1,23 @@
 package me.petr1furious.potatominigames.core.world;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.bukkit.GameRules;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /** Shared world setup: border snapshot/restore and standard game rules. */
 public final class ArenaService {
     private final Map<String, BorderSnapshot> borderSnapshots = new HashMap<>();
 
     /** Snapshots the border once per world until restored. */
-    public void applyBorder(World world, Location center, double initialSize, double finalSize,
+    public void applyBorder(
+            World world,
+            Location center,
+            double initialSize,
+            double finalSize,
             long secondsToFinal) {
         borderSnapshots.computeIfAbsent(world.getName(), name -> BorderSnapshot.of(world));
         WorldBorder border = world.getWorldBorder();

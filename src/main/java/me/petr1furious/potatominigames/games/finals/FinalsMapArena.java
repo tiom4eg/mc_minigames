@@ -34,11 +34,17 @@ public interface FinalsMapArena {
     Location vault();
 
     /** Optional per-map kill plane, measured at the player's feet. */
-    default Double deathHeight() { return null; }
+    default Double deathHeight() {
+        return null;
+    }
 
-    default long timeOfDay() { return 6000; }
+    default long timeOfDay() {
+        return 6000;
+    }
 
-    default List<FinalsMapJumpPads.Pad> jumpPads() { return List.of(); }
+    default List<FinalsMapJumpPads.Pad> jumpPads() {
+        return List.of();
+    }
 
     /** All configured candidates, including the currently active vault. */
     List<Location> vaultLocations();

@@ -1,5 +1,22 @@
 package me.petr1furious.potatominigames.i18n;
 
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.ComponentLike;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.translation.MiniMessageTranslator;
+import net.kyori.adventure.text.renderer.TranslatableComponentRenderer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.translation.GlobalTranslator;
+
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,38 +33,28 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-
-import net.kyori.adventure.key.Key;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.ComponentLike;
-import net.kyori.adventure.text.TranslatableComponent;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.translation.MiniMessageTranslator;
-import net.kyori.adventure.text.renderer.TranslatableComponentRenderer;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import net.kyori.adventure.translation.GlobalTranslator;
-
 /** One catalog format for chat, HUD, titles, menus, items and user-facing errors. */
 public final class I18n {
     private static final String PREFIX = "potatominigames.";
     private static final Pattern ARGUMENT = Pattern.compile("<(?:arg|argument):([0-9]+)>");
-    private static final List<Locale> SUPPORTED_LOCALES = List.of(Locale.ENGLISH, Locale.forLanguageTag("ru"));
+    private static final List<Locale> SUPPORTED_LOCALES =
+            List.of(Locale.ENGLISH, Locale.forLanguageTag("ru"));
     private static final Map<String, Map<String, String>> CATALOGS = loadCatalogs();
     private static final Map<String, Integer> ARGUMENT_COUNTS = argumentCounts();
     private static final Map<String, TranslatableComponent> LABELS = new ConcurrentHashMap<>();
-    private static final MiniMessageTranslator TRANSLATOR = new MiniMessageTranslator(MiniMessage.builder().strict(true).build()) {
-        @Override public Key name() { return Key.key("potatominigames", "i18n"); }
-        @Override protected String getMiniMessageString(String key, Locale locale) {
-            if (!key.startsWith(PREFIX)) return null;
-            return CATALOGS.get(language(locale)).get(key.substring(PREFIX.length()));
-        }
-    };
+    private static final MiniMessageTranslator TRANSLATOR =
+            new MiniMessageTranslator(MiniMessage.builder().strict(true).build()) {
+                @Override
+                public Key name() {
+                    return Key.key("potatominigames", "i18n");
+                }
+
+                @Override
+                protected String getMiniMessageString(String key, Locale locale) {
+                    if (!key.startsWith(PREFIX)) return null;
+                    return CATALOGS.get(language(locale)).get(key.substring(PREFIX.length()));
+                }
+            };
     private static final TranslatableComponentRenderer<Locale> RENDERER =
             TranslatableComponentRenderer.usingTranslationSource(TRANSLATOR);
 
@@ -67,20 +74,28 @@ public final class I18n {
         return locale != null && locale.getLanguage().equals("ru") ? "ru" : "en";
     }
 
-    public static boolean has(String key) { return CATALOGS.get("en").containsKey(key); }
+    public static boolean has(String key) {
+        return CATALOGS.get("en").containsKey(key);
+    }
 
     public static TranslatableComponent tr(String key) {
         requireArguments(key, 0);
         return LABELS.computeIfAbsent(key, name -> Component.translatable(PREFIX + name));
     }
 
-    /** Values become literal components, never parsed MiniMessage. Rich component arguments retain styling. */
+    /**
+     * Values become literal components, never parsed MiniMessage. Rich component arguments retain
+     * styling.
+     */
     public static TranslatableComponent tr(String key, Object... arguments) {
         requireArguments(key, arguments.length);
         if (arguments.length == 0) return tr(key);
         List<ComponentLike> values = new ArrayList<>(arguments.length);
         for (Object argument : arguments) {
-            values.add(argument instanceof ComponentLike component ? component : Component.text(String.valueOf(argument)));
+            values.add(
+                    argument instanceof ComponentLike component
+                            ? component
+                            : Component.text(String.valueOf(argument)));
         }
         return Component.translatable(PREFIX + key, values);
     }
@@ -98,7 +113,9 @@ public final class I18n {
     }
 
     /** Render metadata on an item freshly created for this viewer, not on a shared template. */
-    public static ItemStack item(ItemStack item, Player viewer) { return item(item, viewer.locale()); }
+    public static ItemStack item(ItemStack item, Player viewer) {
+        return item(item, viewer.locale());
+    }
 
     public static ItemStack item(ItemStack item, Locale locale) {
         if (!item.hasItemMeta()) return item;
@@ -107,13 +124,19 @@ public final class I18n {
         Component name = meta.displayName();
         if (name != null) {
             Component rendered = render(name, locale);
-            if (!rendered.equals(name)) { meta.displayName(rendered); changed = true; }
+            if (!rendered.equals(name)) {
+                meta.displayName(rendered);
+                changed = true;
+            }
         }
         List<Component> lore = meta.lore();
         if (lore != null) {
             List<Component> rendered = new ArrayList<>(lore.size());
             for (Component line : lore) rendered.add(render(line, locale));
-            if (!rendered.equals(lore)) { meta.lore(rendered); changed = true; }
+            if (!rendered.equals(lore)) {
+                meta.lore(rendered);
+                changed = true;
+            }
         }
         if (changed) item.setItemMeta(meta);
         return item;
@@ -124,19 +147,26 @@ public final class I18n {
     }
 
     public static Component message(Throwable error) {
-        return error instanceof LocalizedException localized ? localized.component
-                : Component.text(error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage());
+        return error instanceof LocalizedException localized
+                ? localized.component
+                : Component.text(
+                        error.getMessage() == null
+                                ? error.getClass().getSimpleName()
+                                : error.getMessage());
     }
 
     private static final class LocalizedException extends IllegalArgumentException {
         private final Component component;
+
         LocalizedException(Component component) {
             super(plain(component, Locale.ENGLISH));
             this.component = component;
         }
     }
 
-    public static Set<String> keys() { return CATALOGS.get("en").keySet(); }
+    public static Set<String> keys() {
+        return CATALOGS.get("en").keySet();
+    }
 
     public static int arguments(String key) {
         Integer count = ARGUMENT_COUNTS.get(key);
@@ -146,7 +176,9 @@ public final class I18n {
 
     private static void requireArguments(String key, int count) {
         int expected = arguments(key);
-        if (expected != count) throw new IllegalArgumentException("Translation " + key + " expects " + expected + " arguments, got " + count);
+        if (expected != count)
+            throw new IllegalArgumentException(
+                    "Translation " + key + " expects " + expected + " arguments, got " + count);
     }
 
     private static Set<Integer> indexes(String value) {
@@ -161,7 +193,8 @@ public final class I18n {
         for (var entry : CATALOGS.get("en").entrySet()) {
             Set<Integer> indexes = indexes(entry.getValue());
             int count = indexes.stream().mapToInt(Integer::intValue).max().orElse(-1) + 1;
-            if (indexes.size() != count) throw new IllegalStateException("Non-contiguous arguments in " + entry.getKey());
+            if (indexes.size() != count)
+                throw new IllegalStateException("Non-contiguous arguments in " + entry.getKey());
             counts.put(entry.getKey(), count);
         }
         return Map.copyOf(counts);
@@ -181,7 +214,8 @@ public final class I18n {
                 try {
                     render(message, locale);
                 } catch (RuntimeException error) {
-                    throw new IllegalStateException("Invalid translation " + language(locale) + "/" + key, error);
+                    throw new IllegalStateException(
+                            "Invalid translation " + language(locale) + "/" + key, error);
                 }
             }
         }
@@ -197,7 +231,11 @@ public final class I18n {
         try {
             List<String> domains;
             try (var reader = resource("i18n/catalogs.txt")) {
-                domains = reader.lines().map(String::trim).filter(line -> !line.isEmpty() && !line.startsWith("#")).toList();
+                domains =
+                        reader.lines()
+                                .map(String::trim)
+                                .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                                .toList();
             }
             Map<String, Map<String, String>> languages = new HashMap<>();
             for (String language : List.of("en", "ru")) {
@@ -208,14 +246,20 @@ public final class I18n {
                     // replaces "miners.open" with a section when "miners.open.subtitle" loads.
                     // Catalog IDs never contain NUL, so none of their dots becomes a path.
                     yaml.options().pathSeparator('\0');
-                    try (var reader = resource("i18n/" + language + "/" + domain.replace('.', '/') + ".yml")) {
+                    try (var reader =
+                            resource(
+                                    "i18n/" + language + "/" + domain.replace('.', '/') + ".yml")) {
                         yaml.load(reader);
                     }
                     for (var entry : yaml.getValues(true).entrySet()) {
                         if (entry.getValue() instanceof ConfigurationSection) continue;
                         String key = domain + "." + entry.getKey();
                         if (!(entry.getValue() instanceof String text) || text.isEmpty())
-                            throw new IOException("Translation must be a nonempty string: " + language + "/" + key);
+                            throw new IOException(
+                                    "Translation must be a nonempty string: "
+                                            + language
+                                            + "/"
+                                            + key);
                         if (messages.putIfAbsent(key, text) != null)
                             throw new IOException("Duplicate translation key: " + key);
                     }

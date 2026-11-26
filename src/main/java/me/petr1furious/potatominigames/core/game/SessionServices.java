@@ -1,7 +1,5 @@
 package me.petr1furious.potatominigames.core.game;
 
-import org.bukkit.plugin.java.JavaPlugin;
-
 import me.petr1furious.potatominigames.core.hud.BossBarService;
 import me.petr1furious.potatominigames.core.hud.SidebarService;
 import me.petr1furious.potatominigames.core.player.ParticipantRegistry;
@@ -14,7 +12,11 @@ import me.petr1furious.potatominigames.core.world.ArenaService;
 import me.petr1furious.potatominigames.core.world.SessionWorlds;
 import me.petr1furious.potatominigames.core.world.SpawnFinder;
 
-/** Per-session services, except the plugin, player state, spawn finder and points, which are shared. */
+import org.bukkit.plugin.java.JavaPlugin;
+
+/**
+ * Per-session services, except the plugin, player state, spawn finder and points, which are shared.
+ */
 public record SessionServices(
         JavaPlugin plugin,
         ActiveSession session,
@@ -29,7 +31,10 @@ public record SessionServices(
         Messages messages,
         PointsService points) {
 
-    /** From the start command or queue, e.g. {@code arena} for pillars, {@code difficulty} for bingo. */
+    /**
+     * From the start command or queue, e.g. {@code arena} for pillars, {@code difficulty} for
+     * bingo.
+     */
     public java.util.Map<String, String> options() {
         return session.options();
     }

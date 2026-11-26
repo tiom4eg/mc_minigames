@@ -181,8 +181,12 @@ final class DuelSession implements PartyRoundSession {
         this(services, config, sumo, context, false);
     }
 
-    private DuelSession(SessionServices services, PartyConfig config, boolean sumo,
-            PartyRoundContext context, boolean freeForAll) {
+    private DuelSession(
+            SessionServices services,
+            PartyConfig config,
+            boolean sumo,
+            PartyRoundContext context,
+            boolean freeForAll) {
         this(services, config, sumo, context, freeForAll, false);
     }
 
@@ -220,7 +224,8 @@ final class DuelSession implements PartyRoundSession {
         try {
             start();
         } catch (CommandFailure | RuntimeException failure) {
-            if (chooseKits) for (Player p : services.participants().onlinePlayers()) kitMenu.close(p);
+            if (chooseKits)
+                for (Player p : services.participants().onlinePlayers()) kitMenu.close(p);
             countdownFreeze.releaseAll();
             mounts.clear();
             harpoon.clear();
@@ -239,7 +244,8 @@ final class DuelSession implements PartyRoundSession {
             roster.add(participant.id());
             names.put(participant.id(), participant.name());
         }
-        if (roster.isEmpty()) throw new CommandFailure(I18n.tr("party.duels.tournament.participants_required"));
+        if (roster.isEmpty())
+            throw new CommandFailure(I18n.tr("party.duels.tournament.participants_required"));
         try {
             selectedKits = PvpDuelKits.fromOptions(services.options());
         } catch (IllegalArgumentException failure) {
@@ -247,15 +253,21 @@ final class DuelSession implements PartyRoundSession {
         }
         if (selectedKits != null && (ffa || sumo || !selectedKits.matches(roster)))
             throw new CommandFailure(I18n.tr("party.duels.duel.invalid_mode"));
-        if (freeForAll && roster.size() > 16) throw new CommandFailure(I18n.tr("party.duels.ffa.player_limit", 16));
+        if (freeForAll && roster.size() > 16)
+            throw new CommandFailure(I18n.tr("party.duels.ffa.player_limit", 16));
         training = roster.size() == 1;
         Collections.shuffle(roster, random);
         if (ffa) standings = new SurvivalStandings(roster);
         else if (!training) tournament = new DuelTournament(roster);
         // Read once so config reload cannot change the rules halfway through a duel.
-        roundLength = freeForAll
-                ? (sumo ? config.sumoFfaOvertimeSeconds : config.pvpFfaOvertimeSeconds).get()
-                : Math.clamp((sumo ? config.sumoRoundSeconds : config.roundSeconds).get(), 20, 300);
+        roundLength =
+                freeForAll
+                        ? (sumo ? config.sumoFfaOvertimeSeconds : config.pvpFfaOvertimeSeconds)
+                                .get()
+                        : Math.clamp(
+                                (sumo ? config.sumoRoundSeconds : config.roundSeconds).get(),
+                                20,
+                                300);
         countdown =
                 Math.clamp(
                         context.embedded()
@@ -283,18 +295,26 @@ final class DuelSession implements PartyRoundSession {
         arena = sumo ? new SumoArena(world) : new PvpArena(world, random);
         arena.build();
         if (arena instanceof PvpArena pvp)
-            services.messages().broadcast(text("arena.selected", NamedTextColor.GRAY, pvp.layout().title()));
+            services.messages()
+                    .broadcast(text("arena.selected", NamedTextColor.GRAY, pvp.layout().title()));
         if (!sumo) shadowArmor.start(services.plugin());
         bar =
                 services.bossBars()
                         .create(
-                                text(ffa ? "tournament.ffa_bar" : "tournament.bo3_bar",
-                                        NamedTextColor.GOLD, title),
+                                text(
+                                        ffa ? "tournament.ffa_bar" : "tournament.bo3_bar",
+                                        NamedTextColor.GOLD,
+                                        title),
                                 BossBar.Color.YELLOW,
                                 BossBar.Overlay.PROGRESS);
         services.messages()
                 .broadcast(
-                        text(freeForAll ? "ffa.rules" : ffa ? "tournament.ffa_rules" : "tournament.bo3_rules", NamedTextColor.GOLD, title));
+                        text(
+                                freeForAll
+                                        ? "ffa.rules"
+                                        : ffa ? "tournament.ffa_rules" : "tournament.bo3_rules",
+                                NamedTextColor.GOLD,
+                                title));
         if (chooseKits)
             services.messages()
                     .broadcast(
@@ -311,9 +331,7 @@ final class DuelSession implements PartyRoundSession {
                                     NamedTextColor.GRAY));
         if (ffa) prepareRound();
         else if (training) {
-            services.messages()
-                    .broadcast(
-                            text("tournament.training_rules", NamedTextColor.YELLOW));
+            services.messages().broadcast(text("tournament.training_rules", NamedTextColor.YELLOW));
             prepareRound();
         } else nextMatch();
     }
@@ -416,8 +434,7 @@ final class DuelSession implements PartyRoundSession {
                 Collections.shuffle(shuffled, random);
                 playoffs.addAll(shuffled);
                 services.messages()
-                        .broadcast(
-                                text("tournament.tie_announcement", NamedTextColor.GOLD));
+                        .broadcast(text("tournament.tie_announcement", NamedTextColor.GOLD));
                 nextMatch();
                 return;
             }
@@ -426,10 +443,21 @@ final class DuelSession implements PartyRoundSession {
             return;
         }
         if (!sumo) {
-            opening = selectedKits == null ? PvpClass.opening(random) : selectedKits.opening(match.pair(), random);
+            opening =
+                    selectedKits == null
+                            ? PvpClass.opening(random)
+                            : selectedKits.opening(match.pair(), random);
             decider = PvpClass.random(random);
             if (selectedKits != null)
-                services.messages().broadcast(text("duel.opening", NamedTextColor.GREEN, name(match.pair().first()), opening.getFirst().title, name(match.pair().second()), opening.getLast().title));
+                services.messages()
+                        .broadcast(
+                                text(
+                                        "duel.opening",
+                                        NamedTextColor.GREEN,
+                                        name(match.pair().first()),
+                                        opening.getFirst().title,
+                                        name(match.pair().second()),
+                                        opening.getLast().title));
         }
         // Forfeits are processed on the next tick, avoiding recursive traversal of the schedule.
         phase = Phase.BREAK;
@@ -437,12 +465,20 @@ final class DuelSession implements PartyRoundSession {
         if (player(match.pair().first()) != null && player(match.pair().second()) != null) {
             services.messages()
                     .broadcast(
-                            text(playoff ? "tournament.playoff_match" : "tournament.match",
+                            text(
+                                    playoff ? "tournament.playoff_match" : "tournament.match",
                                     NamedTextColor.AQUA,
                                     playoff
-                                            ? new Object[] {name(match.pair().first()), name(match.pair().second())}
-                                            : new Object[] {scheduleIndex, tournament.schedule().size(),
-                                                    name(match.pair().first()), name(match.pair().second())}));
+                                            ? new Object[] {
+                                                name(match.pair().first()),
+                                                name(match.pair().second())
+                                            }
+                                            : new Object[] {
+                                                scheduleIndex,
+                                                tournament.schedule().size(),
+                                                name(match.pair().first()),
+                                                name(match.pair().second())
+                                            }));
             prepareRound();
         }
     }
@@ -507,11 +543,7 @@ final class DuelSession implements PartyRoundSession {
             else if (sumo) SumoCombat.equip(p);
             boolean east = !ffa && !training && match.pair().second().equals(id);
             if (!ffa && !training && match.roundsWon() % 2 == 1) east = !east;
-            teleport(
-                    p,
-                    ffa
-                            ? arena.spawn(spawnIndex++, spawnOrder.size())
-                            : arena.spawn(east));
+            teleport(p, ffa ? arena.spawn(spawnIndex++, spawnOrder.size()) : arena.spawn(east));
             if (kit != null) explainKit(p, kit);
             else if (sumo) p.sendMessage(text("sumo.kit_help", NamedTextColor.GREEN));
         }
@@ -614,7 +646,12 @@ final class DuelSession implements PartyRoundSession {
                     if (kits.get(id) == PvpClass.LANCER) mounts.spawn(p);
                     if (kits.get(id) == PvpClass.SHADOW) shadowArmor.watch(p);
                     if (kits.get(id) == PvpClass.DEMOLITIONIST)
-                        airstrike.watch(p, services.plugin(), abilityKey, this::fighting, arena::contains,
+                        airstrike.watch(
+                                p,
+                                services.plugin(),
+                                abilityKey,
+                                this::fighting,
+                                arena::contains,
                                 () -> Math.max(0, readyAt.getOrDefault(id, 0L) - now));
                     if (kits.get(id) == PvpClass.THUNDERER)
                         thunder.watch(
@@ -647,10 +684,19 @@ final class DuelSession implements PartyRoundSession {
                 suddenDeath = true;
                 if (!sumo)
                     services.arena()
-                            .applyBorder(world, arena.center(), PvpArena.BORDER_SIZE, freeForAll ? 1 : 7, 30);
+                            .applyBorder(
+                                    world,
+                                    arena.center(),
+                                    PvpArena.BORDER_SIZE,
+                                    freeForAll ? 1 : 7,
+                                    30);
                 services.messages()
                         .broadcast(
-                                text(sumo ? "sumo.overtime" : freeForAll ? "ffa.overtime" : "pvp.overtime", NamedTextColor.RED));
+                                text(
+                                        sumo
+                                                ? "sumo.overtime"
+                                                : freeForAll ? "ffa.overtime" : "pvp.overtime",
+                                        NamedTextColor.RED));
             }
             if (!freeForAll && elapsed >= roundLength + 30) {
                 if (ffa) {
@@ -703,13 +749,18 @@ final class DuelSession implements PartyRoundSession {
         if (winner == null)
             services.messages()
                     .broadcast(
-                            text(sumo ? "sumo.round_draw" : "pvp.round_draw", NamedTextColor.YELLOW));
+                            text(
+                                    sumo ? "sumo.round_draw" : "pvp.round_draw",
+                                    NamedTextColor.YELLOW));
         else {
             match.winRound(winner);
             services.messages()
                     .broadcast(
-                            text("tournament.round_won", NamedTextColor.GREEN,
-                                    name(winner), match.wins(match.pair().first()),
+                            text(
+                                    "tournament.round_won",
+                                    NamedTextColor.GREEN,
+                                    name(winner),
+                                    match.wins(match.pair().first()),
                                     match.wins(match.pair().second())));
             if (match.winner() != null) completeMatch(match.winner());
         }
@@ -735,10 +786,16 @@ final class DuelSession implements PartyRoundSession {
         if (winner != null) {
             services.messages()
                     .broadcast(
-                            text(forfeit
-                                            ? playoff ? "tournament.playoff_forfeit" : "tournament.match_forfeit"
-                                            : playoff ? "tournament.playoff_won" : "tournament.match_won",
-                                    NamedTextColor.GOLD, name(winner)));
+                            text(
+                                    forfeit
+                                            ? playoff
+                                                    ? "tournament.playoff_forfeit"
+                                                    : "tournament.match_forfeit"
+                                            : playoff
+                                                    ? "tournament.playoff_won"
+                                                    : "tournament.match_won",
+                                    NamedTextColor.GOLD,
+                                    name(winner)));
         }
         phase = Phase.BREAK;
         deadline = now + intermission;
@@ -762,9 +819,14 @@ final class DuelSession implements PartyRoundSession {
         for (int i = 0; i < ordered.size(); i++) {
             UUID id = ordered.get(i);
             lines.add(
-                    text(withdrawn.contains(id) ? "tournament.standing_withdrawn" : "tournament.standing",
+                    text(
+                            withdrawn.contains(id)
+                                    ? "tournament.standing_withdrawn"
+                                    : "tournament.standing",
                             i == 0 ? NamedTextColor.GOLD : NamedTextColor.GRAY,
-                            i + 1, name(id), tournament.points(id)));
+                            i + 1,
+                            name(id),
+                            tournament.points(id)));
         }
         result = List.copyOf(lines);
         services.session().endGame(EndReason.FINISHED);
@@ -789,7 +851,8 @@ final class DuelSession implements PartyRoundSession {
         deathPause.clear();
         lastHit.clear();
         if (resolution != null) resolution.cancel();
-        if (freeForAll && reason == EndReason.FINISHED && champion != null) services.award("party", champion, 3);
+        if (freeForAll && reason == EndReason.FINISHED && champion != null)
+            services.award("party", champion, 3);
         if (!ffa && reason == EndReason.FINISHED && tournament != null) {
             for (UUID id : names.keySet()) services.award("party", id, tournament.points(id));
         }
@@ -805,14 +868,23 @@ final class DuelSession implements PartyRoundSession {
     public Component globalResult() {
         return champion == null
                 ? null
-                : text(freeForAll ? "ffa.global_winner" : "tournament.winner", NamedTextColor.GOLD, name(champion), title);
+                : text(
+                        freeForAll ? "ffa.global_winner" : "tournament.winner",
+                        NamedTextColor.GOLD,
+                        name(champion),
+                        title);
     }
 
     private void updateHud() {
         if (bar == null || phase == Phase.DONE) return;
         long remaining =
                 phase == Phase.RESULT
-                        ? ((ffa ? Math.max(0, ffaResultUntil - Bukkit.getCurrentTick()) : deathPause.remaining(Bukkit.getCurrentTick())) + 19) / 20
+                        ? ((ffa
+                                                ? Math.max(
+                                                        0, ffaResultUntil - Bukkit.getCurrentTick())
+                                                : deathPause.remaining(Bukkit.getCurrentTick()))
+                                        + 19)
+                                / 20
                         : phase == Phase.FIGHT
                                 ? Math.max(
                                         0,
@@ -868,18 +940,31 @@ final class DuelSession implements PartyRoundSession {
                                 1));
         List<Component> lines = new ArrayList<>();
         if (ffa) {
-            lines.add(text("hud.remaining", NamedTextColor.AQUA, standings.survivors().size(), names.size()));
+            lines.add(
+                    text(
+                            "hud.remaining",
+                            NamedTextColor.AQUA,
+                            standings.survivors().size(),
+                            names.size()));
             lines.add(text("hud.ffa_rules", NamedTextColor.WHITE));
-            for (UUID id : standings.survivors().stream().limit(8).toList()) lines.add(name(id).color(NamedTextColor.GRAY));
-        }
-        else if (!training && match != null) {
+            for (UUID id : standings.survivors().stream().limit(8).toList())
+                lines.add(name(id).color(NamedTextColor.GRAY));
+        } else if (!training && match != null) {
             lines.add(
                     playoff
                             ? text("hud.playoff", NamedTextColor.AQUA)
-                            : text("hud.match", NamedTextColor.AQUA, scheduleIndex, tournament.schedule().size()));
+                            : text(
+                                    "hud.match",
+                                    NamedTextColor.AQUA,
+                                    scheduleIndex,
+                                    tournament.schedule().size()));
             lines.add(
-                    text("hud.score", NamedTextColor.WHITE, name(match.pair().first()),
-                            match.wins(match.pair().first()), match.wins(match.pair().second()),
+                    text(
+                            "hud.score",
+                            NamedTextColor.WHITE,
+                            name(match.pair().first()),
+                            match.wins(match.pair().first()),
+                            match.wins(match.pair().second()),
                             name(match.pair().second())));
             for (UUID id : tournament.standings().stream().limit(8).toList()) {
                 lines.add(text("hud.points", NamedTextColor.GRAY, name(id), tournament.points(id)));
@@ -895,13 +980,18 @@ final class DuelSession implements PartyRoundSession {
                                 ? combat.shadowRemaining(p.getUniqueId(), now)
                                 : Math.max(0, readyAt.getOrDefault(p.getUniqueId(), 0L) - now);
                 own.add(
-                        text(kit == PvpClass.SHADOW
+                        text(
+                                kit == PvpClass.SHADOW
                                         ? cooldown == 0 ? "hud.wand_ready" : "hud.wand_cooldown"
-                                        : cooldown == 0 ? "hud.ability_ready" : "hud.ability_cooldown",
-                                NamedTextColor.GOLD, cooldown == 0 ? new Object[0] : new Object[] {cooldown}));
+                                        : cooldown == 0
+                                                ? "hud.ability_ready"
+                                                : "hud.ability_cooldown",
+                                NamedTextColor.GOLD,
+                                cooldown == 0 ? new Object[0] : new Object[] {cooldown}));
             }
             if (sumo) own.add(text("sumo.objective", NamedTextColor.GREEN));
-            services.sidebar().update(p, text("hud.title", NamedTextColor.LIGHT_PURPLE, title), own);
+            services.sidebar()
+                    .update(p, text("hud.title", NamedTextColor.LIGHT_PURPLE, title), own);
             p.showBossBar(bar);
         }
     }
@@ -953,13 +1043,13 @@ final class DuelSession implements PartyRoundSession {
         if (phase == Phase.DONE || !names.containsKey(p.getUniqueId())) return;
         withdrawn.add(p.getUniqueId());
         if (ffa) {
-            services.messages().broadcast(text("ffa.withdrawn", NamedTextColor.YELLOW, p.getName()));
+            services.messages()
+                    .broadcast(text("ffa.withdrawn", NamedTextColor.YELLOW, p.getName()));
             scheduleFfaResolution();
             return;
         }
         services.messages()
-                .broadcast(
-                        text("tournament.withdrawn", NamedTextColor.YELLOW, p.getName()));
+                .broadcast(text("tournament.withdrawn", NamedTextColor.YELLOW, p.getName()));
     }
 
     @Override
@@ -1007,7 +1097,10 @@ final class DuelSession implements PartyRoundSession {
                             && resolution != null
                             && fighter(attacker)
                             && eliminated.contains(attacker.getUniqueId())
-                            && (!ffa || standings.survived(attacker.getUniqueId(), Bukkit.getCurrentTick()) == Bukkit.getCurrentTick());
+                            && (!ffa
+                                    || standings.survived(
+                                                    attacker.getUniqueId(), Bukkit.getCurrentTick())
+                                            == Bukkit.getCurrentTick());
             return attacker != null && (fighting(attacker) || trade);
         }
         return true;
@@ -1037,7 +1130,10 @@ final class DuelSession implements PartyRoundSession {
     public void onEntityDamage(EntityDamageEvent event) {
         if (event instanceof EntityDamageByEntityEvent hit && bombBlast(hit)) {
             Entity direct = event.getDamageSource().getDirectEntity();
-            event.setDamage(bombs.blastDamage(bombs.owner(direct) != null ? direct : hit.getDamager(), event.getDamage()));
+            event.setDamage(
+                    bombs.blastDamage(
+                            bombs.owner(direct) != null ? direct : hit.getDamager(),
+                            event.getDamage()));
         }
         Player owner = mounts.owner(event.getEntity());
         if (owner != null) {
@@ -1057,8 +1153,7 @@ final class DuelSession implements PartyRoundSession {
             if (event.getFinalDamage() >= ((LivingEntity) event.getEntity()).getHealth()) {
                 event.setCancelled(true);
                 mounts.remove(owner.getUniqueId());
-                owner.sendMessage(
-                        text("pvp.horse_lost", NamedTextColor.YELLOW));
+                owner.sendMessage(text("pvp.horse_lost", NamedTextColor.YELLOW));
             }
             return;
         }
@@ -1086,7 +1181,9 @@ final class DuelSession implements PartyRoundSession {
                                 .getItemInMainHand()
                                 .getEnchantmentLevel(Enchantment.KNOCKBACK);
                 if (sumoCombat.hit(p, away, attacker.isSprinting(), level, Bukkit.getCurrentTick()))
-                    lastHit.put(p.getUniqueId(), new Hit(attacker.getUniqueId(), Bukkit.getCurrentTick()));
+                    lastHit.put(
+                            p.getUniqueId(),
+                            new Hit(attacker.getUniqueId(), Bukkit.getCurrentTick()));
             }
             return;
         }
@@ -1114,14 +1211,14 @@ final class DuelSession implements PartyRoundSession {
                     p.addPotionEffect(
                             new PotionEffect(
                                     PotionEffectType.SLOWNESS, PvpCombat.SHADOW_SLOWNESS_TICKS, 1));
-                    p.sendActionBar(
-                            text("pvp.shadow_hit", NamedTextColor.DARK_PURPLE));
-                    attacker.sendActionBar(
-                            text("pvp.shadow_used", NamedTextColor.GOLD));
+                    p.sendActionBar(text("pvp.shadow_hit", NamedTextColor.DARK_PURPLE));
+                    attacker.sendActionBar(text("pvp.shadow_used", NamedTextColor.GOLD));
                     p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, .5f, .7f);
                 } else if (landed)
                     attacker.sendActionBar(
-                            text("pvp.shadow_cooldown", NamedTextColor.RED,
+                            text(
+                                    "pvp.shadow_cooldown",
+                                    NamedTextColor.RED,
                                     combat.shadowRemaining(attacker.getUniqueId(), now)));
                 return;
             }
@@ -1204,17 +1301,21 @@ final class DuelSession implements PartyRoundSession {
     private void announceDeath(Player victim, UUID killer, boolean ringOut) {
         services.messages()
                 .broadcast(
-                        text(killer == null
+                        text(
+                                killer == null
                                         ? ringOut ? "death.fell" : "death.died"
                                         : ringOut ? "death.pushed" : "death.killed",
                                 NamedTextColor.RED,
-                                killer == null ? new Object[] {name(victim.getUniqueId())}
+                                killer == null
+                                        ? new Object[] {name(victim.getUniqueId())}
                                         : new Object[] {name(killer), name(victim.getUniqueId())}));
         Player winner = killer == null ? null : player(killer);
         if (winner != null && !winner.isDead())
             winner.showTitle(
                     Title.title(
-                            text(ringOut ? "death.you_pushed" : "death.you_killed", NamedTextColor.GOLD),
+                            text(
+                                    ringOut ? "death.you_pushed" : "death.you_killed",
+                                    NamedTextColor.GOLD),
                             text(name(victim.getUniqueId()), NamedTextColor.WHITE),
                             Title.Times.times(
                                     Duration.ZERO, Duration.ofSeconds(3), Duration.ofMillis(300))));
@@ -1247,7 +1348,12 @@ final class DuelSession implements PartyRoundSession {
         bombs.eliminate(p.getUniqueId());
         if (!p.isDead() && sumo) p.setGameMode(GameMode.SPECTATOR);
         if (ffa) {
-            services.messages().broadcast(text("ffa.remaining", NamedTextColor.YELLOW, standings.survivors().size()));
+            services.messages()
+                    .broadcast(
+                            text(
+                                    "ffa.remaining",
+                                    NamedTextColor.YELLOW,
+                                    standings.survivors().size()));
             if (sumo) {
                 spectator(p);
                 scheduleFfaResolution();
@@ -1268,7 +1374,9 @@ final class DuelSession implements PartyRoundSession {
                                                 && services.session().isRunning()
                                                 && p.isOnline()
                                                 && context.eligible().contains(id)
-                                                && (p.isDead() || p.getGameMode() != GameMode.SPECTATOR)) spectator(p);
+                                                && (p.isDead()
+                                                        || p.getGameMode() != GameMode.SPECTATOR))
+                                            spectator(p);
                                     },
                                     DeathPause.TICKS));
             scheduleFfaResolution();
@@ -1385,10 +1493,19 @@ final class DuelSession implements PartyRoundSession {
             List<UUID> alive = standings.survivors();
             champion = alive.size() == 1 ? alive.getFirst() : null;
             List<Component> lines = new ArrayList<>();
-            lines.add(text(champion == null ? "ffa.draw" : "ffa.winner", NamedTextColor.GOLD, champion == null ? new Object[0] : new Object[] {name(champion)}));
+            lines.add(
+                    text(
+                            champion == null ? "ffa.draw" : "ffa.winner",
+                            NamedTextColor.GOLD,
+                            champion == null ? new Object[0] : new Object[] {name(champion)}));
             int place = 0;
             for (UUID id : standings.ranking(names.keySet(), Bukkit.getCurrentTick()))
-                lines.add(text(id.equals(champion) ? "ffa.standing_winner" : "ffa.standing_out", NamedTextColor.GRAY, ++place, name(id)));
+                lines.add(
+                        text(
+                                id.equals(champion) ? "ffa.standing_winner" : "ffa.standing_out",
+                                NamedTextColor.GRAY,
+                                ++place,
+                                name(id)));
             result = List.copyOf(lines);
             context.finish(EndReason.FINISHED, roundResult());
             return;
@@ -1397,10 +1514,15 @@ final class DuelSession implements PartyRoundSession {
         result =
                 ranking.places().stream()
                         .flatMap(List::stream)
-                        .map(id ->
-                                (Component)
-                                        text("tournament.ffa_standing", NamedTextColor.GOLD,
-                                                ranking.place(id), name(id), ranking.awards().get(id)))
+                        .map(
+                                id ->
+                                        (Component)
+                                                text(
+                                                        "tournament.ffa_standing",
+                                                        NamedTextColor.GOLD,
+                                                        ranking.place(id),
+                                                        name(id),
+                                                        ranking.awards().get(id)))
                         .toList();
         context.finish(EndReason.FINISHED, ranking);
     }
@@ -1419,8 +1541,11 @@ final class DuelSession implements PartyRoundSession {
         UUID killer = recentKiller(p);
         event.deathMessage(null);
         event.deathScreenMessageOverride(
-                I18n.render(killer == null ? text("death.you_died", NamedTextColor.RED)
-                        : text("death.killed_by", NamedTextColor.RED, name(killer)), p));
+                I18n.render(
+                        killer == null
+                                ? text("death.you_died", NamedTextColor.RED)
+                                : text("death.killed_by", NamedTextColor.RED, name(killer)),
+                        p));
         event.getDrops().clear();
         event.setDroppedExp(0);
         event.setKeepInventory(true);
@@ -1522,12 +1647,12 @@ final class DuelSession implements PartyRoundSession {
                         .map(this::player)
                         .filter(other -> other != null && fighting(other))
                         .toList();
-        Player opponent = PartyTargeting.nearestVisible(p, opponents, kit == PvpClass.PYROMANCER ? 8 : 6);
+        Player opponent =
+                PartyTargeting.nearestVisible(p, opponents, kit == PvpClass.PYROMANCER ? 8 : 6);
         if (kit == PvpClass.THUNDERER) {
             PvpThunder.Aim aim = PvpThunder.aim(p);
             if (aim == null || !arena.contains(aim.point())) {
-                p.sendActionBar(
-                        text("ability.thunder_aim", NamedTextColor.YELLOW));
+                p.sendActionBar(text("ability.thunder_aim", NamedTextColor.YELLOW));
                 return;
             }
             if (!thunder.start(
@@ -1539,13 +1664,14 @@ final class DuelSession implements PartyRoundSession {
                 p.sendActionBar(text("ability.airstrike_aim", NamedTextColor.YELLOW));
                 return;
             }
-            if (!airstrike.start(p, aim.point(), services.plugin(), this::fighting, arena::contains, bombs)) return;
+            if (!airstrike.start(
+                    p, aim.point(), services.plugin(), this::fighting, arena::contains, bombs))
+                return;
             int added = PvpBombs.replenish(p);
             p.sendActionBar(text("ability.airstrike_used", NamedTextColor.GOLD, added));
         } else if (kit == PvpClass.HARPOONER) {
             if (!harpoon.start(p, services.plugin(), this::fighting)) {
-                p.sendActionBar(
-                        text("ability.trident_required", NamedTextColor.YELLOW));
+                p.sendActionBar(text("ability.trident_required", NamedTextColor.YELLOW));
                 return;
             }
         } else if (!(kit == PvpClass.LANCER && mounts.boost(p, now)) && !kit.activate(p, opponent))
@@ -1581,8 +1707,7 @@ final class DuelSession implements PartyRoundSession {
     private void placeBomb(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         if (event.getClickedBlock() == null) {
-            player.sendActionBar(
-                    text("bomb.controls", NamedTextColor.YELLOW));
+            player.sendActionBar(text("bomb.controls", NamedTextColor.YELLOW));
             return;
         }
         var block = event.getClickedBlock().getRelative(event.getBlockFace());
@@ -1637,7 +1762,9 @@ final class DuelSession implements PartyRoundSession {
 
     @Override
     public void onPlayerTeleport(PlayerTeleportEvent event) {
-        if (internalTeleport || !fighter(event.getPlayer()) || eliminated.contains(event.getPlayer().getUniqueId())) return;
+        if (internalTeleport
+                || !fighter(event.getPlayer())
+                || eliminated.contains(event.getPlayer().getUniqueId())) return;
         if (sumo
                 || !fighting(event.getPlayer())
                 || event.getCause() != PlayerTeleportEvent.TeleportCause.ENDER_PEARL
@@ -1684,8 +1811,9 @@ final class DuelSession implements PartyRoundSession {
                 || !(target instanceof LivingEntity living)) return;
         if (combat.frost(caster.getUniqueId(), Bukkit.getCurrentTick())) {
             PvpCombat.applyFrost(living);
-            if (player.getVehicle() instanceof LivingEntity horse && mounts.owner(horse) == player && horse != living)
-                PvpCombat.applyFrost(horse);
+            if (player.getVehicle() instanceof LivingEntity horse
+                    && mounts.owner(horse) == player
+                    && horse != living) PvpCombat.applyFrost(horse);
             caster.playSound(caster.getLocation(), Sound.BLOCK_GLASS_BREAK, .4f, 1.5f);
         }
     }

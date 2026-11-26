@@ -43,24 +43,50 @@ final class PvpBombs {
     static final double IMPACT_RADIUS = .49; // Half of native TNT's 0.98-block collision box.
     static final double IMPACT_DAMAGE_MULTIPLIER = .5;
     private static final NamespacedKey KEY = new NamespacedKey("potatominigames", "pvp_bomb");
+
     static final class Cooldowns {
         private final int throwCooldown;
-        Cooldowns() { this(THROW_COOLDOWN); }
-        Cooldowns(int throwCooldown) { this.throwCooldown = throwCooldown; }
-        private final Map<UUID, Integer> handReady = new HashMap<>(), throwReady = new HashMap<>();
-        int remaining(UUID owner, int tick, boolean thrown) {
-            return Math.max(0, Math.max(handReady.getOrDefault(owner, 0), thrown ? throwReady.getOrDefault(owner, 0) : 0) - tick);
+
+        Cooldowns() {
+            this(THROW_COOLDOWN);
         }
+
+        Cooldowns(int throwCooldown) {
+            this.throwCooldown = throwCooldown;
+        }
+
+        private final Map<UUID, Integer> handReady = new HashMap<>(), throwReady = new HashMap<>();
+
+        int remaining(UUID owner, int tick, boolean thrown) {
+            return Math.max(
+                    0,
+                    Math.max(
+                                    handReady.getOrDefault(owner, 0),
+                                    thrown ? throwReady.getOrDefault(owner, 0) : 0)
+                            - tick);
+        }
+
         void used(UUID owner, int tick, boolean thrown) {
             handReady.put(owner, tick + PLACE_COOLDOWN);
             if (thrown) throwReady.put(owner, tick + throwCooldown);
         }
-        void forget(UUID owner) { handReady.remove(owner); throwReady.remove(owner); }
-        void clear() { handReady.clear(); throwReady.clear(); }
+
+        void forget(UUID owner) {
+            handReady.remove(owner);
+            throwReady.remove(owner);
+        }
+
+        void clear() {
+            handReady.clear();
+            throwReady.clear();
+        }
     }
 
     private record Bomb(
-            Player owner, TNTPrimed entity, boolean airstrike, Location previous,
+            Player owner,
+            TNTPrimed entity,
+            boolean airstrike,
+            Location previous,
             boolean detonatedOnImpact) {}
 
     private final Map<UUID, Bomb> bombs = new HashMap<>();
@@ -71,11 +97,12 @@ final class PvpBombs {
     private BukkitTask cleanup;
 
     PvpBombs() {
-        this((owner, entity) ->
-                entity instanceof Player target
-                        && !owner.getUniqueId().equals(target.getUniqueId())
-                        && target.getGameMode() == GameMode.SURVIVAL
-                        && !target.isDead());
+        this(
+                (owner, entity) ->
+                        entity instanceof Player target
+                                && !owner.getUniqueId().equals(target.getUniqueId())
+                                && target.getGameMode() == GameMode.SURVIVAL
+                                && !target.isDead());
     }
 
     PvpBombs(BiPredicate<Player, Entity> impactTarget) {
@@ -102,6 +129,7 @@ final class PvpBombs {
     static ItemStack item(int amount) {
         return item(amount, THROW_COOLDOWN, FUSE, true);
     }
+
     /** Miners loot retains its original fuse and has no Demolitionist contact perk. */
     static ItemStack item(int amount, int throwCooldown) {
         return item(amount, throwCooldown, MINERS_FUSE, false);
@@ -109,34 +137,51 @@ final class PvpBombs {
 
     private static ItemStack item(int amount, int throwCooldown, int fuse, boolean impact) {
         ItemStack item = new ItemStack(Material.TNT, amount);
-        item.editMeta(meta -> {
-            meta.displayName(I18n.tr("party.duels.bomb.title").color(NamedTextColor.GOLD));
-            List<Component> lore =
-                    new ArrayList<>(
-                            List.of(
-                                    I18n.tr("party.duels.bomb.place").color(NamedTextColor.GRAY),
-                                    I18n.tr("party.duels.bomb.throw", throwCooldown / 20)
-                                            .color(NamedTextColor.GRAY),
-                                    I18n.tr("party.duels.bomb.fuse", fuse / 20.0, MAX_ACTIVE)
-                                            .color(NamedTextColor.RED)));
-            if (impact) lore.add(I18n.tr("party.duels.bomb.impact").color(NamedTextColor.GOLD));
-            meta.lore(lore);
-            meta.getPersistentDataContainer().set(KEY, PersistentDataType.BYTE, (byte) 1);
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(I18n.tr("party.duels.bomb.title").color(NamedTextColor.GOLD));
+                    List<Component> lore =
+                            new ArrayList<>(
+                                    List.of(
+                                            I18n.tr("party.duels.bomb.place")
+                                                    .color(NamedTextColor.GRAY),
+                                            I18n.tr("party.duels.bomb.throw", throwCooldown / 20)
+                                                    .color(NamedTextColor.GRAY),
+                                            I18n.tr(
+                                                            "party.duels.bomb.fuse",
+                                                            fuse / 20.0,
+                                                            MAX_ACTIVE)
+                                                    .color(NamedTextColor.RED)));
+                    if (impact)
+                        lore.add(I18n.tr("party.duels.bomb.impact").color(NamedTextColor.GOLD));
+                    meta.lore(lore);
+                    meta.getPersistentDataContainer().set(KEY, PersistentDataType.BYTE, (byte) 1);
+                });
         return item;
     }
+
     static boolean isBomb(ItemStack item) {
-        return item != null && item.getType() == Material.TNT && item.hasItemMeta()
-                && item.getItemMeta().getPersistentDataContainer().has(KEY, PersistentDataType.BYTE);
+        return item != null
+                && item.getType() == Material.TNT
+                && item.hasItemMeta()
+                && item.getItemMeta()
+                        .getPersistentDataContainer()
+                        .has(KEY, PersistentDataType.BYTE);
     }
+
     static int replenish(Player player) {
         var inventory = player.getInventory();
         int owned = 0;
-        for (ItemStack stack : inventory.getContents()) if (isBomb(stack)) owned += stack.getAmount();
+        for (ItemStack stack : inventory.getContents())
+            if (isBomb(stack)) owned += stack.getAmount();
         int added = PvpPotion.refillAmount(owned, REFILL, STOCK);
         if (added == 0) return 0;
-        return added - inventory.addItem(I18n.item(item(added), player)).values().stream().mapToInt(ItemStack::getAmount).sum();
+        return added
+                - inventory.addItem(I18n.item(item(added), player)).values().stream()
+                        .mapToInt(ItemStack::getAmount)
+                        .sum();
     }
+
     /** Called only after placement/throw geometry has passed session validation. */
     boolean use(Player player, Location at, boolean thrown, Plugin plugin) {
         ItemStack held = player.getInventory().getItemInMainHand();
@@ -145,16 +190,23 @@ final class PvpBombs {
         int tick = Bukkit.getCurrentTick();
         int remaining = cooldowns.remaining(id, tick, thrown);
         if (remaining > 0) {
-            player.sendActionBar(I18n.tr(thrown ? "party.duels.bomb.throw_cooldown" : "party.duels.bomb.place_cooldown",
-                    String.format(java.util.Locale.ROOT, "%.1f", remaining / 20.0)).color(NamedTextColor.YELLOW));
+            player.sendActionBar(
+                    I18n.tr(
+                                    thrown
+                                            ? "party.duels.bomb.throw_cooldown"
+                                            : "party.duels.bomb.place_cooldown",
+                                    String.format(java.util.Locale.ROOT, "%.1f", remaining / 20.0))
+                            .color(NamedTextColor.YELLOW));
             return false;
         }
         prune();
         if (active(id) >= MAX_ACTIVE) {
-            player.sendActionBar(I18n.tr("party.duels.bomb.active_limit").color(NamedTextColor.YELLOW));
+            player.sendActionBar(
+                    I18n.tr("party.duels.bomb.active_limit").color(NamedTextColor.YELLOW));
             return false;
         }
-        Vector velocity = thrown ? throwVelocity(player.getEyeLocation().getDirection()) : new Vector();
+        Vector velocity =
+                thrown ? throwVelocity(player.getEyeLocation().getDirection()) : new Vector();
         TNTPrimed tnt =
                 at.getWorld()
                         .spawn(
@@ -164,7 +216,8 @@ final class PvpBombs {
                                     configure(charge, player, velocity);
                                     charge.setFuseTicks(fuse);
                                 });
-        if (!tnt.isValid()) return false; // A plugin may cancel the spawn; no ammo/cooldown is spent.
+        if (!tnt.isValid())
+            return false; // A plugin may cancel the spawn; no ammo/cooldown is spent.
         track(player, tnt, thrown);
         cooldowns.used(id, tick, thrown);
         int amount = held.getAmount() - 1;
@@ -174,6 +227,7 @@ final class PvpBombs {
         maintain(plugin);
         return true;
     }
+
     static void configure(TNTPrimed charge, Player owner, Vector velocity) {
         charge.setSource(owner);
         charge.setFuseTicks(FUSE);
@@ -209,24 +263,38 @@ final class PvpBombs {
         Bomb bomb = bombs.get(entity.getUniqueId());
         return bomb == null ? null : bomb.owner();
     }
+
     int active(UUID owner) {
         return active(owner, false);
     }
-    int activeAirstrike(UUID owner) { return active(owner, true); }
-    private int active(UUID owner, boolean airstrike) {
-        return (int) bombs.values().stream().filter(bomb -> bomb.airstrike() == airstrike
-                && bomb.owner().getUniqueId().equals(owner) && bomb.entity().isValid()).count();
+
+    int activeAirstrike(UUID owner) {
+        return active(owner, true);
     }
+
+    private int active(UUID owner, boolean airstrike) {
+        return (int)
+                bombs.values().stream()
+                        .filter(
+                                bomb ->
+                                        bomb.airstrike() == airstrike
+                                                && bomb.owner().getUniqueId().equals(owner)
+                                                && bomb.entity().isValid())
+                        .count();
+    }
+
     double blastDamage(Entity entity, double raw) {
         Bomb bomb = entity == null ? null : bombs.get(entity.getUniqueId());
-        double damage = Math.clamp(
-                raw * damageMultiplier,
-                0,
-                bomb != null && bomb.airstrike() ? PvpAirstrike.MAX_DAMAGE : damageLimit);
+        double damage =
+                Math.clamp(
+                        raw * damageMultiplier,
+                        0,
+                        bomb != null && bomb.airstrike() ? PvpAirstrike.MAX_DAMAGE : damageLimit);
         return bomb != null && bomb.detonatedOnImpact()
                 ? damage * IMPACT_DAMAGE_MULTIPLIER
                 : damage;
     }
+
     void maintain(Plugin plugin) {
         if (cleanup == null) cleanup = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1, 1);
     }
@@ -242,8 +310,9 @@ final class PvpBombs {
                 Location hit =
                         impact(before, at, entity -> impactTarget.test(bomb.owner(), entity));
                 if (hit != null) {
-                    bombs.put(tnt.getUniqueId(), new Bomb(
-                            bomb.owner(), tnt, bomb.airstrike(), before, true));
+                    bombs.put(
+                            tnt.getUniqueId(),
+                            new Bomb(bomb.owner(), tnt, bomb.airstrike(), before, true));
                     // Keep the tracked native TNT and source: one ordinary blast, correct
                     // armour/terrain handling and same-tick trade attribution, no extra damage hit.
                     tnt.teleport(hit.subtract(0, tnt.getHeight() / 2, 0));
@@ -288,27 +357,48 @@ final class PvpBombs {
                 return to.clone();
         return null;
     }
+
     void prune() {
-        // Do not prune from damage/explode callbacks: native TNT is discarded before applying its blast.
+        // Do not prune from damage/explode callbacks: native TNT is discarded before applying its
+        // blast.
         bombs.values().removeIf(bomb -> !bomb.entity().isValid());
-        if (bombs.isEmpty() && cleanup != null) { cleanup.cancel(); cleanup = null; }
+        if (bombs.isEmpty() && cleanup != null) {
+            cleanup.cancel();
+            cleanup = null;
+        }
     }
-    void remove(UUID owner) { remove(owner, false); }
-    void eliminate(UUID owner) { remove(owner, true); }
+
+    void remove(UUID owner) {
+        remove(owner, false);
+    }
+
+    void eliminate(UUID owner) {
+        remove(owner, true);
+    }
+
     private void remove(UUID owner, boolean keepExploding) {
         for (var entry : List.copyOf(bombs.entrySet())) {
             Bomb bomb = entry.getValue();
-            if (!bomb.owner().getUniqueId().equals(owner) || keepExploding && !bomb.entity().isValid()) continue;
+            if (!bomb.owner().getUniqueId().equals(owner)
+                    || keepExploding && !bomb.entity().isValid()) continue;
             if (bomb.entity().isValid()) bomb.entity().remove();
             bombs.remove(entry.getKey());
         }
         cooldowns.forget(owner);
-        if (bombs.isEmpty() && cleanup != null) { cleanup.cancel(); cleanup = null; }
+        if (bombs.isEmpty() && cleanup != null) {
+            cleanup.cancel();
+            cleanup = null;
+        }
     }
+
     void clear() {
         for (Bomb bomb : bombs.values()) if (bomb.entity().isValid()) bomb.entity().remove();
-        bombs.clear(); cooldowns.clear();
-        if (cleanup != null) { cleanup.cancel(); cleanup = null; }
+        bombs.clear();
+        cooldowns.clear();
+        if (cleanup != null) {
+            cleanup.cancel();
+            cleanup = null;
+        }
     }
 
     static double blastDamage(double raw) {

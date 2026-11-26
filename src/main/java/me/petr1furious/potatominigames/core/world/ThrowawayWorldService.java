@@ -1,5 +1,15 @@
 package me.petr1furious.potatominigames.core.world;
 
+import net.kyori.adventure.util.TriState;
+
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
+import org.bukkit.WorldType;
+import org.bukkit.entity.Player;
+import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,19 +23,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.bukkit.Bukkit;
-import org.bukkit.World;
-import org.bukkit.WorldCreator;
-import org.bukkit.WorldType;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.generator.ChunkGenerator;
-
-import net.kyori.adventure.util.TriState;
-
 /**
- * Per-game generated worlds, deleted afterwards. Only worlds prefixed {@code potato_tmp_}
- * are ever unloaded or deleted; crash leftovers are swept on startup.
+ * Per-game generated worlds, deleted afterwards. Only worlds prefixed {@code potato_tmp_} are ever
+ * unloaded or deleted; crash leftovers are swept on startup.
  */
 public final class ThrowawayWorldService {
     public static final String PREFIX = "potato_tmp_";
@@ -35,8 +35,10 @@ public final class ThrowawayWorldService {
 
     /** Base name -> the dimensions currently created for it. */
     private final Map<String, Map<World.Environment, World>> sets = new HashMap<>();
+
     /** World name -> base name, for resolving a world's sibling dimensions. */
     private final Map<String, String> worldToBase = new HashMap<>();
+
     /** Base name -> seed, so lazily created dimensions match their overworld. */
     private final Map<String, Long> seeds = new HashMap<>();
 
@@ -64,20 +66,28 @@ public final class ThrowawayWorldService {
         return overworld;
     }
 
-    /** Empty disposable world for generated arenas; uses the same crash cleanup as survival games. */
+    /**
+     * Empty disposable world for generated arenas; uses the same crash cleanup as survival games.
+     */
     public World createVoid(String id) {
         destroy(id);
         String base = baseName(id);
         long seed = random.nextLong();
         seeds.put(base, seed);
-        World world = Bukkit.createWorld(new WorldCreator(base).seed(seed).generateStructures(false)
-                .keepSpawnLoaded(TriState.FALSE)
-                .generator(new ChunkGenerator() {
-                    @Override
-                    public org.bukkit.Location getFixedSpawnLocation(World world, Random random) {
-                        return new org.bukkit.Location(world, .5, 81, .5);
-                    }
-                }));
+        World world =
+                Bukkit.createWorld(
+                        new WorldCreator(base)
+                                .seed(seed)
+                                .generateStructures(false)
+                                .keepSpawnLoaded(TriState.FALSE)
+                                .generator(
+                                        new ChunkGenerator() {
+                                            @Override
+                                            public org.bukkit.Location getFixedSpawnLocation(
+                                                    World world, Random random) {
+                                                return new org.bukkit.Location(world, .5, 81, .5);
+                                            }
+                                        }));
         if (world == null) {
             throw new IllegalStateException("Failed to create arena world " + base);
         }
@@ -92,13 +102,14 @@ public final class ThrowawayWorldService {
 
     private World createDimension(String base, World.Environment environment, long seed) {
         String name = dimensionName(base, environment);
-        WorldCreator creator = new WorldCreator(name)
-                .environment(environment)
-                .type(WorldType.NORMAL)
-                .generateStructures(true)
-                .seed(seed)
-                // Keeping spawn chunks loaded slows creation.
-                .keepSpawnLoaded(TriState.FALSE);
+        WorldCreator creator =
+                new WorldCreator(name)
+                        .environment(environment)
+                        .type(WorldType.NORMAL)
+                        .generateStructures(true)
+                        .seed(seed)
+                        // Keeping spawn chunks loaded slows creation.
+                        .keepSpawnLoaded(TriState.FALSE);
 
         long startedAt = System.currentTimeMillis();
         World world = Bukkit.createWorld(creator);
@@ -110,8 +121,15 @@ public final class ThrowawayWorldService {
         world.setDifficulty(Bukkit.getWorlds().getFirst().getDifficulty());
         sets.computeIfAbsent(base, key -> new HashMap<>()).put(environment, world);
         worldToBase.put(name, base);
-        plugin.getLogger().info("Created throwaway world " + name + " (seed " + seed + ") in "
-                + (System.currentTimeMillis() - startedAt) + "ms");
+        plugin.getLogger()
+                .info(
+                        "Created throwaway world "
+                                + name
+                                + " (seed "
+                                + seed
+                                + ") in "
+                                + (System.currentTimeMillis() - startedAt)
+                                + "ms");
         return world;
     }
 
@@ -176,8 +194,11 @@ public final class ThrowawayWorldService {
         File folder = world.getWorldFolder();
         evacuate(world);
         if (!Bukkit.unloadWorld(world, false)) {
-            plugin.getLogger().warning("Could not unload throwaway world " + world.getName()
-                    + "; leaving its folder for the next startup sweep");
+            plugin.getLogger()
+                    .warning(
+                            "Could not unload throwaway world "
+                                    + world.getName()
+                                    + "; leaving its folder for the next startup sweep");
             return;
         }
         deleteRecursively(folder.toPath());
@@ -198,12 +219,12 @@ public final class ThrowawayWorldService {
     private List<Path> findThrowawayFolders() {
         Path container = Bukkit.getWorldContainer().toPath();
         try (var stream = Files.walk(container, 4)) {
-            return stream
-                    .filter(Files::isDirectory)
+            return stream.filter(Files::isDirectory)
                     .filter(path -> path.getFileName().toString().startsWith(PREFIX))
                     .toList();
         } catch (IOException exception) {
-            plugin.getLogger().warning("Could not scan for throwaway worlds: " + exception.getMessage());
+            plugin.getLogger()
+                    .warning("Could not scan for throwaway worlds: " + exception.getMessage());
             return List.of();
         }
     }
@@ -251,8 +272,12 @@ public final class ThrowawayWorldService {
             }
             return true;
         } catch (IOException exception) {
-            plugin.getLogger().warning("Failed to delete throwaway world folder " + path + ": "
-                    + exception.getMessage());
+            plugin.getLogger()
+                    .warning(
+                            "Failed to delete throwaway world folder "
+                                    + path
+                                    + ": "
+                                    + exception.getMessage());
             return false;
         }
     }

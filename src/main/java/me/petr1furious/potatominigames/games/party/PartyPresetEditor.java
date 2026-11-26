@@ -41,15 +41,31 @@ final class PartyPresetEditor {
         }
         if (!rounds.isEmpty()) {
             buttons.add(button(current, I18n.tr("core.preset.save"), this::save));
-            buttons.add(button(current, I18n.tr("core.preset.start"), p -> {
-                PresetDialog.start(p, sessions, game, "party_games",
-                        Map.of(PartyGamesSession.SEQUENCE_OPTION, String.join(",", rounds)));
-                view++;
-            }));
+            buttons.add(
+                    button(
+                            current,
+                            I18n.tr("core.preset.start"),
+                            p -> {
+                                PresetDialog.start(
+                                        p,
+                                        sessions,
+                                        game,
+                                        "party_games",
+                                        Map.of(
+                                                PartyGamesSession.SEQUENCE_OPTION,
+                                                String.join(",", rounds)));
+                                view++;
+                            }));
         }
-        PresetDialog.show(player, text("editor"), List.of(
-                text("count", rounds.size(), PartyGamesState.MAX_CUSTOM_ROUNDS),
-                text(rounds.isEmpty() ? "empty" : "edit_hint")), List.of(), buttons, () -> {
+        PresetDialog.show(
+                player,
+                text("editor"),
+                List.of(
+                        text("count", rounds.size(), PartyGamesState.MAX_CUSTOM_ROUNDS),
+                        text(rounds.isEmpty() ? "empty" : "edit_hint")),
+                List.of(),
+                buttons,
+                () -> {
                     if (view != current) return;
                     view++;
                     back.run();
@@ -60,12 +76,17 @@ final class PartyPresetEditor {
         long current = ++view;
         List<PresetDialog.Button> buttons = new ArrayList<>(PartyGamesState.MODES.size());
         for (String mode : PartyGamesState.MODES) {
-            buttons.add(button(current, PartyRoundFactory.title(mode), p -> {
-                rounds.add(mode);
-                show(p);
-            }));
+            buttons.add(
+                    button(
+                            current,
+                            PartyRoundFactory.title(mode),
+                            p -> {
+                                rounds.add(mode);
+                                show(p);
+                            }));
         }
-        PresetDialog.show(player, text("pick"), List.of(), List.of(), buttons, backToDraft(player, current));
+        PresetDialog.show(
+                player, text("pick"), List.of(), List.of(), buttons, backToDraft(player, current));
     }
 
     private void editRound(Player player, int index) {
@@ -77,11 +98,21 @@ final class PartyPresetEditor {
         if (index + 1 < rounds.size()) {
             buttons.add(button(current, text("move_down"), p -> move(p, index, index + 1)));
         }
-        buttons.add(button(current, text("remove"), p -> {
-            rounds.remove(index);
-            show(p);
-        }));
-        PresetDialog.show(player, roundLabel(index), List.of(), List.of(), buttons, backToDraft(player, current));
+        buttons.add(
+                button(
+                        current,
+                        text("remove"),
+                        p -> {
+                            rounds.remove(index);
+                            show(p);
+                        }));
+        PresetDialog.show(
+                player,
+                roundLabel(index),
+                List.of(),
+                List.of(),
+                buttons,
+                backToDraft(player, current));
     }
 
     private void move(Player player, int from, int to) {
@@ -91,11 +122,17 @@ final class PartyPresetEditor {
 
     private void save(Player player) {
         long current = ++view;
-        PresetDialog.identity(player, text("save_title"), "", GamePreset.DEFAULT_ICON, (p, name, icon) -> {
-            if (view != current) return;
-            game.savePreset(p, name, icon, rounds);
-            show(p);
-        }, backToDraft(player, current));
+        PresetDialog.identity(
+                player,
+                text("save_title"),
+                "",
+                GamePreset.DEFAULT_ICON,
+                (p, name, icon) -> {
+                    if (view != current) return;
+                    game.savePreset(p, name, icon, rounds);
+                    show(p);
+                },
+                backToDraft(player, current));
     }
 
     private Runnable backToDraft(Player player, long current) {
@@ -105,9 +142,11 @@ final class PartyPresetEditor {
     }
 
     private PresetDialog.Button button(long current, Component label, Step action) {
-        return new PresetDialog.Button(label, (player, form) -> {
-            if (view == current) action.run(player);
-        });
+        return new PresetDialog.Button(
+                label,
+                (player, form) -> {
+                    if (view == current) action.run(player);
+                });
     }
 
     private Component roundLabel(int index) {

@@ -192,8 +192,10 @@ final class FinalsImportedArena implements FinalsMapArena {
                     .setType(Material.SLIME_BLOCK, false);
         vaultBlocks =
                 map.vaults().stream()
-                        .map(point ->
-                                world.getBlockAt(point.bx(), point.by(), point.bz()).getState())
+                        .map(
+                                point ->
+                                        world.getBlockAt(point.bx(), point.by(), point.bz())
+                                                .getState())
                         .toList();
         activeCashouts =
                 FinalsCashoutLocations.initial(map.cashouts().size(), ThreadLocalRandom.current());
@@ -238,15 +240,24 @@ final class FinalsImportedArena implements FinalsMapArena {
 
     @Override
     public List<FinalsMapJumpPads.Pad> jumpPads() {
-        return map.jumpPads().stream().map(p -> new FinalsMapJumpPads.Pad(
-                p.origin().at(world), p.target() == null ? null : p.target().at(world))).toList();
+        return map.jumpPads().stream()
+                .map(
+                        p ->
+                                new FinalsMapJumpPads.Pad(
+                                        p.origin().at(world),
+                                        p.target() == null ? null : p.target().at(world)))
+                .toList();
     }
 
     @Override
-    public Double deathHeight() { return map.deathHeight(); }
+    public Double deathHeight() {
+        return map.deathHeight();
+    }
 
     @Override
-    public long timeOfDay() { return map.timeOfDay() == null ? 6000 : map.timeOfDay(); }
+    public long timeOfDay() {
+        return map.timeOfDay() == null ? 6000 : map.timeOfDay();
+    }
 
     @Override
     public Location vault() {
@@ -333,7 +344,8 @@ final class FinalsImportedArena implements FinalsMapArena {
             return false;
         for (Point spawn : concat(map.red(), map.blue())) if (protects(block, spawn)) return false;
         for (JumpPad pad : map.jumpPads())
-            if (block.getX() == pad.origin().bx() && block.getY() == pad.origin().by() - 1
+            if (block.getX() == pad.origin().bx()
+                    && block.getY() == pad.origin().by() - 1
                     && block.getZ() == pad.origin().bz()) return false;
         for (Point objective : map.vaults()) {
             if (protects(block, objective)) return false;

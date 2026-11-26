@@ -65,10 +65,11 @@ public final class FinalsSlimeSnapshotCheck {
         var croppedOutside = FinalsSlimeSnapshot.restrict(outside, clipped, -32, 64, 16);
         require(
                 croppedOutside.getList("palette").stream()
-                        .noneMatch(tag ->
-                                ((CompoundBinaryTag) tag)
-                                        .getString("Name")
-                                        .equals("minecraft:command_block")),
+                        .noneMatch(
+                                tag ->
+                                        ((CompoundBinaryTag) tag)
+                                                .getString("Name")
+                                                .equals("minecraft:command_block")),
                 "Unsafe blocks outside the exact selection are clipped instead of rejecting the"
                         + " map");
         var unused = packed(dangerous, i -> 0);

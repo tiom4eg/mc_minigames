@@ -1,6 +1,7 @@
 package me.petr1furious.potatominigames.games.bingo.model;
 
 import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 
 import java.util.Arrays;
@@ -10,7 +11,10 @@ public enum GameMode {
     DEFAULT("default"),
     BUTFAST("butfast"),
     COLLECTALL("collectall"),
-    /** 5x5; a cell counts only for the team that collects it first; a line wins, else the most cells. */
+    /**
+     * 5x5; a cell counts only for the team that collects it first; a line wins, else the most
+     * cells.
+     */
     LOCKOUT("lockout");
 
     private final String key;

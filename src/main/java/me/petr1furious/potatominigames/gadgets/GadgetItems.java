@@ -1,20 +1,19 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import java.util.List;
-
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.List;
+
 /** Item/projectile tagging via custom model data strings and PDC. */
 public final class GadgetItems {
-    private static final NamespacedKey PROJECTILE_TYPE_KEY = new NamespacedKey("potato_minigames",
-            "projectile_type");
+    private static final NamespacedKey PROJECTILE_TYPE_KEY =
+            new NamespacedKey("potato_minigames", "projectile_type");
 
-    private GadgetItems() {
-    }
+    private GadgetItems() {}
 
     public static boolean checkForItem(ItemStack item, String tag) {
         if (item == null) {
@@ -33,9 +32,13 @@ public final class GadgetItems {
         if (projectile == null) {
             return false;
         }
-        if (projectile.getPersistentDataContainer().has(PROJECTILE_TYPE_KEY, PersistentDataType.STRING)) {
-            String value = projectile.getPersistentDataContainer().get(PROJECTILE_TYPE_KEY,
-                    PersistentDataType.STRING);
+        if (projectile
+                .getPersistentDataContainer()
+                .has(PROJECTILE_TYPE_KEY, PersistentDataType.STRING)) {
+            String value =
+                    projectile
+                            .getPersistentDataContainer()
+                            .get(PROJECTILE_TYPE_KEY, PersistentDataType.STRING);
             return value.equals(tag);
         }
         return false;
@@ -45,7 +48,9 @@ public final class GadgetItems {
         if (projectile == null) {
             return false;
         }
-        projectile.getPersistentDataContainer().set(PROJECTILE_TYPE_KEY, PersistentDataType.STRING, tag);
+        projectile
+                .getPersistentDataContainer()
+                .set(PROJECTILE_TYPE_KEY, PersistentDataType.STRING, tag);
         return true;
     }
 
@@ -60,11 +65,9 @@ public final class GadgetItems {
     }
 
     public static void addTag(ItemStack item, String tag) {
-        if (item == null || tag == null || tag.isEmpty())
-            return;
+        if (item == null || tag == null || tag.isEmpty()) return;
         var meta = item.getItemMeta();
-        if (meta == null)
-            return;
+        if (meta == null) return;
         var cmd = meta.getCustomModelDataComponent();
         cmd.setStrings(List.of(tag));
         meta.setCustomModelDataComponent(cmd);

@@ -7,7 +7,10 @@ import java.util.Set;
 import java.util.UUID;
 
 final class LessIsBetterVotes {
-    enum Side { RED, BLUE }
+    enum Side {
+        RED,
+        BLUE
+    }
 
     record Reveal(int red, int blue, Side winner, Map<UUID, Side> choices) {}
 
@@ -24,8 +27,10 @@ final class LessIsBetterVotes {
             if (side == Side.RED) red++;
             else blue++;
         }
-        Side winner = red == 0 || blue == 0 || red == blue ? null : red < blue ? Side.RED : Side.BLUE;
-        choices.forEach((player, side) -> scores.merge(player, side == winner ? 1 : 0, Integer::sum));
+        Side winner =
+                red == 0 || blue == 0 || red == blue ? null : red < blue ? Side.RED : Side.BLUE;
+        choices.forEach(
+                (player, side) -> scores.merge(player, side == winner ? 1 : 0, Integer::sum));
         return new Reveal(red, blue, winner, Map.copyOf(choices));
     }
 

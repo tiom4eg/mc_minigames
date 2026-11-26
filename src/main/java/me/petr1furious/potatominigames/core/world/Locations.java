@@ -6,8 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 
 public final class Locations {
-    private Locations() {
-    }
+    private Locations() {}
 
     /** Two passable blocks at/above the location. Does not mutate the argument. */
     public static boolean playerPassable(Location location) {
@@ -21,7 +20,8 @@ public final class Locations {
         var y = location.getBlockY();
 
         while (y > world.getMinHeight()) {
-            if (!playerPassable(new Location(world, location.getBlockX(), y, location.getBlockZ()))) {
+            if (!playerPassable(
+                    new Location(world, location.getBlockX(), y, location.getBlockZ()))) {
                 break;
             }
             y--;
@@ -30,7 +30,8 @@ public final class Locations {
         if (y == world.getMinHeight()) {
             y = world.getMaxHeight();
             while (y > world.getMinHeight()) {
-                if (!playerPassable(new Location(world, location.getBlockX(), y, location.getBlockZ()))) {
+                if (!playerPassable(
+                        new Location(world, location.getBlockX(), y, location.getBlockZ()))) {
                     break;
                 }
                 y--;
@@ -42,7 +43,8 @@ public final class Locations {
         }
 
         while (y < world.getMaxHeight()) {
-            if (playerPassable(new Location(world, location.getBlockX(), y, location.getBlockZ()))) {
+            if (playerPassable(
+                    new Location(world, location.getBlockX(), y, location.getBlockZ()))) {
                 break;
             }
             y++;
@@ -62,13 +64,23 @@ public final class Locations {
     }
 
     public static void spawnExplosion(Location location, double explosionPower, Entity entity) {
-        location.getWorld().createExplosion(entity, location, (float) explosionPower, false, true, false);
+        location.getWorld()
+                .createExplosion(entity, location, (float) explosionPower, false, true, false);
     }
 
-    public static void spawnExplosion(Location location, double explosionPower, Entity entity,
+    public static void spawnExplosion(
+            Location location,
+            double explosionPower,
+            Entity entity,
             boolean excludeSourceFromDamage) {
-        location.getWorld().createExplosion(entity, location, (float) explosionPower, false, true,
-                excludeSourceFromDamage);
+        location.getWorld()
+                .createExplosion(
+                        entity,
+                        location,
+                        (float) explosionPower,
+                        false,
+                        true,
+                        excludeSourceFromDamage);
     }
 
     public static Entity getEntityShooter(Projectile projectile) {

@@ -18,10 +18,14 @@ public interface Minigame {
     String id();
 
     /** Optional onboarding before queue membership changes. True defers this attempt. */
-    default boolean beforeQueue(org.bukkit.entity.Player player, Runnable continueQueue) { return false; }
+    default boolean beforeQueue(org.bukkit.entity.Player player, Runnable continueQueue) {
+        return false;
+    }
 
     /** A direct replay entry for private experiences without a public queue. */
-    default String replayCommand(String mode) { return null; }
+    default String replayCommand(String mode) {
+        return null;
+    }
 
     Component displayName();
 
@@ -60,9 +64,13 @@ public interface Minigame {
     }
 
     /** Player-facing mode label; the command/queue identifier stays unchanged. */
-    default Component modeTitle(String mode) { return Component.text(mode); }
+    default Component modeTitle(String mode) {
+        return Component.text(mode);
+    }
 
-    default Material icon(String mode) { return icon(); }
+    default Material icon(String mode) {
+        return icon();
+    }
 
     /** One line for the lobby menu and {@code /play}. */
     default Component description(String mode) {
@@ -88,7 +96,9 @@ public interface Minigame {
         return usesTeams() ? List.of(TeamColor.values()) : List.of();
     }
 
-    /** Levels queued players vote on, easiest first; the winner is passed as option "difficulty". */
+    /**
+     * Levels queued players vote on, easiest first; the winner is passed as option "difficulty".
+     */
     default List<String> difficulties() {
         return List.of();
     }
@@ -119,6 +129,5 @@ public interface Minigame {
         return null;
     }
 
-    default void extendCommands(LiteralArgumentBuilder<CommandSourceStack> root) {
-    }
+    default void extendCommands(LiteralArgumentBuilder<CommandSourceStack> root) {}
 }

@@ -59,15 +59,20 @@ final class PartyGamesSession extends PartyRoundForwarder {
 
     /** Fixed match sizes never repeat a game when an admin supplies a smaller pool. */
     static int roundCount(String length, int configuredRounds, int poolSize) {
-        int requested = switch (length) {
-            case null -> configuredRounds;
-            case "small" -> 4;
-            case "medium" -> 6;
-            case "large" -> 9;
-            case "marathon" -> poolSize;
-            default -> throw I18n.exception("core.ballot.unknown_choice", I18n.tr("core.ballot.length"),
-                    length, "small, medium, large, marathon");
-        };
+        int requested =
+                switch (length) {
+                    case null -> configuredRounds;
+                    case "small" -> 4;
+                    case "medium" -> 6;
+                    case "large" -> 9;
+                    case "marathon" -> poolSize;
+                    default ->
+                            throw I18n.exception(
+                                    "core.ballot.unknown_choice",
+                                    I18n.tr("core.ballot.length"),
+                                    length,
+                                    "small, medium, large, marathon");
+                };
         return Math.min(requested, poolSize);
     }
 
@@ -90,7 +95,8 @@ final class PartyGamesSession extends PartyRoundForwarder {
             if (sequence == null) {
                 String option = services.option(SEQUENCE_OPTION);
                 if (option != null)
-                    sequence = Arrays.asList(option.split(",", PartyGamesState.MAX_CUSTOM_ROUNDS + 1));
+                    sequence =
+                            Arrays.asList(option.split(",", PartyGamesState.MAX_CUSTOM_ROUNDS + 1));
             }
             if (sequence != null) {
                 state = PartyGamesState.sequenced(roster, sequence);
@@ -101,7 +107,11 @@ final class PartyGamesSession extends PartyRoundForwarder {
                                 .map(String::trim)
                                 .toList();
                 state = new PartyGamesState(roster, pool, new Random());
-                roundCount = roundCount(services.option("length"), config.partyRounds.get(), state.schedule().size());
+                roundCount =
+                        roundCount(
+                                services.option("length"),
+                                config.partyRounds.get(),
+                                state.schedule().size());
             }
             intermission = config.partyIntermission.get();
             options =
@@ -138,7 +148,8 @@ final class PartyGamesSession extends PartyRoundForwarder {
                                     1);
         } catch (RuntimeException e) {
             onEnd(EndReason.ABORTED);
-            throw new CommandFailure(I18n.tr("party.rounds.party_games.error.prepare", I18n.message(e)));
+            throw new CommandFailure(
+                    I18n.tr("party.rounds.party_games.error.prepare", I18n.message(e)));
         }
     }
 
@@ -181,8 +192,12 @@ final class PartyGamesSession extends PartyRoundForwarder {
         phase = Phase.ACTIVE;
         services.messages()
                 .broadcast(
-                        text(I18n.tr("party.rounds.party_games.round_start", index + 1, roundCount,
-                                PartyRoundFactory.title(state.schedule().get(index)))));
+                        text(
+                                I18n.tr(
+                                        "party.rounds.party_games.round_start",
+                                        index + 1,
+                                        roundCount,
+                                        PartyRoundFactory.title(state.schedule().get(index)))));
         try {
             child.onStart();
         } catch (CommandFailure | RuntimeException e) {
@@ -212,8 +227,12 @@ final class PartyGamesSession extends PartyRoundForwarder {
             for (UUID id : group)
                 services.messages()
                         .broadcast(
-                                text(I18n.tr("party.rounds.party_games.round_result",
-                                        result.place(id), names.get(id), result.awards().get(id))));
+                                text(
+                                        I18n.tr(
+                                                "party.rounds.party_games.round_result",
+                                                result.place(id),
+                                                names.get(id),
+                                                result.awards().get(id))));
         // Never reset players or unload a world while inside its death/damage callback.
         transition =
                 Bukkit.getScheduler()
@@ -269,8 +288,7 @@ final class PartyGamesSession extends PartyRoundForwarder {
 
     private void fail(Exception e) {
         services.plugin().getLogger().log(java.util.logging.Level.SEVERE, "Party Games failed", e);
-        services.messages()
-                .broadcast(text(I18n.tr("party.rounds.party_games.error.stopped")));
+        services.messages().broadcast(text(I18n.tr("party.rounds.party_games.error.stopped")));
         services.session().endGame(EndReason.ABORTED);
     }
 
@@ -289,19 +307,26 @@ final class PartyGamesSession extends PartyRoundForwarder {
         if (state == null || phase != Phase.BREAK) return;
         List<Component> lines = new ArrayList<>();
         lines.add(text(I18n.tr("party.rounds.party_games.round", index + 1, roundCount)));
-        lines.add((phase == Phase.ACTIVE
-                ? PartyRoundFactory.title(state.schedule().get(index))
-                : aloneSince >= 0
-                        ? I18n.tr("party.rounds.party_games.waiting",
-                                Math.max(0, (300 - (tick - aloneSince) + 19) / 20))
-                        : I18n.tr("party.rounds.party_games.next",
-                                Math.max(0, (deadline - tick + 19) / 20)))
-                .color(NamedTextColor.AQUA));
+        lines.add(
+                (phase == Phase.ACTIVE
+                                ? PartyRoundFactory.title(state.schedule().get(index))
+                                : aloneSince >= 0
+                                        ? I18n.tr(
+                                                "party.rounds.party_games.waiting",
+                                                Math.max(0, (300 - (tick - aloneSince) + 19) / 20))
+                                        : I18n.tr(
+                                                "party.rounds.party_games.next",
+                                                Math.max(0, (deadline - tick + 19) / 20)))
+                        .color(NamedTextColor.AQUA));
         for (var group : state.score().standings())
             for (UUID id : group) {
                 if (lines.size() >= 14) break;
-                lines.add(I18n.tr("party.rounds.party_games.score", names.get(id), state.score().points(id))
-                        .color(NamedTextColor.WHITE));
+                lines.add(
+                        I18n.tr(
+                                        "party.rounds.party_games.score",
+                                        names.get(id),
+                                        state.score().points(id))
+                                .color(NamedTextColor.WHITE));
             }
         for (Player p : services.session().audiencePlayers())
             services.sidebar().update(p, text(I18n.tr("party.rounds.mode.party_games")), lines);
@@ -317,24 +342,34 @@ final class PartyGamesSession extends PartyRoundForwarder {
         child = null;
         if (endingChild != null) endStep(() -> endingChild.onEnd(EndReason.ABORTED));
         if (state != null)
-            endStep(() -> {
-                List<Component> lines = new ArrayList<>();
-                lines.add(text(I18n.tr(complete ? "party.rounds.party_games.final"
-                        : "party.rounds.party_games.intermediate")));
-                int place = 1;
-                for (var group : state.score().standings()) {
-                    for (UUID id : group)
-                        lines.add(text(I18n.tr("party.rounds.party_games.result",
-                                place, names.get(id), state.score().points(id))));
-                    place += group.size();
-                }
-                summary = List.copyOf(lines);
-                if (complete && reason == EndReason.FINISHED && !awarded) {
-                    awarded = true;
-                    for (UUID id : names.keySet())
-                        services.award("party_games", id, state.score().points(id));
-                }
-            });
+            endStep(
+                    () -> {
+                        List<Component> lines = new ArrayList<>();
+                        lines.add(
+                                text(
+                                        I18n.tr(
+                                                complete
+                                                        ? "party.rounds.party_games.final"
+                                                        : "party.rounds.party_games.intermediate")));
+                        int place = 1;
+                        for (var group : state.score().standings()) {
+                            for (UUID id : group)
+                                lines.add(
+                                        text(
+                                                I18n.tr(
+                                                        "party.rounds.party_games.result",
+                                                        place,
+                                                        names.get(id),
+                                                        state.score().points(id))));
+                            place += group.size();
+                        }
+                        summary = List.copyOf(lines);
+                        if (complete && reason == EndReason.FINISHED && !awarded) {
+                            awarded = true;
+                            for (UUID id : names.keySet())
+                                services.award("party_games", id, state.score().points(id));
+                        }
+                    });
         if (context != null) {
             endStep(context::hideBars);
             context = null;
@@ -364,9 +399,14 @@ final class PartyGamesSession extends PartyRoundForwarder {
     @Override
     public Component globalResult() {
         return complete
-                ? text(I18n.tr("party.rounds.party_games.completed",
-                        String.join(", ", state.score().standings().getFirst().stream()
-                                .map(names::get).toList())))
+                ? text(
+                        I18n.tr(
+                                "party.rounds.party_games.completed",
+                                String.join(
+                                        ", ",
+                                        state.score().standings().getFirst().stream()
+                                                .map(names::get)
+                                                .toList())))
                 : text(I18n.tr("party.rounds.party_games.stopped"));
     }
 

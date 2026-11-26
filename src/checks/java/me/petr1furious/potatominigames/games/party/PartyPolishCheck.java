@@ -59,7 +59,8 @@ public final class PartyPolishCheck {
         for (int stage = 0; stage < shortChain.size(); stage++) {
             race.setAlive(b, true);
             race.death(b, a, stage);
-            check((race.winner() != null) == (stage == shortChain.size() - 1),
+            check(
+                    (race.winner() != null) == (stage == shortChain.size() - 1),
                     "Exactly five kills to win the short progression");
         }
         var session = new PartyGamesSession(null, null);

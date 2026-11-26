@@ -1,7 +1,10 @@
 package me.petr1furious.potatominigames.games.party;
 
 import me.petr1furious.potatominigames.i18n.I18n;
-import java.util.List;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -11,10 +14,12 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
-/** Tagged, stackable class potions. Beneficial splashes affect their caster; debuffs affect enemies. */
+import java.util.List;
+
+/**
+ * Tagged, stackable class potions. Beneficial splashes affect their caster; debuffs affect enemies.
+ */
 enum PvpPotion {
     HEALING(false, 1, 0xF94B4B),
     HARMING(true, 1, 0x652B85),
@@ -37,8 +42,11 @@ enum PvpPotion {
 
     PvpPotion(boolean harmful, int durationTicks, int color) {
         this.title = I18n.tr("party.duels.potion." + name().toLowerCase(java.util.Locale.ROOT));
-        this.harmful = harmful; this.durationTicks = durationTicks; this.color = color;
+        this.harmful = harmful;
+        this.durationTicks = durationTicks;
+        this.color = color;
     }
+
     private PotionEffectType effectType() {
         return switch (this) {
             case HEALING -> PotionEffectType.INSTANT_HEALTH;
@@ -55,26 +63,53 @@ enum PvpPotion {
             case FIRE_RESISTANCE -> PotionEffectType.FIRE_RESISTANCE;
         };
     }
-    boolean affects(boolean caster, boolean activeFighter) { return activeFighter && (harmful ? !caster : caster); }
+
+    boolean affects(boolean caster, boolean activeFighter) {
+        return activeFighter && (harmful ? !caster : caster);
+    }
+
     ItemStack item(int amount) {
         ItemStack potion = new ItemStack(Material.SPLASH_POTION, amount);
-        potion.editMeta(PotionMeta.class, meta -> {
-            meta.setMaxStackSize(8);
-            meta.setColor(Color.fromRGB(color));
-            meta.addCustomEffect(new PotionEffect(effectType(), durationTicks, 0, false, this != INVISIBILITY, true), true);
-            meta.displayName(title.color(harmful ? NamedTextColor.RED : NamedTextColor.GREEN));
-            meta.lore(List.of(I18n.tr(harmful ? "party.duels.potion.harmful_lore"
-                    : "party.duels.potion.beneficial_lore").color(NamedTextColor.GRAY)));
-            meta.getPersistentDataContainer().set(KEY, PersistentDataType.STRING, name());
-        });
+        potion.editMeta(
+                PotionMeta.class,
+                meta -> {
+                    meta.setMaxStackSize(8);
+                    meta.setColor(Color.fromRGB(color));
+                    meta.addCustomEffect(
+                            new PotionEffect(
+                                    effectType(),
+                                    durationTicks,
+                                    0,
+                                    false,
+                                    this != INVISIBILITY,
+                                    true),
+                            true);
+                    meta.displayName(
+                            title.color(harmful ? NamedTextColor.RED : NamedTextColor.GREEN));
+                    meta.lore(
+                            List.of(
+                                    I18n.tr(
+                                                    harmful
+                                                            ? "party.duels.potion.harmful_lore"
+                                                            : "party.duels.potion.beneficial_lore")
+                                            .color(NamedTextColor.GRAY)));
+                    meta.getPersistentDataContainer().set(KEY, PersistentDataType.STRING, name());
+                });
         return potion;
     }
+
     static PvpPotion from(ItemStack item) {
         if (item == null || item.getType() != Material.SPLASH_POTION) return null;
-        String name = item.getItemMeta().getPersistentDataContainer().get(KEY, PersistentDataType.STRING);
+        String name =
+                item.getItemMeta().getPersistentDataContainer().get(KEY, PersistentDataType.STRING);
         if (name == null) return null;
-        try { return valueOf(name); } catch (IllegalArgumentException unknown) { return null; }
+        try {
+            return valueOf(name);
+        } catch (IllegalArgumentException unknown) {
+            return null;
+        }
     }
+
     int replenish(Player player, int amount, int cap) {
         int owned = 0;
         for (ItemStack item : player.getInventory().getContents()) {
@@ -82,8 +117,14 @@ enum PvpPotion {
         }
         int added = refillAmount(owned, amount, cap);
         if (added == 0) return 0;
-        int leftover = player.getInventory().addItem(I18n.item(item(added), player)).values().stream().mapToInt(ItemStack::getAmount).sum();
+        int leftover =
+                player.getInventory().addItem(I18n.item(item(added), player)).values().stream()
+                        .mapToInt(ItemStack::getAmount)
+                        .sum();
         return added - leftover;
     }
-    static int refillAmount(int owned, int requested, int cap) { return Math.max(0, Math.min(requested, cap - owned)); }
+
+    static int refillAmount(int owned, int requested, int cap) {
+        return Math.max(0, Math.min(requested, cap - owned));
+    }
 }

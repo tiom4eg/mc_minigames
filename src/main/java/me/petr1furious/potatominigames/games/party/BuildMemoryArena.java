@@ -99,12 +99,14 @@ final class BuildMemoryArena {
         clear(id);
         Location c = origin(id);
         p.blocks()
-                .forEach((cell, m) ->
-                        world.getBlockAt(
-                                        c.getBlockX() + cell.x(),
-                                        81 + cell.y(),
-                                        c.getBlockZ() + cell.z())
-                                .setBlockData(Bukkit.createBlockData(m.dataString()), false));
+                .forEach(
+                        (cell, m) ->
+                                world.getBlockAt(
+                                                c.getBlockX() + cell.x(),
+                                                81 + cell.y(),
+                                                c.getBlockZ() + cell.z())
+                                        .setBlockData(
+                                                Bukkit.createBlockData(m.dataString()), false));
         // Derive fence connections and powered lamps just as the player's build does.
         for (var cell : p.blocks().keySet()) {
             Block block =
@@ -139,14 +141,17 @@ final class BuildMemoryArena {
                     && data instanceof org.bukkit.block.data.Lightable lamp) {
                 lamp.setLit(
                         p.blocks().entrySet().stream()
-                                .anyMatch(e ->
-                                        e.getValue().material() == Material.REDSTONE_BLOCK
-                                                && Math.abs(e.getKey().x() - cell.x())
-                                                                + Math.abs(
-                                                                        e.getKey().y() - cell.y())
-                                                                + Math.abs(
-                                                                        e.getKey().z() - cell.z())
-                                                        == 1));
+                                .anyMatch(
+                                        e ->
+                                                e.getValue().material() == Material.REDSTONE_BLOCK
+                                                        && Math.abs(e.getKey().x() - cell.x())
+                                                                        + Math.abs(
+                                                                                e.getKey().y()
+                                                                                        - cell.y())
+                                                                        + Math.abs(
+                                                                                e.getKey().z()
+                                                                                        - cell.z())
+                                                                == 1));
                 block.setBlockData(lamp, false);
             }
         }

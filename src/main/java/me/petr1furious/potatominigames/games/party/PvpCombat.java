@@ -1,14 +1,15 @@
 package me.petr1furious.potatominigames.games.party;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Player;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /** Class passives have separate cooldowns; no lasting player attributes are modified. */
 final class PvpCombat {
@@ -29,49 +30,82 @@ final class PvpCombat {
         staticReady.put(player, second + THUNDER_STATIC_COOLDOWN);
         return true;
     }
+
     boolean backstab(UUID player, long second, Vector facing, Vector towardsAttacker) {
-        if (second < backstabReady.getOrDefault(player, 0L) || !isBehind(facing, towardsAttacker)) return false;
+        if (second < backstabReady.getOrDefault(player, 0L) || !isBehind(facing, towardsAttacker))
+            return false;
         backstabReady.put(player, second + 5);
         return true;
     }
+
     boolean leech(UUID player, long second) {
         if (second < leechReady.getOrDefault(player, 0L)) return false;
         leechReady.put(player, second + 3);
         return true;
     }
+
     boolean frost(UUID player, int tick) {
         Integer previous = frostHits.get(player);
         if (previous != null && tick - previous < FROST_COOLDOWN_TICKS) return false;
         frostHits.put(player, tick);
         return true;
     }
+
     static void applyFrost(LivingEntity target) {
         target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, FROST_SLOW_TICKS, 3));
-        target.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, FROST_WEAKNESS_TICKS, 0));
+        target.addPotionEffect(
+                new PotionEffect(PotionEffectType.WEAKNESS, FROST_WEAKNESS_TICKS, 0));
     }
+
     boolean shadowStrike(UUID player, long second, boolean unblockedHit) {
         if (!unblockedHit || shadowRemaining(player, second) > 0) return false;
         shadowReady.put(player, second + SHADOW_WAND_COOLDOWN);
         return true;
     }
-    long shadowRemaining(UUID player, long second) { return Math.max(0, shadowReady.getOrDefault(player, 0L) - second); }
-    void forget(UUID player) { staticReady.remove(player); backstabReady.remove(player); leechReady.remove(player); frostHits.remove(player); shadowReady.remove(player); }
-    void reset() { staticReady.clear(); backstabReady.clear(); leechReady.clear(); frostHits.clear(); shadowReady.clear(); }
+
+    long shadowRemaining(UUID player, long second) {
+        return Math.max(0, shadowReady.getOrDefault(player, 0L) - second);
+    }
+
+    void forget(UUID player) {
+        staticReady.remove(player);
+        backstabReady.remove(player);
+        leechReady.remove(player);
+        frostHits.remove(player);
+        shadowReady.remove(player);
+    }
+
+    void reset() {
+        staticReady.clear();
+        backstabReady.clear();
+        leechReady.clear();
+        frostHits.clear();
+        shadowReady.clear();
+    }
+
     static boolean isBehind(Vector facing, Vector towardsAttacker) {
         Vector a = facing.clone().setY(0), b = towardsAttacker.clone().setY(0);
-        return a.lengthSquared() > 1.0e-6 && b.lengthSquared() > 1.0e-6 && a.normalize().dot(b.normalize()) <= -.5;
+        return a.lengthSquared() > 1.0e-6
+                && b.lengthSquared() > 1.0e-6
+                && a.normalize().dot(b.normalize()) <= -.5;
     }
+
     static Vector dash(Vector facing, boolean backwards) {
         Vector direction = facing.clone().setY(0);
         if (direction.lengthSquared() < 1.0e-6) direction = new Vector(0, 0, 1);
         return direction.normalize().multiply(backwards ? -.9 : 1.05).setY(.2);
     }
-    static boolean canPayFury(double health) { return health > 2; }
+
+    static boolean canPayFury(double health) {
+        return health > 2;
+    }
+
     static Vector launch(Vector current) {
         Vector motion = current.clone().setY(0).multiply(.5);
         if (motion.lengthSquared() > .6 * .6) motion.normalize().multiply(.6);
         return motion.setY(.9);
     }
+
     static void heal(Player player, double health) {
         var maximum = player.getAttribute(Attribute.MAX_HEALTH);
         double cap = maximum == null ? 20 : Math.min(20, maximum.getValue());

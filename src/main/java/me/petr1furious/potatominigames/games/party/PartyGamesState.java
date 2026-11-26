@@ -22,8 +22,14 @@ final class PartyGamesState {
                     "tool_race",
                     "hole_in_the_wall",
                     "parkour_race");
-    static final List<String> QUICK_MODES = List.of(
-            "hot_potato", "jump_rope", "drop_tower", "chicken_shooter", "less_is_better", "wait_for_it");
+    static final List<String> QUICK_MODES =
+            List.of(
+                    "hot_potato",
+                    "jump_rope",
+                    "drop_tower",
+                    "chicken_shooter",
+                    "less_is_better",
+                    "wait_for_it");
     private static final List<String> QUICK_GAMES_DEFAULT =
             Stream.concat(PREVIOUS_DEFAULT.stream(), QUICK_MODES.stream()).toList();
     static final List<String> MODES =

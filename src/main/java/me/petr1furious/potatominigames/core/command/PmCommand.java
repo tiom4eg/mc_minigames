@@ -1,15 +1,7 @@
 package me.petr1furious.potatominigames.core.command;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.java.JavaPlugin;
+import static me.petr1furious.potatominigames.core.command.GameCommands.requirePlayer;
+import static me.petr1furious.potatominigames.core.command.GameCommands.run;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -19,9 +11,6 @@ import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
 import me.petr1furious.potatominigames.core.config.ConfigEditor;
 import me.petr1furious.potatominigames.core.config.ConfigRegistry;
 import me.petr1furious.potatominigames.core.game.EndReason;
@@ -29,9 +18,20 @@ import me.petr1furious.potatominigames.core.game.Minigame;
 import me.petr1furious.potatominigames.core.queue.QueueService;
 import me.petr1furious.potatominigames.core.session.SessionManager;
 import me.petr1furious.potatominigames.core.text.Messages;
+import me.petr1furious.potatominigames.i18n.I18n;
 
-import static me.petr1furious.potatominigames.core.command.GameCommands.run;
-import static me.petr1furious.potatominigames.core.command.GameCommands.requirePlayer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 /** Cross-game admin commands and kit helpers. */
 public final class PmCommand {
@@ -43,8 +43,13 @@ public final class PmCommand {
     private final QueueService queues;
     private final File kitsFile;
 
-    public PmCommand(JavaPlugin plugin, SessionManager sessions, ConfigRegistry configs, Messages messages,
-            GameCommands gameCommands, QueueService queues) {
+    public PmCommand(
+            JavaPlugin plugin,
+            SessionManager sessions,
+            ConfigRegistry configs,
+            Messages messages,
+            GameCommands gameCommands,
+            QueueService queues) {
         this.plugin = plugin;
         this.queues = queues;
         this.sessions = sessions;
@@ -58,43 +63,136 @@ public final class PmCommand {
         return Commands.literal("pm")
                 .executes(ctx -> run(ctx, this::sendStatus))
                 .then(Commands.literal("status").executes(ctx -> run(ctx, this::sendStatus)))
-                .then(Commands.literal("games").executes(ctx -> run(ctx, c -> {
-                    for (Minigame game : sessions.games()) {
-                        c.getSource().getSender().sendMessage(Component.text()
-                                .append(Component.text("/" + game.id() + " — ", NamedTextColor.GOLD))
-                                .append(game.displayName())
-                                .build());
-                    }
-                })))
-                .then(Commands.literal("stop")
-                        .requires(source -> source.getSender().hasPermission(GameCommands.ADMIN_PERMISSION))
-                        .executes(ctx -> run(ctx, c -> {
-                            if (sessions.activeSessions().isEmpty()) {
-                                throw new CommandFailure(I18n.tr("core.session.no_active"));
-                            }
-                            sessions.stopAll(EndReason.ABORTED);
-                            messages.broadcast(I18n.tr("core.session.all_stopped").color(NamedTextColor.RED));
-                        }))
-                        .then(Commands.argument("game", StringArgumentType.word())
-                                .suggests(Suggest.dynamic(() -> sessions.activeSessions().stream()
-                                        .map(session -> session.game().id()).toList()))
-                                .executes(ctx -> run(ctx, c -> {
-                                    Minigame game = requireGame(c.getArgument("game", String.class));
-                                    var session = sessions.sessionOf(game)
-                                            .orElseThrow(() -> new CommandFailure(I18n.tr("core.session.no_running_game", game.displayName())));
-                                    session.stopNow(EndReason.ABORTED);
-                                    messages.broadcast(I18n.tr("core.session.stopped", session.displayName()).color(NamedTextColor.RED));
-                                }))))
+                .then(
+                        Commands.literal("games")
+                                .executes(
+                                        ctx ->
+                                                run(
+                                                        ctx,
+                                                        c -> {
+                                                            for (Minigame game : sessions.games()) {
+                                                                c.getSource()
+                                                                        .getSender()
+                                                                        .sendMessage(
+                                                                                Component.text()
+                                                                                        .append(
+                                                                                                Component
+                                                                                                        .text(
+                                                                                                                "/"
+                                                                                                                        + game
+                                                                                                                                .id()
+                                                                                                                        + " — ",
+                                                                                                                NamedTextColor
+                                                                                                                        .GOLD))
+                                                                                        .append(
+                                                                                                game
+                                                                                                        .displayName())
+                                                                                        .build());
+                                                            }
+                                                        })))
+                .then(
+                        Commands.literal("stop")
+                                .requires(
+                                        source ->
+                                                source.getSender()
+                                                        .hasPermission(
+                                                                GameCommands.ADMIN_PERMISSION))
+                                .executes(
+                                        ctx ->
+                                                run(
+                                                        ctx,
+                                                        c -> {
+                                                            if (sessions.activeSessions()
+                                                                    .isEmpty()) {
+                                                                throw new CommandFailure(
+                                                                        I18n.tr(
+                                                                                "core.session.no_active"));
+                                                            }
+                                                            sessions.stopAll(EndReason.ABORTED);
+                                                            messages.broadcast(
+                                                                    I18n.tr(
+                                                                                    "core.session.all_stopped")
+                                                                            .color(
+                                                                                    NamedTextColor
+                                                                                            .RED));
+                                                        }))
+                                .then(
+                                        Commands.argument("game", StringArgumentType.word())
+                                                .suggests(
+                                                        Suggest.dynamic(
+                                                                () ->
+                                                                        sessions
+                                                                                .activeSessions()
+                                                                                .stream()
+                                                                                .map(
+                                                                                        session ->
+                                                                                                session.game()
+                                                                                                        .id())
+                                                                                .toList()))
+                                                .executes(
+                                                        ctx ->
+                                                                run(
+                                                                        ctx,
+                                                                        c -> {
+                                                                            Minigame game =
+                                                                                    requireGame(
+                                                                                            c
+                                                                                                    .getArgument(
+                                                                                                            "game",
+                                                                                                            String
+                                                                                                                    .class));
+                                                                            var session =
+                                                                                    sessions.sessionOf(
+                                                                                                    game)
+                                                                                            .orElseThrow(
+                                                                                                    () ->
+                                                                                                            new CommandFailure(
+                                                                                                                    I18n
+                                                                                                                            .tr(
+                                                                                                                                    "core.session.no_running_game",
+                                                                                                                                    game
+                                                                                                                                            .displayName())));
+                                                                            session.stopNow(
+                                                                                    EndReason
+                                                                                            .ABORTED);
+                                                                            messages.broadcast(
+                                                                                    I18n.tr(
+                                                                                                    "core.session.stopped",
+                                                                                                    session
+                                                                                                            .displayName())
+                                                                                            .color(
+                                                                                                    NamedTextColor
+                                                                                                            .RED));
+                                                                        }))))
                 .then(buildForceStart())
-                .then(Commands.literal("reload")
-                        .requires(source -> source.getSender().hasPermission(GameCommands.ADMIN_PERMISSION))
-                        .executes(ctx -> run(ctx, c -> {
-                            configs.reloadAll();
-                            c.getSource().getSender().sendMessage(messages.success(I18n.tr("core.config.reloaded")));
-                        })))
+                .then(
+                        Commands.literal("reload")
+                                .requires(
+                                        source ->
+                                                source.getSender()
+                                                        .hasPermission(
+                                                                GameCommands.ADMIN_PERMISSION))
+                                .executes(
+                                        ctx ->
+                                                run(
+                                                        ctx,
+                                                        c -> {
+                                                            configs.reloadAll();
+                                                            c.getSource()
+                                                                    .getSender()
+                                                                    .sendMessage(
+                                                                            messages.success(
+                                                                                    I18n.tr(
+                                                                                            "core.config.reloaded")));
+                                                        })))
                 .then(buildInventorySubtree())
-                .then(new ConfigCommand("pm", new ConfigEditor(configs)
-                        .mount("", "config.yml").mount("gadgets", "gadgets.yml")).build())
+                .then(
+                        new ConfigCommand(
+                                        "pm",
+                                        new ConfigEditor(configs)
+                                                .mount("", "config.yml")
+                                                .mount("gadgets", "gadgets.yml"))
+                                .build())
                 .then(gameCommands.buildGiveSubtree())
                 .build();
     }
@@ -103,55 +201,106 @@ public final class PmCommand {
         var sender = ctx.getSource().getSender();
         var running = sessions.activeSessions();
         if (running.isEmpty()) {
-            sender.sendMessage(I18n.tr("core.command.plugin_idle", plugin.getPluginMeta().getVersion())
-                    .color(NamedTextColor.GRAY));
+            sender.sendMessage(
+                    I18n.tr("core.command.plugin_idle", plugin.getPluginMeta().getVersion())
+                            .color(NamedTextColor.GRAY));
         }
         for (var session : running) {
-            sender.sendMessage(I18n.tr("core.command.plugin_status", session.displayName(),
-                    session.phase().displayName(), session.participants().size(), session.spectatorIds().size())
-                    .color(NamedTextColor.GRAY));
+            sender.sendMessage(
+                    I18n.tr(
+                                    "core.command.plugin_status",
+                                    session.displayName(),
+                                    session.phase().displayName(),
+                                    session.participants().size(),
+                                    session.spectatorIds().size())
+                            .color(NamedTextColor.GRAY));
         }
         for (var queue : queues.visibleQueues()) {
             if (queue.size() > 0) {
-                sender.sendMessage((queue.countdown() != null
-                        ? I18n.tr("core.command.queue_countdown", queue.displayName(), queue.countText(), queue.countdown())
-                        : I18n.tr("core.command.queue_status", queue.displayName(), queue.countText()))
-                        .color(NamedTextColor.GRAY));
+                sender.sendMessage(
+                        (queue.countdown() != null
+                                        ? I18n.tr(
+                                                "core.command.queue_countdown",
+                                                queue.displayName(),
+                                                queue.countText(),
+                                                queue.countdown())
+                                        : I18n.tr(
+                                                "core.command.queue_status",
+                                                queue.displayName(),
+                                                queue.countText()))
+                                .color(NamedTextColor.GRAY));
             }
         }
     }
 
     /** Skips the queue's minimum and timers. */
-    private com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> buildForceStart() {
+    private com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack>
+            buildForceStart() {
         return Commands.literal("forcestart")
                 .requires(source -> source.getSender().hasPermission(GameCommands.ADMIN_PERMISSION))
-                .then(Commands.argument("game", StringArgumentType.word())
-                        .suggests(Suggest.dynamic(() -> sessions.games().stream().map(Minigame::id).toList()))
-                        .executes(ctx -> run(ctx, c -> forceStart(c, null)))
-                        .then(Commands.argument("mode", StringArgumentType.word())
-                                .suggests((context, builder) -> {
-                                    Minigame game = sessions.game(context.getArgument("game", String.class));
-                                    return Suggest.strings(game == null ? List.of() : game.modes())
-                                            .getSuggestions(context, builder);
-                                })
-                                .executes(ctx -> run(ctx, c -> forceStart(c, c.getArgument("mode", String.class))))));
+                .then(
+                        Commands.argument("game", StringArgumentType.word())
+                                .suggests(
+                                        Suggest.dynamic(
+                                                () ->
+                                                        sessions.games().stream()
+                                                                .map(Minigame::id)
+                                                                .toList()))
+                                .executes(ctx -> run(ctx, c -> forceStart(c, null)))
+                                .then(
+                                        Commands.argument("mode", StringArgumentType.word())
+                                                .suggests(
+                                                        (context, builder) -> {
+                                                            Minigame game =
+                                                                    sessions.game(
+                                                                            context.getArgument(
+                                                                                    "game",
+                                                                                    String.class));
+                                                            return Suggest.strings(
+                                                                            game == null
+                                                                                    ? List.of()
+                                                                                    : game.modes())
+                                                                    .getSuggestions(
+                                                                            context, builder);
+                                                        })
+                                                .executes(
+                                                        ctx ->
+                                                                run(
+                                                                        ctx,
+                                                                        c ->
+                                                                                forceStart(
+                                                                                        c,
+                                                                                        c
+                                                                                                .getArgument(
+                                                                                                        "mode",
+                                                                                                        String
+                                                                                                                .class))))));
     }
 
-    private void forceStart(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, String mode)
+    private void forceStart(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, String mode)
             throws CommandFailure {
         Minigame game = requireGame(ctx.getArgument("game", String.class));
         if (mode == null) {
             // No mode given: the fullest queue.
-            var fullest = queues.queuesOf(game).stream()
-                    .max(java.util.Comparator.comparingInt(QueueService.Queue::size));
+            var fullest =
+                    queues.queuesOf(game).stream()
+                            .max(java.util.Comparator.comparingInt(QueueService.Queue::size));
             if (fullest.isEmpty()) {
                 throw new CommandFailure(I18n.tr("core.queue.no_open", game.displayName()));
             }
             queues.forceStart(fullest.get());
             return;
         }
-        var queue = queues.find(game, mode)
-                .orElseThrow(() -> new CommandFailure(I18n.tr("core.command.game_unknown_mode", game.displayName(), mode)));
+        var queue =
+                queues.find(game, mode)
+                        .orElseThrow(
+                                () ->
+                                        new CommandFailure(
+                                                I18n.tr(
+                                                        "core.command.game_unknown_mode",
+                                                        game.displayName(),
+                                                        mode)));
         queues.forceStart(queue);
     }
 
@@ -163,51 +312,153 @@ public final class PmCommand {
         return game;
     }
 
-    private com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> buildInventorySubtree() {
+    private com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack>
+            buildInventorySubtree() {
         return Commands.literal("inventory")
                 .requires(source -> source.getSender().hasPermission(GameCommands.ADMIN_PERMISSION))
-                .then(Commands.literal("save")
-                        .then(Commands.argument("name", StringArgumentType.word())
-                                .executes(ctx -> run(ctx, c -> {
-                                    Player player = requirePlayer(c);
-                                    saveKit(c.getArgument("name", String.class),
-                                            player.getInventory().getContents());
-                                    player.sendMessage(messages.success(I18n.tr("core.inventory.saved", c.getArgument("name", String.class))));
-                                }))))
-                .then(Commands.literal("load")
-                        .then(Commands.argument("name", StringArgumentType.word())
-                                .suggests(Suggest.dynamic(this::kitNames))
-                                .executes(ctx -> run(ctx, c -> {
-                                    Player player = requirePlayer(c);
-                                    loadKit(c.getArgument("name", String.class), List.of(player));
-                                    player.sendMessage(messages.success(I18n.tr("core.inventory.loaded")));
-                                }))
-                                .then(Commands.argument("targets", ArgumentTypes.players())
-                                        .executes(ctx -> run(ctx, c -> {
-                                            var targets = c
-                                                    .getArgument("targets", PlayerSelectorArgumentResolver.class)
-                                                    .resolve(c.getSource());
-                                            loadKit(c.getArgument("name", String.class), targets);
-                                            c.getSource().getSender().sendMessage(messages.success(
-                                                    I18n.tr("core.inventory.loaded_targets", targets.size())));
-                                        })))))
-                .then(Commands.literal("copy")
-                        .then(Commands.argument("source", ArgumentTypes.player())
-                                .then(Commands.argument("targets", ArgumentTypes.players())
-                                        .executes(ctx -> run(ctx, c -> {
-                                            Player source = c
-                                                    .getArgument("source", PlayerSelectorArgumentResolver.class)
-                                                    .resolve(c.getSource()).getFirst();
-                                            var targets = c
-                                                    .getArgument("targets", PlayerSelectorArgumentResolver.class)
-                                                    .resolve(c.getSource());
-                                            for (Player target : targets) {
-                                                target.getInventory()
-                                                        .setContents(source.getInventory().getContents());
-                                            }
-                                            c.getSource().getSender()
-                                                    .sendMessage(messages.success(I18n.tr("core.inventory.copied")));
-                                        })))));
+                .then(
+                        Commands.literal("save")
+                                .then(
+                                        Commands.argument("name", StringArgumentType.word())
+                                                .executes(
+                                                        ctx ->
+                                                                run(
+                                                                        ctx,
+                                                                        c -> {
+                                                                            Player player =
+                                                                                    requirePlayer(
+                                                                                            c);
+                                                                            saveKit(
+                                                                                    c.getArgument(
+                                                                                            "name",
+                                                                                            String
+                                                                                                    .class),
+                                                                                    player.getInventory()
+                                                                                            .getContents());
+                                                                            player.sendMessage(
+                                                                                    messages
+                                                                                            .success(
+                                                                                                    I18n
+                                                                                                            .tr(
+                                                                                                                    "core.inventory.saved",
+                                                                                                                    c
+                                                                                                                            .getArgument(
+                                                                                                                                    "name",
+                                                                                                                                    String
+                                                                                                                                            .class))));
+                                                                        }))))
+                .then(
+                        Commands.literal("load")
+                                .then(
+                                        Commands.argument("name", StringArgumentType.word())
+                                                .suggests(Suggest.dynamic(this::kitNames))
+                                                .executes(
+                                                        ctx ->
+                                                                run(
+                                                                        ctx,
+                                                                        c -> {
+                                                                            Player player =
+                                                                                    requirePlayer(
+                                                                                            c);
+                                                                            loadKit(
+                                                                                    c.getArgument(
+                                                                                            "name",
+                                                                                            String
+                                                                                                    .class),
+                                                                                    List.of(
+                                                                                            player));
+                                                                            player.sendMessage(
+                                                                                    messages
+                                                                                            .success(
+                                                                                                    I18n
+                                                                                                            .tr(
+                                                                                                                    "core.inventory.loaded")));
+                                                                        }))
+                                                .then(
+                                                        Commands.argument(
+                                                                        "targets",
+                                                                        ArgumentTypes.players())
+                                                                .executes(
+                                                                        ctx ->
+                                                                                run(
+                                                                                        ctx,
+                                                                                        c -> {
+                                                                                            var
+                                                                                                    targets =
+                                                                                                            c.getArgument(
+                                                                                                                            "targets",
+                                                                                                                            PlayerSelectorArgumentResolver
+                                                                                                                                    .class)
+                                                                                                                    .resolve(
+                                                                                                                            c
+                                                                                                                                    .getSource());
+                                                                                            loadKit(
+                                                                                                    c
+                                                                                                            .getArgument(
+                                                                                                                    "name",
+                                                                                                                    String
+                                                                                                                            .class),
+                                                                                                    targets);
+                                                                                            c.getSource()
+                                                                                                    .getSender()
+                                                                                                    .sendMessage(
+                                                                                                            messages
+                                                                                                                    .success(
+                                                                                                                            I18n
+                                                                                                                                    .tr(
+                                                                                                                                            "core.inventory.loaded_targets",
+                                                                                                                                            targets
+                                                                                                                                                    .size())));
+                                                                                        })))))
+                .then(
+                        Commands.literal("copy")
+                                .then(
+                                        Commands.argument("source", ArgumentTypes.player())
+                                                .then(
+                                                        Commands.argument(
+                                                                        "targets",
+                                                                        ArgumentTypes.players())
+                                                                .executes(
+                                                                        ctx ->
+                                                                                run(
+                                                                                        ctx,
+                                                                                        c -> {
+                                                                                            Player
+                                                                                                    source =
+                                                                                                            c.getArgument(
+                                                                                                                            "source",
+                                                                                                                            PlayerSelectorArgumentResolver
+                                                                                                                                    .class)
+                                                                                                                    .resolve(
+                                                                                                                            c
+                                                                                                                                    .getSource())
+                                                                                                                    .getFirst();
+                                                                                            var
+                                                                                                    targets =
+                                                                                                            c.getArgument(
+                                                                                                                            "targets",
+                                                                                                                            PlayerSelectorArgumentResolver
+                                                                                                                                    .class)
+                                                                                                                    .resolve(
+                                                                                                                            c
+                                                                                                                                    .getSource());
+                                                                                            for (Player
+                                                                                                    target :
+                                                                                                            targets) {
+                                                                                                target.getInventory()
+                                                                                                        .setContents(
+                                                                                                                source.getInventory()
+                                                                                                                        .getContents());
+                                                                                            }
+                                                                                            c.getSource()
+                                                                                                    .getSender()
+                                                                                                    .sendMessage(
+                                                                                                            messages
+                                                                                                                    .success(
+                                                                                                                            I18n
+                                                                                                                                    .tr(
+                                                                                                                                            "core.inventory.copied")));
+                                                                                        })))));
     }
 
     private List<String> kitNames() {
@@ -223,7 +474,8 @@ public final class PmCommand {
             kitsFile.getParentFile().mkdirs();
             config.save(kitsFile);
         } catch (IOException exception) {
-            throw new CommandFailure(I18n.tr("core.inventory.save_failed", I18n.message(exception)));
+            throw new CommandFailure(
+                    I18n.tr("core.inventory.save_failed", I18n.message(exception)));
         }
     }
 
@@ -233,9 +485,10 @@ public final class PmCommand {
         if (stored == null) {
             throw new CommandFailure(I18n.tr("core.inventory.not_found", name));
         }
-        ItemStack[] contents = stored.stream()
-                .map(item -> item instanceof ItemStack stack ? stack : null)
-                .toArray(ItemStack[]::new);
+        ItemStack[] contents =
+                stored.stream()
+                        .map(item -> item instanceof ItemStack stack ? stack : null)
+                        .toArray(ItemStack[]::new);
         for (Player target : targets) {
             target.getInventory().setContents(contents);
         }

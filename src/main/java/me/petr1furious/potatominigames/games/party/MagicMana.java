@@ -9,6 +9,7 @@ final class MagicMana {
     private double mana = MAX;
     private long nextCast;
     private final Map<MagicSpell, Long> readyAt = new EnumMap<>(MagicSpell.class);
+
     double mana() {
         return mana;
     }

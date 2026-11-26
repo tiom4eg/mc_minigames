@@ -1,18 +1,21 @@
 package me.petr1furious.potatominigames.core.config;
 
 import me.petr1furious.potatominigames.i18n.I18n;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
 
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.util.Vector;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
 /** Converts between typed values, YAML and command strings. */
 public interface PropertyCodec<T> {
 
-    /** @throws IllegalArgumentException on bad input */
+    /**
+     * @throws IllegalArgumentException on bad input
+     */
     T parse(String raw);
 
     String render(T value);
@@ -44,144 +47,163 @@ public interface PropertyCodec<T> {
         }
     }
 
-    PropertyCodec<Integer> INT = new PropertyCodec<>() {
-        public Integer parse(String raw) {
-            return Integer.parseInt(raw);
-        }
+    PropertyCodec<Integer> INT =
+            new PropertyCodec<>() {
+                public Integer parse(String raw) {
+                    return Integer.parseInt(raw);
+                }
 
-        public String render(Integer value) {
-            return value.toString();
-        }
+                public String render(Integer value) {
+                    return value.toString();
+                }
 
-        public String typeName() {
-            return "int";
-        }
+                public String typeName() {
+                    return "int";
+                }
 
-        public Integer fromYaml(ConfigurationSection section, String key, Integer fallback) {
-            return section.isInt(key) ? section.getInt(key) : fallback;
-        }
-    };
+                public Integer fromYaml(
+                        ConfigurationSection section, String key, Integer fallback) {
+                    return section.isInt(key) ? section.getInt(key) : fallback;
+                }
+            };
 
-    PropertyCodec<Double> DOUBLE = new PropertyCodec<>() {
-        public Double parse(String raw) {
-            return Double.parseDouble(raw);
-        }
+    PropertyCodec<Double> DOUBLE =
+            new PropertyCodec<>() {
+                public Double parse(String raw) {
+                    return Double.parseDouble(raw);
+                }
 
-        public String render(Double value) {
-            return value.toString();
-        }
+                public String render(Double value) {
+                    return value.toString();
+                }
 
-        public String typeName() {
-            return "number";
-        }
+                public String typeName() {
+                    return "number";
+                }
 
-        public Double fromYaml(ConfigurationSection section, String key, Double fallback) {
-            return section.isDouble(key) || section.isInt(key) ? section.getDouble(key) : fallback;
-        }
-    };
+                public Double fromYaml(ConfigurationSection section, String key, Double fallback) {
+                    return section.isDouble(key) || section.isInt(key)
+                            ? section.getDouble(key)
+                            : fallback;
+                }
+            };
 
-    PropertyCodec<Boolean> BOOL = new PropertyCodec<>() {
-        public Boolean parse(String raw) {
-            String normalized = raw.toLowerCase(Locale.ROOT);
-            if (normalized.equals("true") || normalized.equals("yes") || normalized.equals("on")) {
-                return true;
-            }
-            if (normalized.equals("false") || normalized.equals("no") || normalized.equals("off")) {
-                return false;
-            }
-            throw I18n.exception("core.config.expected_boolean", raw);
-        }
+    PropertyCodec<Boolean> BOOL =
+            new PropertyCodec<>() {
+                public Boolean parse(String raw) {
+                    String normalized = raw.toLowerCase(Locale.ROOT);
+                    if (normalized.equals("true")
+                            || normalized.equals("yes")
+                            || normalized.equals("on")) {
+                        return true;
+                    }
+                    if (normalized.equals("false")
+                            || normalized.equals("no")
+                            || normalized.equals("off")) {
+                        return false;
+                    }
+                    throw I18n.exception("core.config.expected_boolean", raw);
+                }
 
-        public String render(Boolean value) {
-            return value.toString();
-        }
+                public String render(Boolean value) {
+                    return value.toString();
+                }
 
-        public String typeName() {
-            return "boolean";
-        }
+                public String typeName() {
+                    return "boolean";
+                }
 
-        public List<String> choices() {
-            return List.of("true", "false");
-        }
+                public List<String> choices() {
+                    return List.of("true", "false");
+                }
 
-        public Boolean fromYaml(ConfigurationSection section, String key, Boolean fallback) {
-            return section.isBoolean(key) ? section.getBoolean(key) : fallback;
-        }
-    };
+                public Boolean fromYaml(
+                        ConfigurationSection section, String key, Boolean fallback) {
+                    return section.isBoolean(key) ? section.getBoolean(key) : fallback;
+                }
+            };
 
-    PropertyCodec<String> STRING = new PropertyCodec<>() {
-        public String parse(String raw) {
-            return raw;
-        }
+    PropertyCodec<String> STRING =
+            new PropertyCodec<>() {
+                public String parse(String raw) {
+                    return raw;
+                }
 
-        public String render(String value) {
-            return value;
-        }
+                public String render(String value) {
+                    return value;
+                }
 
-        public String fromYaml(ConfigurationSection section, String key, String fallback) {
-            String stored = section.getString(key);
-            return stored != null ? stored : fallback;
-        }
-    };
+                public String fromYaml(ConfigurationSection section, String key, String fallback) {
+                    String stored = section.getString(key);
+                    return stored != null ? stored : fallback;
+                }
+            };
 
-    PropertyCodec<Material> MATERIAL = new PropertyCodec<>() {
-        public Material parse(String raw) {
-            Material material = Material.matchMaterial(raw);
-            if (material == null) {
-                throw I18n.exception("core.config.unknown_material", raw);
-            }
-            return material;
-        }
+    PropertyCodec<Material> MATERIAL =
+            new PropertyCodec<>() {
+                public Material parse(String raw) {
+                    Material material = Material.matchMaterial(raw);
+                    if (material == null) {
+                        throw I18n.exception("core.config.unknown_material", raw);
+                    }
+                    return material;
+                }
 
-        public String render(Material value) {
-            return value.getKey().getKey();
-        }
+                public String render(Material value) {
+                    return value.getKey().getKey();
+                }
 
-        public String typeName() {
-            return "material";
-        }
+                public String typeName() {
+                    return "material";
+                }
 
-        public List<String> choices() {
-            return Arrays.stream(Material.values()).filter(material -> !material.name().startsWith("LEGACY_"))
-                    .map(material -> material.getKey().getKey()).toList();
-        }
+                public List<String> choices() {
+                    return Arrays.stream(Material.values())
+                            .filter(material -> !material.name().startsWith("LEGACY_"))
+                            .map(material -> material.getKey().getKey())
+                            .toList();
+                }
 
-        public Object toYaml(Material value) {
-            return value.getKey().getKey();
-        }
+                public Object toYaml(Material value) {
+                    return value.getKey().getKey();
+                }
 
-        public Material fromYaml(ConfigurationSection section, String key, Material fallback) {
-            String stored = section.getString(key);
-            if (stored == null) {
-                return fallback;
-            }
-            Material material = Material.matchMaterial(stored);
-            return material != null ? material : fallback;
-        }
-    };
+                public Material fromYaml(
+                        ConfigurationSection section, String key, Material fallback) {
+                    String stored = section.getString(key);
+                    if (stored == null) {
+                        return fallback;
+                    }
+                    Material material = Material.matchMaterial(stored);
+                    return material != null ? material : fallback;
+                }
+            };
 
     /** "x y z" (doubles), stored as a Bukkit Vector. */
-    PropertyCodec<Vector> VECTOR = new PropertyCodec<>() {
-        public Vector parse(String raw) {
-            String[] parts = raw.trim().split("\\s+");
-            if (parts.length != 3) {
-                throw I18n.exception("core.config.expected_vector", raw);
-            }
-            return new Vector(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]),
-                    Double.parseDouble(parts[2]));
-        }
+    PropertyCodec<Vector> VECTOR =
+            new PropertyCodec<>() {
+                public Vector parse(String raw) {
+                    String[] parts = raw.trim().split("\\s+");
+                    if (parts.length != 3) {
+                        throw I18n.exception("core.config.expected_vector", raw);
+                    }
+                    return new Vector(
+                            Double.parseDouble(parts[0]),
+                            Double.parseDouble(parts[1]),
+                            Double.parseDouble(parts[2]));
+                }
 
-        public String render(Vector value) {
-            return value.getX() + " " + value.getY() + " " + value.getZ();
-        }
+                public String render(Vector value) {
+                    return value.getX() + " " + value.getY() + " " + value.getZ();
+                }
 
-        public String typeName() {
-            return "x y z";
-        }
+                public String typeName() {
+                    return "x y z";
+                }
 
-        public Vector fromYaml(ConfigurationSection section, String key, Vector fallback) {
-            Vector stored = section.getVector(key);
-            return stored != null ? stored : fallback;
-        }
-    };
+                public Vector fromYaml(ConfigurationSection section, String key, Vector fallback) {
+                    Vector stored = section.getVector(key);
+                    return stored != null ? stored : fallback;
+                }
+            };
 }

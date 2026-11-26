@@ -13,18 +13,20 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * Copies the chunks around an arena's center into a separate world folder for ASP
- * to import. Works on region files directly, so the world need not be loaded.
+ * Copies the chunks around an arena's center into a separate world folder for ASP to import. Works
+ * on region files directly, so the world need not be loaded.
  */
 final class ArenaImporter {
     private static final int SECTOR = 4096;
     private static final Pattern REGION = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
 
-    private ArenaImporter() {
-    }
+    private ArenaImporter() {}
 
-    /** @return block chunks copied; 0 means the arena is empty */
-    static int cut(File sourceWorld, File target, double centerX, double centerZ, int radius) throws IOException {
+    /**
+     * @return block chunks copied; 0 means the arena is empty
+     */
+    static int cut(File sourceWorld, File target, double centerX, double centerZ, int radius)
+            throws IOException {
         int copied = 0;
         for (String kind : new String[] {"region", "entities", "poi"}) {
             File from = new File(sourceWorld, kind);
@@ -42,7 +44,8 @@ final class ArenaImporter {
         return copied;
     }
 
-    private static int cutRegion(File region, File targetFolder, double centerX, double centerZ, int radius)
+    private static int cutRegion(
+            File region, File targetFolder, double centerX, double centerZ, int radius)
             throws IOException {
         Matcher matcher = REGION.matcher(region.getName());
         if (!matcher.matches()) {
@@ -90,10 +93,13 @@ final class ArenaImporter {
             kept++;
             // Oversized chunks live in an external .mcc file.
             if ((payload[4] & 0x80) != 0) {
-                File external = new File(region.getParentFile(), "c." + chunkX + "." + chunkZ + ".mcc");
+                File external =
+                        new File(region.getParentFile(), "c." + chunkX + "." + chunkZ + ".mcc");
                 if (external.isFile()) {
                     targetFolder.mkdirs();
-                    Files.copy(external.toPath(), new File(targetFolder, external.getName()).toPath(),
+                    Files.copy(
+                            external.toPath(),
+                            new File(targetFolder, external.getName()).toPath(),
                             StandardCopyOption.REPLACE_EXISTING);
                 }
             }
@@ -104,7 +110,8 @@ final class ArenaImporter {
 
         // Second pass: write a region holding only those chunks, packed from sector 2.
         targetFolder.mkdirs();
-        try (RandomAccessFile out = new RandomAccessFile(new File(targetFolder, region.getName()), "rw")) {
+        try (RandomAccessFile out =
+                new RandomAccessFile(new File(targetFolder, region.getName()), "rw")) {
             out.setLength(0);
             out.write(new byte[2 * SECTOR]);
             int sector = 2;

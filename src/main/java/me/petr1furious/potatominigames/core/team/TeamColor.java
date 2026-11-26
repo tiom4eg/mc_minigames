@@ -1,13 +1,14 @@
 package me.petr1furious.potatominigames.core.team;
 
 import me.petr1furious.potatominigames.i18n.I18n;
-import java.util.Locale;
-
-import org.bukkit.Material;
 
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+
+import org.bukkit.Material;
+
+import java.util.Locale;
 
 public enum TeamColor {
     WHITE(NamedTextColor.WHITE, BossBar.Color.WHITE),
@@ -36,7 +37,6 @@ public enum TeamColor {
         this.bossBarColor = bossBarColor;
         this.woolMaterial = Material.valueOf(name() + "_WOOL");
     }
-
 
     public NamedTextColor textColor() {
         return textColor;

@@ -18,9 +18,13 @@ final class MobCountArena {
     static final int SEPARATOR = -1;
     private static final double HUB_RADIUS = 4.2;
     private static final double SEPARATOR_CLEARANCE = 1.1;
-    private static final List<Material> COLORS = List.of(
-            Material.LIGHT_BLUE_CONCRETE, Material.LIME_CONCRETE, Material.YELLOW_CONCRETE,
-            Material.PINK_CONCRETE, Material.ORANGE_CONCRETE);
+    private static final List<Material> COLORS =
+            List.of(
+                    Material.LIGHT_BLUE_CONCRETE,
+                    Material.LIME_CONCRETE,
+                    Material.YELLOW_CONCRETE,
+                    Material.PINK_CONCRETE,
+                    Material.ORANGE_CONCRETE);
 
     private final World world;
     private final List<TextDisplay> labels = new ArrayList<>();
@@ -40,7 +44,8 @@ final class MobCountArena {
         double nearestBoundary = arc / 2 - Math.abs(angle - wedge * arc);
         // The center must clear the ray by more than half a block diagonal in each wedge.
         // This leaves a band of neutral tiles between different wedges, even on diagonals.
-        if (Math.sqrt(squaredRadius) * Math.sin(nearestBoundary) <= SEPARATOR_CLEARANCE) return SEPARATOR;
+        if (Math.sqrt(squaredRadius) * Math.sin(nearestBoundary) <= SEPARATOR_CLEARANCE)
+            return SEPARATOR;
         return Math.floorMod(wedge, sectors);
     }
 
@@ -108,7 +113,8 @@ final class MobCountArena {
         for (int i = 0; i < sectors; i++) {
             if (i == correct) continue;
             Location marker = marker(i, sectors);
-            world.getBlockAt(marker.getBlockX(), FLOOR + 1, marker.getBlockZ()).setType(Material.AIR, false);
+            world.getBlockAt(marker.getBlockX(), FLOOR + 1, marker.getBlockZ())
+                    .setType(Material.AIR, false);
             labels.get(i).remove();
         }
     }

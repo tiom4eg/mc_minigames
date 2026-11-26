@@ -1,12 +1,13 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyCodec;
+import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -34,17 +35,15 @@ public class LocatorGadget extends AbstractGadget {
 
     @Override
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (!GadgetItems.isRightClick(event))
-            return;
-        if (!GadgetItems.checkForItem(event.getItem(), TAG))
-            return;
+        if (!GadgetItems.isRightClick(event)) return;
+        if (!GadgetItems.checkForItem(event.getItem(), TAG)) return;
         Player player = event.getPlayer();
         event.setCancelled(true);
-        if (player.getGameMode() == GameMode.SPECTATOR)
-            return;
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
         int remaining = getRemainingCooldownSeconds(player);
         if (remaining > 0) {
-            player.sendActionBar(I18n.tr("gadgets.locator.cooldown", remaining).color(NamedTextColor.RED));
+            player.sendActionBar(
+                    I18n.tr("gadgets.locator.cooldown", remaining).color(NamedTextColor.RED));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.2f, 0.5f); // fail
             return;
         }
@@ -52,23 +51,26 @@ public class LocatorGadget extends AbstractGadget {
         Player nearest = findNearest(player);
         if (nearest == null) {
             player.sendActionBar(I18n.tr("gadgets.locator.no_players").color(NamedTextColor.GRAY));
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.2f, 0.7f); // not found
+            player.playSound(
+                    player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.2f, 0.7f); // not found
             return;
         }
         setCooldown(player);
 
         double dy = nearest.getLocation().getY() - player.getLocation().getY();
         String arrows = buildArrows(dy);
-        Component msg = (context.hideTargetNames(player)
-                ? I18n.tr("gadgets.enemy").color(NamedTextColor.AQUA)
-                : Component.text(nearest.getName()).color(NamedTextColor.AQUA))
-                .append(Component.text(" "))
-                .append(Component.text(arrows).color(NamedTextColor.GOLD));
+        Component msg =
+                (context.hideTargetNames(player)
+                                ? I18n.tr("gadgets.enemy").color(NamedTextColor.AQUA)
+                                : Component.text(nearest.getName()).color(NamedTextColor.AQUA))
+                        .append(Component.text(" "))
+                        .append(Component.text(arrows).color(NamedTextColor.GOLD));
         player.sendActionBar(msg);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.2f, 2f); // success
         if (effectLength.get() > 0) {
             player.addPotionEffect(
-                    new PotionEffect(PotionEffectType.BLINDNESS, effectLength.get() * 20, 0, false, false));
+                    new PotionEffect(
+                            PotionEffectType.BLINDNESS, effectLength.get() * 20, 0, false, false));
         }
     }
 
@@ -96,13 +98,11 @@ public class LocatorGadget extends AbstractGadget {
     private String buildArrows(double dy) {
         double effectivePrecision = Math.max(0.0001, precision.get());
         int arrows = (int) Math.ceil(Math.abs(dy) / effectivePrecision);
-        if (arrows == 0)
-            return "=";
+        if (arrows == 0) return "=";
         arrows = Math.min(arrows, steps.get());
         StringBuilder sb = new StringBuilder();
         char ch = dy > 0 ? '↑' : '↓';
-        for (int i = 0; i < arrows; i++)
-            sb.append(ch);
+        for (int i = 0; i < arrows; i++) sb.append(ch);
         return sb.toString();
     }
 
@@ -112,7 +112,9 @@ public class LocatorGadget extends AbstractGadget {
         GadgetItems.addTag(item, TAG);
         var meta = item.getItemMeta();
         meta.displayName(
-                I18n.tr("gadgets.locator.name").color(NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                I18n.tr("gadgets.locator.name")
+                        .color(NamedTextColor.YELLOW)
+                        .decoration(TextDecoration.ITALIC, false));
         meta.setEnchantmentGlintOverride(true);
         item.setItemMeta(meta);
         item.setAmount(count);

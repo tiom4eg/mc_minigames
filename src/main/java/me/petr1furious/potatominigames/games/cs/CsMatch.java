@@ -502,10 +502,11 @@ final class CsMatch {
                                     : info.weapon() == null ? 1500 : info.weapon().killReward());
                 contributions
                         .getOrDefault(p.id, Map.of())
-                        .forEach((id, damage) -> {
-                            Actor other = actors.get(id);
-                            if (!id.equals(source.id) && damage >= 40) other.assists++;
-                        });
+                        .forEach(
+                                (id, damage) -> {
+                                    Actor other = actors.get(id);
+                                    if (!id.equals(source.id) && damage >= 40) other.assists++;
+                                });
             }
         } else if (source != null) credit(source, -300);
         contributions.remove(p.id);

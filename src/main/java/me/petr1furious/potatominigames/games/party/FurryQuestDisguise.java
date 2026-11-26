@@ -1,6 +1,5 @@
 package me.petr1furious.potatominigames.games.party;
 
-import java.lang.reflect.Method;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -8,9 +7,12 @@ import org.bukkit.entity.Animals;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import java.lang.reflect.Method;
+
 /** The player walks normally; other clients track the animal at the player's feet. */
 final class FurryQuestDisguise {
-    private static final NamespacedKey FORM = new NamespacedKey("potatominigames", "furry_quest_form");
+    private static final NamespacedKey FORM =
+            new NamespacedKey("potatominigames", "furry_quest_form");
     private static final double STANDING_EYE_HEIGHT = 1.62;
 
     final Player player;
@@ -40,7 +42,8 @@ final class FurryQuestDisguise {
         animal.setGravity(false);
         animal.setCollidable(false);
         scale(Attribute.SCALE, animal.getEyeHeight() / STANDING_EYE_HEIGHT);
-        // Vanilla mob walking uses the movement attribute for both forward input and ground acceleration.
+        // Vanilla mob walking uses the movement attribute for both forward input and ground
+        // acceleration.
         double pace = animal.getAttribute(Attribute.MOVEMENT_SPEED).getValue();
         scale(Attribute.MOVEMENT_SPEED, pace * pace);
     }
@@ -48,13 +51,17 @@ final class FurryQuestDisguise {
     private void scale(Attribute attribute, double target) {
         var instance = player.getAttribute(attribute);
         instance.removeModifier(FORM);
-        instance.addTransientModifier(new AttributeModifier(FORM, target / instance.getBaseValue() - 1,
-                AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+        instance.addTransientModifier(
+                new AttributeModifier(
+                        FORM,
+                        target / instance.getBaseValue() - 1,
+                        AttributeModifier.Operation.MULTIPLY_SCALAR_1));
     }
 
     void sync() {
         try {
-            // Let the normal entity tracker send relative movement so observers see an interpolated animal gait.
+            // Let the normal entity tracker send relative movement so observers see an interpolated
+            // animal gait.
             Motion.copyPosition.invoke(animalHandle, playerHandle);
             Motion.onGround.invoke(animalHandle, player.isOnGround());
             animal.setBodyYaw(player.getBodyYaw());
@@ -73,10 +80,13 @@ final class FurryQuestDisguise {
 
     private static final class Motion {
         static final Method handle, copyPosition, onGround;
+
         static {
             try {
                 Class<?> entity = Class.forName("net.minecraft.world.entity.Entity");
-                handle = Class.forName("org.bukkit.craftbukkit.entity.CraftEntity").getMethod("getHandle");
+                handle =
+                        Class.forName("org.bukkit.craftbukkit.entity.CraftEntity")
+                                .getMethod("getHandle");
                 copyPosition = entity.getMethod("copyPosition", entity);
                 onGround = entity.getMethod("setOnGround", boolean.class);
             } catch (ReflectiveOperationException e) {

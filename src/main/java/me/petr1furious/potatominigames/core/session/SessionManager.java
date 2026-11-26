@@ -1,23 +1,5 @@
 package me.petr1furious.potatominigames.core.session;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Consumer;
-
-import org.bukkit.World;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
 import me.petr1furious.potatominigames.core.command.CommandFailure;
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyBag;
@@ -34,6 +16,24 @@ import me.petr1furious.potatominigames.core.world.SessionWorlds;
 import me.petr1furious.potatominigames.core.world.SlimeWorldService;
 import me.petr1furious.potatominigames.core.world.SpawnFinder;
 import me.petr1furious.potatominigames.core.world.ThrowawayWorldService;
+import me.petr1furious.potatominigames.i18n.I18n;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
 
 /** Running games, at most one per game type. Inert for players not in a session. */
 public final class SessionManager {
@@ -53,14 +53,21 @@ public final class SessionManager {
     private final List<Consumer<Player>> joinListeners = new ArrayList<>();
 
     private final Map<String, ActiveSession> sessions = new LinkedHashMap<>();
+
     /** Each player is in at most one session. */
     private final Map<UUID, ActiveSession> byPlayer = new HashMap<>();
 
     private final PropertyBag coreConfig = new PropertyBag("core");
-    private final Property<Boolean> enableDummyGame = coreConfig.define("enableDummyGame", PropertyCodec.BOOL, false);
+    private final Property<Boolean> enableDummyGame =
+            coreConfig.define("enableDummyGame", PropertyCodec.BOOL, false);
 
-    public SessionManager(JavaPlugin plugin, PlayerStateService playerState, TeamRegistry teamRegistry,
-            SlimeWorldService slimeWorlds, ThrowawayWorldService throwawayWorlds, SpawnFinder spawnFinder,
+    public SessionManager(
+            JavaPlugin plugin,
+            PlayerStateService playerState,
+            TeamRegistry teamRegistry,
+            SlimeWorldService slimeWorlds,
+            ThrowawayWorldService throwawayWorlds,
+            SpawnFinder spawnFinder,
             PointsService points) {
         this.plugin = plugin;
         this.playerState = playerState;
@@ -148,7 +155,9 @@ public final class SessionManager {
     /** Playing, not spectating. */
     public boolean isPlaying(Player player) {
         ActiveSession session = byPlayer.get(player.getUniqueId());
-        return session != null && session.isParticipant(player) && session.phase() != GamePhase.IDLE;
+        return session != null
+                && session.isParticipant(player)
+                && session.phase() != GamePhase.IDLE;
     }
 
     /** Playing or spectating. */
@@ -167,8 +176,13 @@ public final class SessionManager {
         byPlayer.remove(playerId, session);
     }
 
-    public ActiveSession start(Minigame game, String mode, List<Player> roster, Map<UUID, TeamColor> teamPicks,
-            boolean queued) throws CommandFailure {
+    public ActiveSession start(
+            Minigame game,
+            String mode,
+            List<Player> roster,
+            Map<UUID, TeamColor> teamPicks,
+            boolean queued)
+            throws CommandFailure {
         return start(game, mode, roster, teamPicks, queued, Map.of());
     }
 
@@ -178,12 +192,21 @@ public final class SessionManager {
      * @param queued saved colours apply only when false
      * @param options game-specific, e.g. {@code arena} for pillars, {@code difficulty} for bingo
      */
-    public ActiveSession start(Minigame game, String mode, List<Player> roster, Map<UUID, TeamColor> teamPicks,
-            boolean queued, Map<String, String> options) throws CommandFailure {
+    public ActiveSession start(
+            Minigame game,
+            String mode,
+            List<Player> roster,
+            Map<UUID, TeamColor> teamPicks,
+            boolean queued,
+            Map<String, String> options)
+            throws CommandFailure {
         ActiveSession running = sessions.get(game.id());
         if (running != null) {
-            throw new CommandFailure(I18n.tr("core.session.already_active", running.displayName(),
-                    running.phase().displayName()));
+            throw new CommandFailure(
+                    I18n.tr(
+                            "core.session.already_active",
+                            running.displayName(),
+                            running.phase().displayName()));
         }
         if (roster.isEmpty()) {
             throw new CommandFailure(I18n.tr("core.session.no_players"));
@@ -191,8 +214,11 @@ public final class SessionManager {
         for (Player player : roster) {
             ActiveSession other = byPlayer.get(player.getUniqueId());
             if (other != null && other.isParticipant(player)) {
-                throw new CommandFailure(I18n.tr("core.session.player_busy", player.getName(),
-                        other.game().displayName()));
+                throw new CommandFailure(
+                        I18n.tr(
+                                "core.session.player_busy",
+                                player.getName(),
+                                other.game().displayName()));
             }
         }
         // Spectators of another game stop watching.
@@ -203,8 +229,17 @@ public final class SessionManager {
             }
         }
 
-        ActiveSession session = new ActiveSession(plugin, this, game, mode, options, playerState, lobby,
-                new TeamService(teamRegistry), new SessionWorlds(throwawayWorlds, slimeWorlds));
+        ActiveSession session =
+                new ActiveSession(
+                        plugin,
+                        this,
+                        game,
+                        mode,
+                        options,
+                        playerState,
+                        lobby,
+                        new TeamService(teamRegistry),
+                        new SessionWorlds(throwawayWorlds, slimeWorlds));
         sessions.put(game.id(), session);
         try {
             session.start(roster, teamPicks, queued);
@@ -247,7 +282,9 @@ public final class SessionManager {
         }
     }
 
-    /** @return whether the player is back in a running game, so nothing else should move them */
+    /**
+     * @return whether the player is back in a running game, so nothing else should move them
+     */
     public boolean handleJoin(Player player) {
         ActiveSession session = byPlayer.get(player.getUniqueId());
         if (session != null && session.isParticipant(player) && session.phase() != GamePhase.IDLE) {
@@ -262,7 +299,9 @@ public final class SessionManager {
         if (!game.showModes() || mode == null || mode.isEmpty()) {
             return game.displayName();
         }
-        return I18n.tr("core.session.mode_name", game.displayName(),
+        return I18n.tr(
+                "core.session.mode_name",
+                game.displayName(),
                 game.modeTitle(mode).colorIfAbsent(NamedTextColor.GRAY));
     }
 

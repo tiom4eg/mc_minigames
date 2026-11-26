@@ -9,7 +9,9 @@ final class PartyTargeting {
         Player nearest = null;
         double bestDistance = range * range;
         for (Player target : candidates) {
-            if (target == null || target.equals(caster) || !PvpClass.visibleTarget(caster, target, range)) continue;
+            if (target == null
+                    || target.equals(caster)
+                    || !PvpClass.visibleTarget(caster, target, range)) continue;
             double distance = caster.getLocation().distanceSquared(target.getLocation());
             if (nearest == null || distance < bestDistance) {
                 nearest = target;

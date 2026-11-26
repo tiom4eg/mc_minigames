@@ -8,7 +8,11 @@ import java.util.random.RandomGenerator;
 
 /** One question and its unanswered players. Accessed only on the server thread. */
 final class MathChallenge {
-    enum Answer { IGNORED, WRONG, CORRECT }
+    enum Answer {
+        IGNORED,
+        WRONG,
+        CORRECT
+    }
 
     record Problem(int left, char operator, int right) {
         static Problem random(RandomGenerator random) {
@@ -28,7 +32,9 @@ final class MathChallenge {
             };
         }
 
-        String expression() { return left + " " + operator + " " + right; }
+        String expression() {
+            return left + " " + operator + " " + right;
+        }
     }
 
     private final Problem problem;
@@ -39,9 +45,17 @@ final class MathChallenge {
         this.unanswered = new HashSet<>(players);
     }
 
-    Problem problem() { return problem; }
-    boolean isWaiting(UUID player) { return unanswered.contains(player); }
-    void remove(UUID player) { unanswered.remove(player); }
+    Problem problem() {
+        return problem;
+    }
+
+    boolean isWaiting(UUID player) {
+        return unanswered.contains(player);
+    }
+
+    void remove(UUID player) {
+        unanswered.remove(player);
+    }
 
     Answer answer(UUID player, String message) {
         if (!isWaiting(player)) return Answer.IGNORED;

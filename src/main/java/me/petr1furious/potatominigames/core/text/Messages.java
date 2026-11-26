@@ -1,14 +1,14 @@
 package me.petr1furious.potatominigames.core.text;
 
-import java.util.function.Supplier;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
-import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import java.util.function.Supplier;
 
 /** Message styling and broadcasting; session instances reach only that game's audience. */
 public final class Messages {
@@ -19,7 +19,9 @@ public final class Messages {
         this(Bukkit::getServer, null);
     }
 
-    /** @param prefix put before every broadcast, e.g. {@link #tag}; null for none */
+    /**
+     * @param prefix put before every broadcast, e.g. {@link #tag}; null for none
+     */
     public Messages(Supplier<Audience> audience, Component prefix) {
         this.audience = audience;
         this.prefix = prefix;
@@ -42,7 +44,6 @@ public final class Messages {
     public void send(Audience target, Component message) {
         target.sendMessage(prefixed(message));
     }
-
 
     public Component success(Component message) {
         return message.colorIfAbsent(NamedTextColor.GREEN);
@@ -75,7 +76,8 @@ public final class Messages {
         }
     }
 
-    public void playSound(Iterable<? extends Player> players, Sound sound, float volume, float pitch) {
+    public void playSound(
+            Iterable<? extends Player> players, Sound sound, float volume, float pitch) {
         for (Player player : players) {
             player.playSound(player.getLocation(), sound, volume, pitch);
         }

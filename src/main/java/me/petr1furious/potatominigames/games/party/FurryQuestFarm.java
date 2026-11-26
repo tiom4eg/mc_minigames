@@ -3,9 +3,9 @@ package me.petr1furious.potatominigames.games.party;
 import static me.petr1furious.potatominigames.games.party.FurryQuestArena.DECK;
 import static me.petr1furious.potatominigames.games.party.FurryQuestArena.EDGE;
 import static me.petr1furious.potatominigames.games.party.FurryQuestArena.FLOOR;
+
 import static org.bukkit.Material.*;
 
-import java.util.Random;
 import org.bukkit.Axis;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -18,12 +18,16 @@ import org.bukkit.block.data.Orientable;
 import org.bukkit.block.data.type.Farmland;
 import org.bukkit.block.data.type.Leaves;
 
+import java.util.Random;
+
 /** The tallest scenery sits along the perimeter, behind the five task approaches. */
 final class FurryQuestFarm {
     private final World world;
     private final Random details = new Random(150);
 
-    FurryQuestFarm(World world) { this.world = world; }
+    FurryQuestFarm(World world) {
+        this.world = world;
+    }
 
     void build() {
         for (int x = -EDGE; x <= EDGE; x++) {
@@ -40,12 +44,23 @@ final class FurryQuestFarm {
         }
 
         // A wagon loop with shortcuts across the yard gives the herd several approaches.
-        lane(-9,-8, -1,-13); lane(-1,-13, 10,-9); lane(10,-9, 15,-3);
-        lane(15,-3, 11,6); lane(11,6, 8,12); lane(8,12, 1,15);
-        lane(1,15, -6,13); lane(-6,13, -10,6); lane(-10,6, -14,0); lane(-14,0, -9,-8);
-        lane(-14,0, -3,-3); lane(-3,-3, 4,-3); lane(4,-3, 10,-9);
-        lane(-3,-3, -4,5); lane(-4,5, 1,15); lane(-4,5, 11,6);
-        lane(-1,-13, 0,-21);
+        lane(-9, -8, -1, -13);
+        lane(-1, -13, 10, -9);
+        lane(10, -9, 15, -3);
+        lane(15, -3, 11, 6);
+        lane(11, 6, 8, 12);
+        lane(8, 12, 1, 15);
+        lane(1, 15, -6, 13);
+        lane(-6, 13, -10, 6);
+        lane(-10, 6, -14, 0);
+        lane(-14, 0, -9, -8);
+        lane(-14, 0, -3, -3);
+        lane(-3, -3, 4, -3);
+        lane(4, -3, 10, -9);
+        lane(-3, -3, -4, 5);
+        lane(-4, 5, 1, 15);
+        lane(-4, 5, 11, 6);
+        lane(-1, -13, 0, -21);
 
         for (var site : FurryQuest.Site.values()) {
             switch (site) {
@@ -63,7 +78,7 @@ final class FurryQuestFarm {
                     chime(FurryQuest.Station.GOLD, YELLOW_WOOL);
                     chime(FurryQuest.Station.RED, RED_WOOL);
                 }
-                case FISH, SWAP, CONTACT -> { } // These use existing scenery or livestock.
+                case FISH, SWAP, CONTACT -> {} // These use existing scenery or livestock.
             }
         }
         farmGate();
@@ -105,10 +120,11 @@ final class FurryQuestFarm {
                 put(x, DECK + 1, z, rim ? SPRUCE_SLAB : OAK_PLANKS);
             }
         }
-        for (int x : new int[]{-2, 2}) for (int z : new int[]{-2, 2}) {
-            for (int y = 2; y < DECK; y++) put(x, y, z, SPRUCE_LOG);
-            put(x, DECK - 2, z, COPPER_BLOCK);
-        }
+        for (int x : new int[] {-2, 2})
+            for (int z : new int[] {-2, 2}) {
+                for (int y = 2; y < DECK; y++) put(x, y, z, SPRUCE_LOG);
+                put(x, DECK - 2, z, COPPER_BLOCK);
+            }
         for (int y = 2; y < DECK - 1; y++) face(0, y, -2, LADDER, BlockFace.NORTH);
         face(2, DECK - 2, 0, RED_WALL_BANNER, BlockFace.EAST);
         face(-2, DECK - 2, 0, RED_WALL_BANNER, BlockFace.WEST);
@@ -116,10 +132,10 @@ final class FurryQuestFarm {
     }
 
     private void farmGate() {
-        for (int x : new int[]{-3, 3}) {
+        for (int x : new int[] {-3, 3}) {
             for (int y = 1; y <= 4; y++) put(x, y, -21, STRIPPED_SPRUCE_LOG);
             put(x, 5, -21, STONE_BRICK_SLAB);
-            for (int side : new int[]{-1, 1}) put(x + side, 1, -20, POPPY);
+            for (int side : new int[] {-1, 1}) put(x + side, 1, -20, POPPY);
         }
         for (int x = -2; x <= 2; x++) timber(x, 4, -21);
         face(0, 4, -20, YELLOW_WALL_BANNER, BlockFace.SOUTH);
@@ -131,7 +147,8 @@ final class FurryQuestFarm {
         }
         face(x + 1, 1, z - 1, POLISHED_BLACKSTONE_BUTTON, BlockFace.NORTH);
         face(x + 1, 1, z + 2, POLISHED_BLACKSTONE_BUTTON, BlockFace.SOUTH);
-        put(x, 2, z, HAY_BLOCK); put(x + 1, 2, z + 1, BARREL);
+        put(x, 2, z, HAY_BLOCK);
+        put(x + 1, 2, z + 1, BARREL);
         timber(x + 3, 1, z);
     }
 
@@ -142,20 +159,22 @@ final class FurryQuestFarm {
     }
 
     private void pond(int x, int z) {
-        for (int dx = -5; dx <= 4; dx++) for (int dz = -4; dz <= 3; dz++) {
-            double radius = Math.pow((dx + .3 * dz) / 4.4, 2) + Math.pow(dz / 3.0, 2);
-            if (radius > 1.55) continue;
-            if (radius > 1) {
-                put(x + dx, 0, z + dz, details.nextBoolean() ? MOSS_BLOCK : GRAVEL);
-            } else {
-                put(x + dx, -1, z + dz, details.nextBoolean() ? CLAY : GRAVEL);
-                put(x + dx, 0, z + dz, WATER);
+        for (int dx = -5; dx <= 4; dx++)
+            for (int dz = -4; dz <= 3; dz++) {
+                double radius = Math.pow((dx + .3 * dz) / 4.4, 2) + Math.pow(dz / 3.0, 2);
+                if (radius > 1.55) continue;
+                if (radius > 1) {
+                    put(x + dx, 0, z + dz, details.nextBoolean() ? MOSS_BLOCK : GRAVEL);
+                } else {
+                    put(x + dx, -1, z + dz, details.nextBoolean() ? CLAY : GRAVEL);
+                    put(x + dx, 0, z + dz, WATER);
+                }
             }
-        }
-        for (int dx = 2; dx <= 5; dx++) for (int dz = 0; dz <= 1; dz++)
-            put(x + dx, 0, z + dz, OAK_PLANKS);
+        for (int dx = 2; dx <= 5; dx++)
+            for (int dz = 0; dz <= 1; dz++) put(x + dx, 0, z + dz, OAK_PLANKS);
         put(x + 2, 1, z + 1, OAK_FENCE);
-        put(x - 2, 1, z - 1, LILY_PAD); put(x - 1, 1, z + 1, LILY_PAD);
+        put(x - 2, 1, z - 1, LILY_PAD);
+        put(x - 1, 1, z + 1, LILY_PAD);
         for (int dx = -2; dx <= 1; dx++) {
             put(x + dx, 0, z - 3, MUD);
             put(x + dx, 1, z - 3, SUGAR_CANE);
@@ -172,8 +191,13 @@ final class FurryQuestFarm {
             for (int dz = -9; dz <= -4; dz++) {
                 put(x + dx, 0, z + dz, SPRUCE_PLANKS);
                 for (int y = 1; y < roof; y++) {
-                    boolean wall = dz == -9 || Math.abs(dx) == 5 || (dz == -4 && (Math.abs(dx) >= 3 || y >= 4));
-                    boolean window = (Math.abs(dx) == 5 && dz == -7 && y == 2) || (dz == -4 && dx == 0 && y == 5);
+                    boolean wall =
+                            dz == -9
+                                    || Math.abs(dx) == 5
+                                    || (dz == -4 && (Math.abs(dx) >= 3 || y >= 4));
+                    boolean window =
+                            (Math.abs(dx) == 5 && dz == -7 && y == 2)
+                                    || (dz == -4 && dx == 0 && y == 5);
                     if (wall && !window) {
                         boolean beam = y == 4 || (Math.abs(dx) == 5 && (dz == -9 || dz == -4));
                         put(x + dx, y, z + dz, beam ? STRIPPED_OAK_WOOD : RED_TERRACOTTA);
@@ -187,7 +211,8 @@ final class FurryQuestFarm {
             if (dx < 0) put(x + dx, 2, z - 1, HAY_BLOCK);
         }
         put(x, 1, z, HAY_BLOCK);
-        put(x + 4, 1, z - 3, BARREL); put(x + 4, 2, z - 3, LANTERN);
+        put(x + 4, 1, z - 3, BARREL);
+        put(x + 4, 2, z - 3, LANTERN);
         put(x - 4, 1, z - 5, COMPOSTER);
     }
 
@@ -199,7 +224,8 @@ final class FurryQuestFarm {
             put(x - 7, 1, z + dz, dz == 0 ? MOSSY_COBBLESTONE : COBBLESTONE_SLAB);
             if (dz % 2 == 0) put(x - 6, 1, z + dz, OXEYE_DAISY);
         }
-        put(x - 3, 1, z + 7, BARREL); put(x - 2, 1, z + 7, COMPOSTER);
+        put(x - 3, 1, z + 7, BARREL);
+        put(x - 2, 1, z + 7, COMPOSTER);
     }
 
     private void tree(int x, int z, Material log, Material leaves, int height) {
@@ -208,10 +234,12 @@ final class FurryQuestFarm {
         foliage.setPersistent(true);
         for (int y = height - 1; y <= height + 1; y++) {
             int radius = y == height + 1 ? 1 : 2;
-            for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
-                if ((dx == 0 && dz == 0 && y <= height) || dx * dx + dz * dz > radius * radius + 1) continue;
-                at(x + dx, y, z + dz).setBlockData(foliage, false);
-            }
+            for (int dx = -radius; dx <= radius; dx++)
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if ((dx == 0 && dz == 0 && y <= height)
+                            || dx * dx + dz * dz > radius * radius + 1) continue;
+                    at(x + dx, y, z + dz).setBlockData(foliage, false);
+                }
         }
     }
 
@@ -236,19 +264,23 @@ final class FurryQuestFarm {
             if (dx != 1 && dx != 2) put(x + dx, 1, z + 12, SPRUCE_FENCE);
         }
         put(x + 1, 0, z + 5, OAK_PLANKS);
-        put(x + 5, 1, z + 2, COMPOSTER); put(x + 6, 1, z + 2, BARREL);
-        put(x + 5, 2, z + 8, OAK_FENCE); put(x + 5, 1, z + 8, OAK_FENCE);
+        put(x + 5, 1, z + 2, COMPOSTER);
+        put(x + 6, 1, z + 2, BARREL);
+        put(x + 5, 2, z + 8, OAK_FENCE);
+        put(x + 5, 1, z + 8, OAK_FENCE);
         face(x + 5, 3, z + 8, CARVED_PUMPKIN, BlockFace.NORTH);
         put(x + 5, 4, z + 8, SPRUCE_SLAB);
     }
 
     private void bellGreen(int x, int z) {
-        for (int dx = -3; dx <= 3; dx++) for (int dz = -2; dz <= 2; dz++) {
-            if (Math.abs(dx) + Math.abs(dz) <= 4)
-                put(x + dx, 0, z + dz, details.nextBoolean() ? ANDESITE : GRAVEL);
-        }
-        put(x, 1, z, CHISELED_STONE_BRICKS); put(x, 2, z, BELL);
-        for (int dx : new int[]{-4, 4}) {
+        for (int dx = -3; dx <= 3; dx++)
+            for (int dz = -2; dz <= 2; dz++) {
+                if (Math.abs(dx) + Math.abs(dz) <= 4)
+                    put(x + dx, 0, z + dz, details.nextBoolean() ? ANDESITE : GRAVEL);
+            }
+        put(x, 1, z, CHISELED_STONE_BRICKS);
+        put(x, 2, z, BELL);
+        for (int dx : new int[] {-4, 4}) {
             put(x + dx, 1, z + 2, STONE_BRICKS);
             put(x + dx, 2, z + 2, SPRUCE_FENCE);
             put(x + dx, 3, z + 2, LANTERN);
@@ -260,20 +292,27 @@ final class FurryQuestFarm {
     }
 
     private void connectRails() {
-        for (int x = -EDGE; x <= EDGE; x++) for (int z = -EDGE; z <= EDGE; z++) {
-            Block block = at(x, 1, z);
-            if (block.getType() != SPRUCE_FENCE) continue;
-            MultipleFacing rail = (MultipleFacing) block.getBlockData();
-            for (BlockFace side : rail.getAllowedFaces()) {
-                Material next = block.getRelative(side).getType();
-                rail.setFace(side, next == SPRUCE_FENCE || next.isOccluding());
+        for (int x = -EDGE; x <= EDGE; x++)
+            for (int z = -EDGE; z <= EDGE; z++) {
+                Block block = at(x, 1, z);
+                if (block.getType() != SPRUCE_FENCE) continue;
+                MultipleFacing rail = (MultipleFacing) block.getBlockData();
+                for (BlockFace side : rail.getAllowedFaces()) {
+                    Material next = block.getRelative(side).getType();
+                    rail.setFace(side, next == SPRUCE_FENCE || next.isOccluding());
+                }
+                block.setBlockData(rail, false);
             }
-            block.setBlockData(rail, false);
-        }
     }
 
-    private Block at(int x, int y, int z) { return world.getBlockAt(x, FLOOR + y, z); }
-    private void put(int x, int y, int z, Material type) { at(x, y, z).setType(type, false); }
+    private Block at(int x, int y, int z) {
+        return world.getBlockAt(x, FLOOR + y, z);
+    }
+
+    private void put(int x, int y, int z, Material type) {
+        at(x, y, z).setType(type, false);
+    }
+
     private void face(int x, int y, int z, Material type, BlockFace facing) {
         Directional data = (Directional) type.createBlockData();
         data.setFacing(facing);

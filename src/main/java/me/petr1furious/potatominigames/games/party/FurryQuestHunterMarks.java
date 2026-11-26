@@ -1,12 +1,15 @@
 package me.petr1furious.potatominigames.games.party;
 
-import java.util.HashSet;
-import java.util.Set;
 import me.petr1furious.potatominigames.core.hud.PrivatePlayerGlow;
+
 import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /** The round HUD gives each player a private scoreboard before roles are assigned. */
 final class FurryQuestHunterMarks {

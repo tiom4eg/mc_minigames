@@ -1,23 +1,22 @@
 package me.petr1furious.potatominigames.games.dummy;
 
+import me.petr1furious.potatominigames.core.game.EndReason;
+import me.petr1furious.potatominigames.core.game.GameSession;
+import me.petr1furious.potatominigames.core.game.Minigame;
+import me.petr1furious.potatominigames.core.game.SessionServices;
+import me.petr1furious.potatominigames.core.text.TimeFormat;
 import me.petr1furious.potatominigames.i18n.I18n;
 
-import java.util.List;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import net.kyori.adventure.bossbar.BossBar;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
-import me.petr1furious.potatominigames.core.game.EndReason;
-import me.petr1furious.potatominigames.core.game.GameSession;
-import me.petr1furious.potatominigames.core.game.Minigame;
-import me.petr1furious.potatominigames.core.game.SessionServices;
-import me.petr1furious.potatominigames.core.text.TimeFormat;
+import java.util.List;
 
 /** Development game for exercising the session lifecycle. */
 public final class DummyGame implements Minigame {
@@ -63,16 +62,25 @@ public final class DummyGame implements Minigame {
 
         @Override
         public void onStart() {
-            timerBar = services.bossBars().create(
-                    I18n.tr("dummy.round").color(NamedTextColor.LIGHT_PURPLE),
-                    BossBar.Color.PURPLE, BossBar.Overlay.PROGRESS);
+            timerBar =
+                    services.bossBars()
+                            .create(
+                                    I18n.tr("dummy.round").color(NamedTextColor.LIGHT_PURPLE),
+                                    BossBar.Color.PURPLE,
+                                    BossBar.Overlay.PROGRESS);
             for (Player player : services.participants().onlinePlayers()) {
                 services.playerState().resetForRound(player, GameMode.ADVENTURE);
                 player.getInventory().addItem(new ItemStack(Material.STICK));
                 player.showBossBar(timerBar);
-                if (services.participants().find(player.getUniqueId()).orElseThrow().team() != null) {
-                    services.sidebar().setNameColor(player,
-                            services.participants().find(player.getUniqueId()).orElseThrow().team());
+                if (services.participants().find(player.getUniqueId()).orElseThrow().team()
+                        != null) {
+                    services.sidebar()
+                            .setNameColor(
+                                    player,
+                                    services.participants()
+                                            .find(player.getUniqueId())
+                                            .orElseThrow()
+                                            .team());
                 }
             }
             updateHud(0);
@@ -82,8 +90,8 @@ public final class DummyGame implements Minigame {
         public void onSecondTick(long secondsElapsed) {
             updateHud(secondsElapsed);
             if (secondsElapsed >= ROUND_SECONDS) {
-                services.messages().broadcast(
-                        I18n.tr("dummy.complete").color(NamedTextColor.GREEN));
+                services.messages()
+                        .broadcast(I18n.tr("dummy.complete").color(NamedTextColor.GREEN));
                 services.session().endGame(EndReason.FINISHED);
             }
         }
@@ -106,16 +114,28 @@ public final class DummyGame implements Minigame {
             long remaining = Math.max(0, ROUND_SECONDS - elapsed);
             if (timerBar != null) {
                 timerBar.progress((float) remaining / ROUND_SECONDS);
-                timerBar.name(I18n.tr("dummy.timer", TimeFormat.clock(remaining)).color(NamedTextColor.LIGHT_PURPLE));
+                timerBar.name(
+                        I18n.tr("dummy.timer", TimeFormat.clock(remaining))
+                                .color(NamedTextColor.LIGHT_PURPLE));
             }
             for (Player player : services.participants().onlinePlayers()) {
-                services.sidebar().update(player,
-                        I18n.tr("dummy.name").color(NamedTextColor.LIGHT_PURPLE),
-                        List.of(
-                                I18n.tr("dummy.time_left", Component.text(TimeFormat.clock(remaining),
-                                        NamedTextColor.AQUA)).color(NamedTextColor.GOLD),
-                                I18n.tr("dummy.players", Component.text(services.participants().size(),
-                                        NamedTextColor.AQUA)).color(NamedTextColor.GOLD)));
+                services.sidebar()
+                        .update(
+                                player,
+                                I18n.tr("dummy.name").color(NamedTextColor.LIGHT_PURPLE),
+                                List.of(
+                                        I18n.tr(
+                                                        "dummy.time_left",
+                                                        Component.text(
+                                                                TimeFormat.clock(remaining),
+                                                                NamedTextColor.AQUA))
+                                                .color(NamedTextColor.GOLD),
+                                        I18n.tr(
+                                                        "dummy.players",
+                                                        Component.text(
+                                                                services.participants().size(),
+                                                                NamedTextColor.AQUA))
+                                                .color(NamedTextColor.GOLD)));
             }
         }
     }

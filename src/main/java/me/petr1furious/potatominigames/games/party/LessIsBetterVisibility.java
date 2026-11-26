@@ -38,11 +38,13 @@ final class LessIsBetterVisibility {
     void remove(Player player) {
         Boolean collidable = originalCollision.remove(player);
         if (collidable == null) return;
-        hidden.removeIf(view -> {
-            if (!view.viewer().equals(player) && !view.target().equals(player)) return false;
-            view.viewer().showPlayer(plugin, view.target());
-            return true;
-        });
+        hidden.removeIf(
+                view -> {
+                    if (!view.viewer().equals(player) && !view.target().equals(player))
+                        return false;
+                    view.viewer().showPlayer(plugin, view.target());
+                    return true;
+                });
         player.setCollidable(collidable);
     }
 

@@ -13,10 +13,15 @@ final class FinalsKills {
 
     boolean death(UUID victim, UUID killer, Map<UUID, Integer> teams) {
         if (victim == null || !teams.containsKey(victim) || !dead.add(victim)) return false;
-        if (killer == null || killer.equals(victim) || !teams.containsKey(killer)
+        if (killer == null
+                || killer.equals(victim)
+                || !teams.containsKey(killer)
                 || teams.get(victim).equals(teams.get(killer))) return false;
-        counts.merge(killer, 1, (current, increment) ->
-                current == Integer.MAX_VALUE ? current : current + increment);
+        counts.merge(
+                killer,
+                1,
+                (current, increment) ->
+                        current == Integer.MAX_VALUE ? current : current + increment);
         return true;
     }
 

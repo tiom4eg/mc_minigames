@@ -1,11 +1,11 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import org.bukkit.GameMode;
-import org.bukkit.entity.Player;
-
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyBag;
 import me.petr1furious.potatominigames.core.config.PropertyCodec;
+
+import org.bukkit.GameMode;
+import org.bukkit.entity.Player;
 
 /** Subclass defaults are the production values; keep them verbatim. */
 public abstract class AbstractGadget implements Gadget {
@@ -18,7 +18,8 @@ public abstract class AbstractGadget implements Gadget {
         this.id = id;
         this.context = context;
         this.config = new PropertyBag("gadgets." + id);
-        this.allowOutsideGame = config.define("allowOutsideGame", PropertyCodec.BOOL, allowOutsideGameDefault);
+        this.allowOutsideGame =
+                config.define("allowOutsideGame", PropertyCodec.BOOL, allowOutsideGameDefault);
     }
 
     @Override

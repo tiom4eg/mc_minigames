@@ -121,9 +121,10 @@ final class WaitForItSession extends PartySurvivalSession {
                 || !round.running(elapsed)) {
             for (Player player : players) {
                 UUID id = player.getUniqueId();
-                Component result = round.finished(id)
-                        ? I18n.tr(KEY + "finished", seconds(round.finishTime(id)))
-                        : completed(id);
+                Component result =
+                        round.finished(id)
+                                ? I18n.tr(KEY + "finished", seconds(round.finishTime(id)))
+                                : completed(id);
                 player.sendMessage(text(result));
             }
             finish(List.of());
@@ -189,20 +190,24 @@ final class WaitForItSession extends PartySurvivalSession {
 
     private void announceTask(Player player, WaitForItRound.Task task) {
         int next = round.completed(player.getUniqueId()) + 1;
-        player.showTitle(Title.title(
-                text(I18n.tr(KEY + "task_start", next, TASK_COUNT, taskText(task, "name"))),
-                taskText(task, "hint").color(NamedTextColor.WHITE),
-                Title.Times.times(Duration.ofMillis(100), Duration.ofSeconds(2),
-                        Duration.ofMillis(150))));
-        player.sendMessage(text(I18n.tr(KEY + "detail", taskText(task, "name"),
-                taskText(task, "detail"))));
+        player.showTitle(
+                Title.title(
+                        text(I18n.tr(KEY + "task_start", next, TASK_COUNT, taskText(task, "name"))),
+                        taskText(task, "hint").color(NamedTextColor.WHITE),
+                        Title.Times.times(
+                                Duration.ofMillis(100),
+                                Duration.ofSeconds(2),
+                                Duration.ofMillis(150))));
+        player.sendMessage(
+                text(I18n.tr(KEY + "detail", taskText(task, "name"), taskText(task, "detail"))));
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, .6f, 1.6f);
         showTimer(player);
     }
 
     @Override
     Component status() {
-        return playing() ? I18n.tr(KEY + "race_clock", round.secondsLeft(elapsed()))
+        return playing()
+                ? I18n.tr(KEY + "race_clock", round.secondsLeft(elapsed()))
                 : I18n.tr(KEY + "ready");
     }
 
@@ -224,10 +229,11 @@ final class WaitForItSession extends PartySurvivalSession {
     private void showTimer(Player player) {
         UUID id = player.getUniqueId();
         var task = round.task(id);
-        Component line = task == null
-                ? completed(id).color(NamedTextColor.GREEN)
-                : I18n.tr(KEY + "timer", objective(id, task), round.secondsLeft(elapsed()))
-                        .color(NamedTextColor.GOLD);
+        Component line =
+                task == null
+                        ? completed(id).color(NamedTextColor.GREEN)
+                        : I18n.tr(KEY + "timer", objective(id, task), round.secondsLeft(elapsed()))
+                                .color(NamedTextColor.GOLD);
         player.sendActionBar(line);
     }
 
@@ -248,14 +254,21 @@ final class WaitForItSession extends PartySurvivalSession {
                             CROP.required(CARROT));
             case BUTTON -> I18n.tr(KEY + "task.button.progress", round.collected(id));
             case LOGS ->
-                    I18n.tr(KEY + "task.logs.progress", round.count(id, SPRUCE),
+                    I18n.tr(
+                            KEY + "task.logs.progress",
+                            round.count(id, SPRUCE),
                             round.count(id, BIRCH));
             case ORES ->
-                    I18n.tr(KEY + "task.ores.progress", round.count(id, COPPER),
+                    I18n.tr(
+                            KEY + "task.ores.progress",
+                            round.count(id, COPPER),
                             round.count(id, IRON));
             case CRAFT, LADDER, BOOTS, STAIRS, TREASURE -> taskText(task, "hint");
             default ->
-                    I18n.tr(KEY + "progress", taskText(task, "hint"), round.collected(id),
+                    I18n.tr(
+                            KEY + "progress",
+                            taskText(task, "hint"),
+                            round.collected(id),
                             task.requiredTotal());
         };
     }
@@ -332,12 +345,16 @@ final class WaitForItSession extends PartySurvivalSession {
         };
     }
 
-    private static boolean validUse(PlayerInteractEvent event, Player player, WaitForItRound.Task task) {
+    private static boolean validUse(
+            PlayerInteractEvent event, Player player, WaitForItRound.Task task) {
         return switch (task) {
-            case BOOKS -> event.getMaterial() == Material.BOOK
-                    && event.getBlockFace() == BlockFace.SOUTH && !player.isSneaking();
-            case CANDLES -> event.getMaterial() == Material.FLINT_AND_STEEL
-                    && event.useItemInHand() != Event.Result.DENY;
+            case BOOKS ->
+                    event.getMaterial() == Material.BOOK
+                            && event.getBlockFace() == BlockFace.SOUTH
+                            && !player.isSneaking();
+            case CANDLES ->
+                    event.getMaterial() == Material.FLINT_AND_STEEL
+                            && event.useItemInHand() != Event.Result.DENY;
             default -> true;
         };
     }
@@ -346,8 +363,7 @@ final class WaitForItSession extends PartySurvivalSession {
     protected void handleBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         var task = activeTask(player);
-        if (event.isCancelled()
-                || task == null || task.action != WaitForItRound.Action.BREAK) {
+        if (event.isCancelled() || task == null || task.action != WaitForItRound.Action.BREAK) {
             event.setCancelled(true);
             return;
         }
@@ -385,7 +401,8 @@ final class WaitForItSession extends PartySurvivalSession {
         if (!event.isCancelled()
                 && event.canBuild()
                 && event.getHand() == EquipmentSlot.HAND
-                && task != null && task.action == WaitForItRound.Action.PLACE) {
+                && task != null
+                && task.action == WaitForItRound.Action.PLACE) {
             int bay = bays.get(player.getUniqueId());
             if (placementAllowed(player, bay, block, block.getType())
                     && record(player, arena.placementAt(bay, block).goal())) return;
@@ -457,7 +474,8 @@ final class WaitForItSession extends PartySurvivalSession {
     protected void handleInventoryDrag(InventoryDragEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)
                 || !canCraft(activeTask(player), event.getView())
-                || !craftingSlotsOnly(event.getRawSlots(), event.getView().getTopInventory().getSize()))
+                || !craftingSlotsOnly(
+                        event.getRawSlots(), event.getView().getTopInventory().getSize()))
             event.setCancelled(true);
     }
 
@@ -467,8 +485,8 @@ final class WaitForItSession extends PartySurvivalSession {
 
     @Override
     protected void handleCraftItem(CraftItemEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player) || !validCraft(activeTask(player), event))
-            event.setCancelled(true);
+        if (!(event.getWhoClicked() instanceof Player player)
+                || !validCraft(activeTask(player), event)) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -486,9 +504,7 @@ final class WaitForItSession extends PartySurvivalSession {
                     case LADDER -> Material.LADDER;
                     case BOOTS -> Material.LEATHER_BOOTS;
                     case STAIRS -> Material.OAK_STAIRS;
-                    default ->
-                            throw new IllegalStateException(
-                                    "No crafting recipe for " + task);
+                    default -> throw new IllegalStateException("No crafting recipe for " + task);
                 };
         return event.getRecipe().getResult().getType() == result
                 && event.getCurrentItem() != null
@@ -508,14 +524,18 @@ final class WaitForItSession extends PartySurvivalSession {
     }
 
     private static boolean canCraft(WaitForItRound.Task task, InventoryView view) {
-        return task != null && task.action == WaitForItRound.Action.CRAFT
+        return task != null
+                && task.action == WaitForItRound.Action.CRAFT
                 && view.getType() == InventoryType.WORKBENCH;
     }
 
     private WaitForItRound.Task activeTask(Player player) {
         UUID id = player.getUniqueId();
-        if (!playing() || context.ended() || !alive(player)
-                || !world.equals(player.getWorld()) || !bays.containsKey(id)
+        if (!playing()
+                || context.ended()
+                || !alive(player)
+                || !world.equals(player.getWorld())
+                || !bays.containsKey(id)
                 || !round.running(elapsed())) return null;
         return round.task(id);
     }
@@ -560,11 +580,13 @@ final class WaitForItSession extends PartySurvivalSession {
     }
 
     private void clearArrows(Player player) {
-        arrows.values().removeIf(arrow -> {
-            if (!player.equals(arrow.getShooter())) return false;
-            arrow.remove();
-            return true;
-        });
+        arrows.values()
+                .removeIf(
+                        arrow -> {
+                            if (!player.equals(arrow.getShooter())) return false;
+                            arrow.remove();
+                            return true;
+                        });
     }
 
     @Override

@@ -9,15 +9,35 @@ public final class TanksRules {
     private TanksRules() {}
 
     /** The rendered armor silhouette, shared with projectile collision; barrel is decorative. */
-    public record ModelGeometry(double scale, double turretPivotY, double turretWidthScale,
-                                double turretHeightScale) {
-        public double hullHalfWidth() { return HALF_WIDTH * scale; }
-        public double hullHeight() { return 1.32 * scale; }
-        public double hullHalfLength() { return HALF_LENGTH * scale; }
-        public double turretHalfWidth() { return scale * turretWidthScale; }
-        public double turretHalfLength() { return 1.05 * scale; }
-        public double turretBottom() { return 1.22 * scale; }
-        public double turretTop() { return turretPivotY + .68 * scale * turretHeightScale; }
+    public record ModelGeometry(
+            double scale, double turretPivotY, double turretWidthScale, double turretHeightScale) {
+        public double hullHalfWidth() {
+            return HALF_WIDTH * scale;
+        }
+
+        public double hullHeight() {
+            return 1.32 * scale;
+        }
+
+        public double hullHalfLength() {
+            return HALF_LENGTH * scale;
+        }
+
+        public double turretHalfWidth() {
+            return scale * turretWidthScale;
+        }
+
+        public double turretHalfLength() {
+            return 1.05 * scale;
+        }
+
+        public double turretBottom() {
+            return 1.22 * scale;
+        }
+
+        public double turretTop() {
+            return turretPivotY + .68 * scale * turretHeightScale;
+        }
     }
 
     private static final ModelGeometry LIGHT_MODEL = new ModelGeometry(.82, 1.22, .9, .62);
@@ -259,15 +279,17 @@ public final class TanksRules {
     /** Chassis acceleration gives the scout an actual escape advantage from a standing start. */
     public static double accelerate(double current, double throttle, Chassis chassis) {
         Objects.requireNonNull(chassis, "chassis");
-        double acceleration = switch (chassis) {
-            case LIGHT -> .024;
-            case MEDIUM -> .016;
-            case HEAVY -> .010;
-        };
+        double acceleration =
+                switch (chassis) {
+                    case LIGHT -> .024;
+                    case MEDIUM -> .016;
+                    case HEAVY -> .010;
+                };
         return accelerate(current, throttle, chassis.speed(), acceleration);
     }
 
-    private static double accelerate(double current, double throttle, double maxSpeed, double acceleration) {
+    private static double accelerate(
+            double current, double throttle, double maxSpeed, double acceleration) {
         finite(current, throttle, maxSpeed);
         if (maxSpeed <= 0) throw new IllegalArgumentException("Nonpositive top speed");
         throttle = clamp(throttle, -1, 1);
@@ -284,21 +306,24 @@ public final class TanksRules {
             Chassis chassis, double speed, double turretErrorDegrees, int stationaryTicks) {
         Objects.requireNonNull(chassis, "chassis");
         finite(speed, turretErrorDegrees);
-        int settleTicks = switch (chassis) {
-            case LIGHT -> 20;
-            case MEDIUM -> 30;
-            case HEAVY -> 40;
-        };
-        double settlePenalty = switch (chassis) {
-            case LIGHT -> .5;
-            case MEDIUM -> 1;
-            case HEAVY -> 1.4;
-        };
-        double motionPenalty = switch (chassis) {
-            case LIGHT -> .9;
-            case MEDIUM -> 1.7;
-            case HEAVY -> 2.8;
-        };
+        int settleTicks =
+                switch (chassis) {
+                    case LIGHT -> 20;
+                    case MEDIUM -> 30;
+                    case HEAVY -> 40;
+                };
+        double settlePenalty =
+                switch (chassis) {
+                    case LIGHT -> .5;
+                    case MEDIUM -> 1;
+                    case HEAVY -> 1.4;
+                };
+        double motionPenalty =
+                switch (chassis) {
+                    case LIGHT -> .9;
+                    case MEDIUM -> 1.7;
+                    case HEAVY -> 2.8;
+                };
         double settling = 1 - clamp(stationaryTicks / (double) settleTicks, 0, 1);
         return .45
                 + settling * settlePenalty

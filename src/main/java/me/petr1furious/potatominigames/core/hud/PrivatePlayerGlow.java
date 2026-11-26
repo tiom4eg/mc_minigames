@@ -106,7 +106,8 @@ public final class PrivatePlayerGlow {
         view = views.computeIfAbsent(id, ignored -> new View(viewer));
         Set<UUID> wanted = new HashSet<>();
         for (Entity target : targets) {
-            if (target.getUniqueId().equals(id) || !viewer.getWorld().equals(target.getWorld())) continue;
+            if (target.getUniqueId().equals(id) || !viewer.getWorld().equals(target.getWorld()))
+                continue;
             Object handle = handle(target);
             // Refresh for newly tracked entities and server metadata updates.
             if (handle == null || !emit(viewer, handle, true)) continue;
@@ -188,7 +189,7 @@ public final class PrivatePlayerGlow {
                     .log(
                             java.util.logging.Level.WARNING,
                             "Native entity outlines are unavailable; the match will continue"
-                                + " without outlines",
+                                    + " without outlines",
                             error);
         }
     }

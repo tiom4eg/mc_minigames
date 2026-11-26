@@ -1,14 +1,10 @@
 package me.petr1furious.potatominigames.games.bingo.board;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import me.petr1furious.potatominigames.games.bingo.model.BoardEntry;
+import me.petr1furious.potatominigames.games.bingo.model.BoardMatch;
+import me.petr1furious.potatominigames.games.bingo.model.CostNode;
+import me.petr1furious.potatominigames.games.bingo.model.CostNodeType;
+import me.petr1furious.potatominigames.games.bingo.model.NodeRecipe;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -24,11 +20,15 @@ import org.bukkit.inventory.SmithingTransformRecipe;
 import org.bukkit.inventory.StonecuttingRecipe;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import me.petr1furious.potatominigames.games.bingo.model.BoardEntry;
-import me.petr1furious.potatominigames.games.bingo.model.BoardMatch;
-import me.petr1furious.potatominigames.games.bingo.model.CostNode;
-import me.petr1furious.potatominigames.games.bingo.model.CostNodeType;
-import me.petr1furious.potatominigames.games.bingo.model.NodeRecipe;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 
 public final class ItemPoolService {
     private final JavaPlugin plugin;
@@ -55,18 +55,22 @@ public final class ItemPoolService {
         boardBlacklistPrefixes.clear();
 
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(boardEntriesFile);
-        boardBlacklistMaterials.addAll(parseMaterialList(yaml.getList("board-blacklist-materials")));
-        boardBlacklistPrefixes.addAll(normalizePrefixes(asStringList(yaml.getList("board-blacklist-prefixes"))));
+        boardBlacklistMaterials.addAll(
+                parseMaterialList(yaml.getList("board-blacklist-materials")));
+        boardBlacklistPrefixes.addAll(
+                normalizePrefixes(asStringList(yaml.getList("board-blacklist-prefixes"))));
         List<?> rawCanonicalGroups = yaml.getMapList("canonical-groups");
         for (int i = 0; i < rawCanonicalGroups.size(); i++) {
             if (!(rawCanonicalGroups.get(i) instanceof Map<?, ?> map)) {
-                throw new IllegalStateException("Invalid canonical group at index " + i + ": expected map.");
+                throw new IllegalStateException(
+                        "Invalid canonical group at index " + i + ": expected map.");
             }
             canonicalGroups.add(parseCanonicalGroup(map));
         }
         List<?> rawNodes = yaml.getMapList("nodes");
         if (rawNodes.isEmpty()) {
-            throw new IllegalStateException("games/bingo-board-entries.yml must define a non-empty nodes list.");
+            throw new IllegalStateException(
+                    "games/bingo-board-entries.yml must define a non-empty nodes list.");
         }
 
         for (int i = 0; i < rawNodes.size(); i++) {
@@ -99,8 +103,9 @@ public final class ItemPoolService {
         BoardMatch boardMatch = parseBoardMatch(map);
         Material displayMaterial = parseDisplayMaterial(map, boardMatch);
         NodeRecipe recipe = parseExplicitRecipe(map);
-        boolean inferVanilla = asBoolean(map.get("recipe-source"), false)
-                || "vanilla".equalsIgnoreCase(asString(map.get("recipe-source")));
+        boolean inferVanilla =
+                asBoolean(map.get("recipe-source"), false)
+                        || "vanilla".equalsIgnoreCase(asString(map.get("recipe-source")));
         boolean boardTargetEnabled = asBoolean(map.get("board"), true);
 
         Double base = asDouble(map.get("base"));
@@ -109,24 +114,37 @@ public final class ItemPoolService {
 
         if (type == CostNodeType.OPERATION) {
             if (recipe != null || inferVanilla) {
-                throw new IllegalStateException("Operation node '" + id + "' cannot have a recipe.");
+                throw new IllegalStateException(
+                        "Operation node '" + id + "' cannot have a recipe.");
             }
             if (boardMatch != null) {
-                throw new IllegalStateException("Operation node '" + id + "' cannot map to board items.");
+                throw new IllegalStateException(
+                        "Operation node '" + id + "' cannot map to board items.");
             }
             requireAtomicCurve(id, base, perBatch, beta);
         } else {
             boolean composite = recipe != null || inferVanilla;
             if (composite) {
                 if (base != null || perBatch != null || beta != null) {
-                    throw new IllegalStateException("Composite node '" + id + "' cannot define base/per-batch/beta.");
+                    throw new IllegalStateException(
+                            "Composite node '" + id + "' cannot define base/per-batch/beta.");
                 }
             } else {
                 requireAtomicCurve(id, base, perBatch, beta);
             }
         }
 
-        return new CostNode(id, type, once, base, perBatch, beta, recipe, boardMatch, displayMaterial, inferVanilla,
+        return new CostNode(
+                id,
+                type,
+                once,
+                base,
+                perBatch,
+                beta,
+                recipe,
+                boardMatch,
+                displayMaterial,
+                inferVanilla,
                 boardTargetEnabled);
     }
 
@@ -134,14 +152,17 @@ public final class ItemPoolService {
         String id = requireString(map, "id");
         BoardMatch boardMatch = parseBoardMatch(map);
         if (boardMatch == null) {
-            throw new IllegalStateException("Canonical group '" + id + "' must define tag or materials.");
+            throw new IllegalStateException(
+                    "Canonical group '" + id + "' must define tag or materials.");
         }
         if (boardMatch.acceptedMaterials().size() < 2) {
-            throw new IllegalStateException("Canonical group '" + id + "' must match at least two materials.");
+            throw new IllegalStateException(
+                    "Canonical group '" + id + "' must match at least two materials.");
         }
         Material displayMaterial = parseDisplayMaterial(map, boardMatch);
         if (displayMaterial == null) {
-            throw new IllegalStateException("Canonical group '" + id + "' needs a display material.");
+            throw new IllegalStateException(
+                    "Canonical group '" + id + "' needs a display material.");
         }
         Material recipeSourceMaterial = parseMaterial(asString(map.get("recipe-source-material")));
         if (recipeSourceMaterial == null) {
@@ -166,14 +187,16 @@ public final class ItemPoolService {
                 List<Material> accepted = new ArrayList<>(node.boardMatch().acceptedMaterials());
                 accepted.sort(Comparator.comparing(Enum::name));
                 if (accepted.isEmpty()) {
-                    throw new IllegalStateException("Board target node '" + node.id() + "' matches no materials.");
+                    throw new IllegalStateException(
+                            "Board target node '" + node.id() + "' matches no materials.");
                 }
                 displayMaterial = accepted.getFirst();
             }
             entries.add(new BoardEntry(node.id(), node.boardMatch(), displayMaterial, node.id()));
         }
         if (entries.isEmpty()) {
-            throw new IllegalStateException("No board items were exposed from games/bingo-board-entries.yml nodes.");
+            throw new IllegalStateException(
+                    "No board items were exposed from games/bingo-board-entries.yml nodes.");
         }
     }
 
@@ -241,9 +264,20 @@ public final class ItemPoolService {
             CostNode current = entry.getValue();
             Material output = inferOutputMaterial(current);
             NodeRecipe recipe = inferVanillaRecipe(current.id(), output);
-            nodes.put(entry.getKey(), new CostNode(current.id(), current.type(), current.once(), current.base(),
-                    current.perBatch(), current.beta(), recipe, current.boardMatch(), current.displayMaterial(),
-                    false, current.boardTargetEnabled()));
+            nodes.put(
+                    entry.getKey(),
+                    new CostNode(
+                            current.id(),
+                            current.type(),
+                            current.once(),
+                            current.base(),
+                            current.perBatch(),
+                            current.beta(),
+                            recipe,
+                            current.boardMatch(),
+                            current.displayMaterial(),
+                            false,
+                            current.boardTargetEnabled()));
         }
     }
 
@@ -270,8 +304,20 @@ public final class ItemPoolService {
             if (recipe == null) {
                 continue;
             }
-            nodes.put(nodeId, new CostNode(nodeId, CostNodeType.RESOURCE, false, null, null, null, recipe,
-                    BoardMatch.forMaterial(material), material, false, true));
+            nodes.put(
+                    nodeId,
+                    new CostNode(
+                            nodeId,
+                            CostNodeType.RESOURCE,
+                            false,
+                            null,
+                            null,
+                            null,
+                            recipe,
+                            BoardMatch.forMaterial(material),
+                            material,
+                            false,
+                            true));
             changed = true;
         }
         return changed;
@@ -283,16 +329,30 @@ public final class ItemPoolService {
             if (nodes.containsKey(group.id())) {
                 continue;
             }
-            List<Material> taggedMaterials = new ArrayList<>(group.boardMatch().acceptedMaterials());
+            List<Material> taggedMaterials =
+                    new ArrayList<>(group.boardMatch().acceptedMaterials());
             if (taggedMaterials.size() < 2) {
                 continue;
             }
-            NodeRecipe canonicalRecipe = tryInferVanillaRecipe(group.id(), group.recipeSourceMaterial());
+            NodeRecipe canonicalRecipe =
+                    tryInferVanillaRecipe(group.id(), group.recipeSourceMaterial());
             if (canonicalRecipe == null) {
                 continue;
             }
-            nodes.put(group.id(), new CostNode(group.id(), CostNodeType.RESOURCE, false, null, null, null,
-                    canonicalRecipe, group.boardMatch(), group.displayMaterial(), false, true));
+            nodes.put(
+                    group.id(),
+                    new CostNode(
+                            group.id(),
+                            CostNodeType.RESOURCE,
+                            false,
+                            null,
+                            null,
+                            null,
+                            canonicalRecipe,
+                            group.boardMatch(),
+                            group.displayMaterial(),
+                            false,
+                            true));
             changed = true;
         }
         return changed;
@@ -309,12 +369,16 @@ public final class ItemPoolService {
     private Material inferOutputMaterial(CostNode node) {
         if (node.boardMatch() == null) {
             throw new IllegalStateException(
-                    "Node '" + node.id() + "' needs a direct material mapping for vanilla recipe inference.");
+                    "Node '"
+                            + node.id()
+                            + "' needs a direct material mapping for vanilla recipe inference.");
         }
         List<Material> accepted = node.boardMatch().acceptedMaterials();
         if (accepted.size() != 1) {
             throw new IllegalStateException(
-                    "Node '" + node.id() + "' must map to exactly one material to infer a vanilla recipe.");
+                    "Node '"
+                            + node.id()
+                            + "' must map to exactly one material to infer a vanilla recipe.");
         }
         return accepted.getFirst();
     }
@@ -338,40 +402,46 @@ public final class ItemPoolService {
     private NodeRecipe inferVanillaRecipe(String nodeId, Material output, Recipe recipe) {
         LinkedHashMap<String, Integer> ingredients = new LinkedHashMap<>();
         int outputAmount = Math.max(1, recipe.getResult().getAmount());
-        String operationNodeId = switch (recipe) {
-            case ShapedRecipe shaped -> {
-                for (RecipeChoice choice : shaped.getChoiceMap().values()) {
-                    addChoiceIngredients(nodeId, ingredients, choice, countChar(shaped, choice));
-                }
-                yield "craft";
-            }
-            case ShapelessRecipe shapeless -> {
-                for (RecipeChoice choice : shapeless.getChoiceList()) {
-                    addChoiceIngredients(nodeId, ingredients, choice, 1);
-                }
-                yield "craft";
-            }
-            case FurnaceRecipe furnace -> {
-                addChoiceIngredients(nodeId, ingredients, furnace.getInputChoice(), 1);
-                yield "smelt";
-            }
-            case CookingRecipe<?> cooking -> {
-                addChoiceIngredients(nodeId, ingredients, cooking.getInputChoice(), 1);
-                yield "smelt";
-            }
-            case StonecuttingRecipe stonecutting -> {
-                addChoiceIngredients(nodeId, ingredients, stonecutting.getInputChoice(), 1);
-                yield "cut";
-            }
-            case SmithingTransformRecipe smithing -> {
-                addChoiceIngredients(nodeId, ingredients, smithing.getTemplate(), 1);
-                addChoiceIngredients(nodeId, ingredients, smithing.getBase(), 1);
-                addChoiceIngredients(nodeId, ingredients, smithing.getAddition(), 1);
-                yield "smith";
-            }
-            default -> throw new IllegalStateException("Unsupported vanilla recipe type for node '" + nodeId + "': "
-                    + recipe.getClass().getName());
-        };
+        String operationNodeId =
+                switch (recipe) {
+                    case ShapedRecipe shaped -> {
+                        for (RecipeChoice choice : shaped.getChoiceMap().values()) {
+                            addChoiceIngredients(
+                                    nodeId, ingredients, choice, countChar(shaped, choice));
+                        }
+                        yield "craft";
+                    }
+                    case ShapelessRecipe shapeless -> {
+                        for (RecipeChoice choice : shapeless.getChoiceList()) {
+                            addChoiceIngredients(nodeId, ingredients, choice, 1);
+                        }
+                        yield "craft";
+                    }
+                    case FurnaceRecipe furnace -> {
+                        addChoiceIngredients(nodeId, ingredients, furnace.getInputChoice(), 1);
+                        yield "smelt";
+                    }
+                    case CookingRecipe<?> cooking -> {
+                        addChoiceIngredients(nodeId, ingredients, cooking.getInputChoice(), 1);
+                        yield "smelt";
+                    }
+                    case StonecuttingRecipe stonecutting -> {
+                        addChoiceIngredients(nodeId, ingredients, stonecutting.getInputChoice(), 1);
+                        yield "cut";
+                    }
+                    case SmithingTransformRecipe smithing -> {
+                        addChoiceIngredients(nodeId, ingredients, smithing.getTemplate(), 1);
+                        addChoiceIngredients(nodeId, ingredients, smithing.getBase(), 1);
+                        addChoiceIngredients(nodeId, ingredients, smithing.getAddition(), 1);
+                        yield "smith";
+                    }
+                    default ->
+                            throw new IllegalStateException(
+                                    "Unsupported vanilla recipe type for node '"
+                                            + nodeId
+                                            + "': "
+                                            + recipe.getClass().getName());
+                };
         if (!ingredients.isEmpty()) {
             requireOperationNode(nodeId, operationNodeId, output);
             ingredients.merge(operationNodeId, 1, Integer::sum);
@@ -382,12 +452,20 @@ public final class ItemPoolService {
     private void requireOperationNode(String nodeId, String operationNodeId, Material output) {
         CostNode operationNode = nodes.get(operationNodeId);
         if (operationNode == null) {
-            throw new IllegalStateException("Vanilla recipe for node '" + nodeId + "' (" + output.name().toLowerCase(
-                    Locale.ROOT) + ") requires missing operation node '" + operationNodeId + "'.");
+            throw new IllegalStateException(
+                    "Vanilla recipe for node '"
+                            + nodeId
+                            + "' ("
+                            + output.name().toLowerCase(Locale.ROOT)
+                            + ") requires missing operation node '"
+                            + operationNodeId
+                            + "'.");
         }
         if (operationNode.type() != CostNodeType.OPERATION) {
             throw new IllegalStateException(
-                    "Node '" + operationNodeId + "' must be an operation to support vanilla recipe inference.");
+                    "Node '"
+                            + operationNodeId
+                            + "' must be an operation to support vanilla recipe inference.");
         }
     }
 
@@ -409,8 +487,8 @@ public final class ItemPoolService {
         return 0;
     }
 
-    private void addChoiceIngredients(String nodeId, Map<String, Integer> ingredients, RecipeChoice choice,
-            int amount) {
+    private void addChoiceIngredients(
+            String nodeId, Map<String, Integer> ingredients, RecipeChoice choice, int amount) {
         if (choice == null || amount <= 0) {
             return;
         }
@@ -427,13 +505,19 @@ public final class ItemPoolService {
             if (resolvedNodeId == null) {
                 resolvedNodeId = candidate;
             } else if (!resolvedNodeId.equals(candidate)) {
-                throw new IllegalStateException("Vanilla recipe for node '" + nodeId
-                        + "' has alternatives that map to different nodes. Add an explicit recipe instead.");
+                throw new IllegalStateException(
+                        "Vanilla recipe for node '"
+                                + nodeId
+                                + "' has alternatives that map to different nodes. Add an explicit"
+                                + " recipe instead.");
             }
         }
         if (resolvedNodeId == null) {
-            throw new IllegalStateException("Vanilla recipe for node '" + nodeId
-                    + "' has no mapped ingredient option. Missing: " + String.join(", ", missingOptions));
+            throw new IllegalStateException(
+                    "Vanilla recipe for node '"
+                            + nodeId
+                            + "' has no mapped ingredient option. Missing: "
+                            + String.join(", ", missingOptions));
         }
         ingredients.merge(resolvedNodeId, amount, Integer::sum);
     }
@@ -442,9 +526,13 @@ public final class ItemPoolService {
         return switch (choice) {
             case RecipeChoice.MaterialChoice materialChoice -> materialChoice.getChoices();
             case RecipeChoice.ExactChoice exactChoice ->
-                exactChoice.getChoices().stream().map(stack -> stack.getType()).toList();
-            default -> throw new IllegalStateException(
-                    "Unsupported recipe choice for node '" + nodeId + "': " + choice.getClass().getName());
+                    exactChoice.getChoices().stream().map(stack -> stack.getType()).toList();
+            default ->
+                    throw new IllegalStateException(
+                            "Unsupported recipe choice for node '"
+                                    + nodeId
+                                    + "': "
+                                    + choice.getClass().getName());
         };
     }
 
@@ -461,9 +549,10 @@ public final class ItemPoolService {
         if (candidates.isEmpty()) {
             return null;
         }
-        candidates.sort(Comparator
-                .comparingInt((CostNode node) -> node.boardMatch().acceptedMaterials().size())
-                .thenComparing(CostNode::id));
+        candidates.sort(
+                Comparator.comparingInt(
+                                (CostNode node) -> node.boardMatch().acceptedMaterials().size())
+                        .thenComparing(CostNode::id));
         return candidates.getFirst().id();
     }
 
@@ -493,7 +582,8 @@ public final class ItemPoolService {
         };
     }
 
-    private static void requireAtomicCurve(String nodeId, Double base, Double perBatch, Double beta) {
+    private static void requireAtomicCurve(
+            String nodeId, Double base, Double perBatch, Double beta) {
         if (base == null || perBatch == null || beta == null) {
             throw new IllegalStateException(
                     "Atomic node '" + nodeId + "' must define base, per-batch, and beta.");
@@ -597,7 +687,8 @@ public final class ItemPoolService {
         for (String raw : rawMaterials) {
             Material material = parseMaterial(raw);
             if (material == null) {
-                throw new IllegalStateException("Unknown material in blocked-propagation-materials: " + raw);
+                throw new IllegalStateException(
+                        "Unknown material in blocked-propagation-materials: " + raw);
             }
             materials.add(material);
         }
@@ -610,7 +701,10 @@ public final class ItemPoolService {
         }
         List<String> prefixes = new ArrayList<>();
         for (String raw : rawPrefixes) {
-            String normalized = raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT).replace("minecraft:", "");
+            String normalized =
+                    raw == null
+                            ? ""
+                            : raw.trim().toLowerCase(Locale.ROOT).replace("minecraft:", "");
             if (!normalized.isEmpty()) {
                 prefixes.add(normalized);
             }
@@ -682,10 +776,11 @@ public final class ItemPoolService {
         return result;
     }
 
-    private record CanonicalGroup(String id, BoardMatch boardMatch, Material displayMaterial,
-            Material recipeSourceMaterial) {
-    }
+    private record CanonicalGroup(
+            String id,
+            BoardMatch boardMatch,
+            Material displayMaterial,
+            Material recipeSourceMaterial) {}
 
-    private record RankedRecipe(int priority, Recipe recipe) {
-    }
+    private record RankedRecipe(int priority, Recipe recipe) {}
 }

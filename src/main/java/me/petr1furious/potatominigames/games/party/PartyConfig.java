@@ -10,13 +10,17 @@ import org.bukkit.configuration.ConfigurationSection;
 public final class PartyConfig {
     private final PropertyBag bag = new PropertyBag("party");
     public final Property<Integer> garticPromptSeconds =
-            bag.define("garticPhone.promptSeconds", PropertyCodec.INT, 30).validate(n -> n >= 10 && n <= 120);
+            bag.define("garticPhone.promptSeconds", PropertyCodec.INT, 30)
+                    .validate(n -> n >= 10 && n <= 120);
     public final Property<Integer> garticBuildSeconds =
-            bag.define("garticPhone.buildSeconds", PropertyCodec.INT, 90).validate(n -> n >= 20 && n <= 300);
+            bag.define("garticPhone.buildSeconds", PropertyCodec.INT, 90)
+                    .validate(n -> n >= 20 && n <= 300);
     public final Property<Integer> garticGuessSeconds =
-            bag.define("garticPhone.guessSeconds", PropertyCodec.INT, 30).validate(n -> n >= 10 && n <= 120);
+            bag.define("garticPhone.guessSeconds", PropertyCodec.INT, 30)
+                    .validate(n -> n >= 10 && n <= 120);
     public final Property<Integer> garticRevealSeconds =
-            bag.define("garticPhone.revealSeconds", PropertyCodec.INT, 6).validate(n -> n >= 3 && n <= 20);
+            bag.define("garticPhone.revealSeconds", PropertyCodec.INT, 6)
+                    .validate(n -> n >= 3 && n <= 20);
     public final Property<Integer> roundSeconds =
             bag.define("pvp.roundSeconds", PropertyCodec.INT, 90)
                     .validate(n -> n >= 20 && n <= 300);
@@ -142,14 +146,18 @@ public final class PartyConfig {
             bag.define("sumoFfa.overtimeSeconds", PropertyCodec.INT, 45)
                     .validate(n -> n >= 20 && n <= 300);
 
-    public final Property<Integer> magicSeconds = bag.define("magicBattle.roundSeconds", PropertyCodec.INT, 180)
-            .validate(n -> n >= 60 && n <= 600);
-    public final Property<Integer> parkourRaceSeconds = bag.define("parkourRace.durationSeconds", PropertyCodec.INT, 240)
-            .validate(n -> n >= 60 && n <= 600);
-    public final Property<Integer> magicCountdown = bag.define("magicBattle.countdownSeconds", PropertyCodec.INT, 5)
-            .validate(n -> n >= 3 && n <= 15);
-    public final Property<Integer> magicChestSeconds = bag.define("magicBattle.chestRechargeSeconds", PropertyCodec.INT, 45)
-            .validate(n -> n >= 10 && n <= 120);
+    public final Property<Integer> magicSeconds =
+            bag.define("magicBattle.roundSeconds", PropertyCodec.INT, 180)
+                    .validate(n -> n >= 60 && n <= 600);
+    public final Property<Integer> parkourRaceSeconds =
+            bag.define("parkourRace.durationSeconds", PropertyCodec.INT, 240)
+                    .validate(n -> n >= 60 && n <= 600);
+    public final Property<Integer> magicCountdown =
+            bag.define("magicBattle.countdownSeconds", PropertyCodec.INT, 5)
+                    .validate(n -> n >= 3 && n <= 15);
+    public final Property<Integer> magicChestSeconds =
+            bag.define("magicBattle.chestRechargeSeconds", PropertyCodec.INT, 45)
+                    .validate(n -> n >= 10 && n <= 120);
 
     public PartyConfig(ConfigRegistry configs) {
         if (migrateMinersTimings(configs.file("games/party.yml")))
@@ -170,7 +178,8 @@ public final class PartyConfig {
         return true;
     }
 
-    private static void upgradeTiming(ConfigurationSection config, String key, int oldValue, int newValue) {
+    private static void upgradeTiming(
+            ConfigurationSection config, String key, int oldValue, int newValue) {
         if (config.getInt(key, newValue) == oldValue) config.set(key, newValue);
     }
 }

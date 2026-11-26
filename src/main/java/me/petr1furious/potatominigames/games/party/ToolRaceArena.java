@@ -44,7 +44,8 @@ final class ToolRaceArena {
                                 (x != 0 || z != 0)
                                         ? Material.GLASS
                                         : y <= 80 ? track.block(80 - y) : Material.AIR;
-                        world.getBlockAt(column.x() + x, y, column.z() + z).setType(material, false);
+                        world.getBlockAt(column.x() + x, y, column.z() + z)
+                                .setType(material, false);
                     }
     }
 
@@ -55,7 +56,12 @@ final class ToolRaceArena {
 
     Location viewpoint() {
         return new Location(
-                world, lastX / 2.0 + .5, 94 + Math.max(lastX, lastZ) / 2.0, lastZ / 2.0 + .5, 0, 90);
+                world,
+                lastX / 2.0 + .5,
+                94 + Math.max(lastX, lastZ) / 2.0,
+                lastZ / 2.0 + .5,
+                0,
+                90);
     }
 
     int depth(UUID id, Block block) {

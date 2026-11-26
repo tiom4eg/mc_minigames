@@ -1,15 +1,17 @@
 package me.petr1furious.potatominigames.games.warfare;
 
+import me.petr1furious.potatominigames.core.command.CommandFailure;
+import me.petr1furious.potatominigames.core.game.EndReason;
+import me.petr1furious.potatominigames.core.game.SessionServices;
+import me.petr1furious.potatominigames.core.player.Participant;
+import me.petr1furious.potatominigames.core.team.TeamColor;
+import me.petr1furious.potatominigames.core.world.Locations;
+import me.petr1furious.potatominigames.gadgets.FPVDroneGadget;
 import me.petr1furious.potatominigames.i18n.I18n;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.DyeColor;
 import org.bukkit.Location;
@@ -34,17 +36,14 @@ import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
-import net.kyori.adventure.bossbar.BossBar;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
-import me.petr1furious.potatominigames.core.command.CommandFailure;
-import me.petr1furious.potatominigames.core.game.EndReason;
-import me.petr1furious.potatominigames.core.game.SessionServices;
-import me.petr1furious.potatominigames.core.player.Participant;
-import me.petr1furious.potatominigames.core.team.TeamColor;
-import me.petr1furious.potatominigames.core.world.Locations;
-import me.petr1furious.potatominigames.gadgets.FPVDroneGadget;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 final class TeamBeaconWarfareSession extends WarfareSessionBase {
     // Blocks kept between the border and an intact beacon or, when it comes in, an alive player.
@@ -73,7 +72,12 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         boolean destroyed;
         BlockDisplay glow;
 
-        BeaconState(TeamColor team, Location location, BlockState replacedBlockState, BossBar bossBar, int health) {
+        BeaconState(
+                TeamColor team,
+                Location location,
+                BlockState replacedBlockState,
+                BossBar bossBar,
+                int health) {
             this.team = team;
             this.location = location;
             this.replacedBlockState = replacedBlockState;
@@ -89,12 +93,16 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
     private boolean borderActive = false;
     private double borderShrinkPerSecond;
 
-    TeamBeaconWarfareSession(SessionServices services, WarfareConfig config, FPVDroneGadget fpvDrone) {
+    TeamBeaconWarfareSession(
+            SessionServices services, WarfareConfig config, FPVDroneGadget fpvDrone) {
         super(services, config, fpvDrone);
     }
 
     private TeamColor teamOf(Player player) {
-        return services.participants().find(player.getUniqueId()).map(Participant::team).orElse(null);
+        return services.participants()
+                .find(player.getUniqueId())
+                .map(Participant::team)
+                .orElse(null);
     }
 
     @Override
@@ -109,9 +117,11 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
 
         try {
             for (TeamColor team : participatingTeams) {
-                Location beaconLocation = map != null ? map.beacon(team, gameWorld()) : config.getBeacon(team);
+                Location beaconLocation =
+                        map != null ? map.beacon(team, gameWorld()) : config.getBeacon(team);
                 if (beaconLocation == null || beaconLocation.getWorld() == null) {
-                    throw new CommandFailure(I18n.tr("warfare.beacon.team_missing", team.displayNameComponent()));
+                    throw new CommandFailure(
+                            I18n.tr("warfare.beacon.team_missing", team.displayNameComponent()));
                 }
                 placeBeacon(team, beaconLocation);
             }
@@ -309,7 +319,9 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
                 return;
             }
 
-            if (attacker != null && attacker != victim && !config.friendlyFire.get()
+            if (attacker != null
+                    && attacker != victim
+                    && !config.friendlyFire.get()
                     && arePlayersFriendly(attacker, victim)) {
                 event.setCancelled(true);
             }
@@ -318,7 +330,8 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
 
     @Override
     public void onEntityShootBow(EntityShootBowEvent event) {
-        if (event.getEntity() instanceof Player player && config.disableSpawnProtectionOnAttack.get()) {
+        if (event.getEntity() instanceof Player player
+                && config.disableSpawnProtectionOnAttack.get()) {
             spawnProtectionExpirations.remove(player.getUniqueId());
         }
     }
@@ -330,7 +343,8 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
                 return true;
             }
             if (block.getWorld().equals(beacon.location.getWorld())
-                    && block.getLocation().distanceSquared(beacon.location) <= (double) radius * radius) {
+                    && block.getLocation().distanceSquared(beacon.location)
+                            <= (double) radius * radius) {
                 return true;
             }
         }
@@ -349,9 +363,16 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         updateBossBar(beacon);
 
         if (beacon.health > 0) {
-            beacon.location.getWorld().playSound(beacon.location, Sound.BLOCK_ANVIL_LAND, 200.0f, 0.8f);
-            breaker.sendActionBar(I18n.tr("warfare.beacon.health", beacon.team.displayNameComponent(),
-                    beacon.health, config.beaconMaxHealth.get()).color(beacon.team.textColor()));
+            beacon.location
+                    .getWorld()
+                    .playSound(beacon.location, Sound.BLOCK_ANVIL_LAND, 200.0f, 0.8f);
+            breaker.sendActionBar(
+                    I18n.tr(
+                                    "warfare.beacon.health",
+                                    beacon.team.displayNameComponent(),
+                                    beacon.health,
+                                    config.beaconMaxHealth.get())
+                            .color(beacon.team.textColor()));
             updateHud();
             return;
         }
@@ -359,9 +380,13 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         beacon.destroyed = true;
         removeGlow(beacon);
         beacon.location.getBlock().setType(Material.AIR, false);
-        beacon.location.getWorld().playSound(beacon.location, Sound.BLOCK_BEACON_DEACTIVATE, 200.0f, 0.6f);
-        services.messages().broadcast(I18n.tr("warfare.beacon.destroyed", beacon.team.displayNameComponent())
-                .color(NamedTextColor.RED));
+        beacon.location
+                .getWorld()
+                .playSound(beacon.location, Sound.BLOCK_BEACON_DEACTIVATE, 200.0f, 0.6f);
+        services.messages()
+                .broadcast(
+                        I18n.tr("warfare.beacon.destroyed", beacon.team.displayNameComponent())
+                                .color(NamedTextColor.RED));
         cancelPendingRespawnsForTeam(beacon.team);
         updateBossBar(beacon);
         updateArenaBorder();
@@ -374,19 +399,28 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         services.playerState().makeSpectator(player, config.respawnBlindnessSeconds.get());
         int delaySeconds = config.respawnDelaySeconds.get();
         long respawnAtMillis = System.currentTimeMillis() + delaySeconds * 1000L;
-        BukkitTask task = services.plugin().getServer().getScheduler().runTaskLater(services.plugin(), () -> {
-            pendingRespawns.remove(player.getUniqueId());
-            BeaconState beacon = beacons.get(team);
-            if (beacon == null || beacon.destroyed || !services.participants().isParticipant(player)
-                    || !player.isOnline()) {
-                updateHud();
-                checkGameEnd();
-                return;
-            }
-            spawnPlayerAtTeamBeacon(player, team);
-            updateHud();
-            checkGameEnd();
-        }, delaySeconds * 20L);
+        BukkitTask task =
+                services.plugin()
+                        .getServer()
+                        .getScheduler()
+                        .runTaskLater(
+                                services.plugin(),
+                                () -> {
+                                    pendingRespawns.remove(player.getUniqueId());
+                                    BeaconState beacon = beacons.get(team);
+                                    if (beacon == null
+                                            || beacon.destroyed
+                                            || !services.participants().isParticipant(player)
+                                            || !player.isOnline()) {
+                                        updateHud();
+                                        checkGameEnd();
+                                        return;
+                                    }
+                                    spawnPlayerAtTeamBeacon(player, team);
+                                    updateHud();
+                                    checkGameEnd();
+                                },
+                                delaySeconds * 20L);
         pendingRespawns.put(player.getUniqueId(), new PendingRespawn(team, respawnAtMillis, task));
     }
 
@@ -401,7 +435,8 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         }
         prepareAlivePlayer(player, spawn, config.keepInvisibility.get());
         if (config.spawnProtectionSeconds.get() > 0) {
-            spawnProtectionExpirations.put(player.getUniqueId(),
+            spawnProtectionExpirations.put(
+                    player.getUniqueId(),
                     System.currentTimeMillis() + config.spawnProtectionSeconds.get() * 1000L);
         }
     }
@@ -411,35 +446,57 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         BlockState replacedState = block.getState();
         block.setType(team.woolMaterial(), false);
         int maxHealth = config.beaconMaxHealth.get();
-        BossBar bossBar = services.bossBars().create(
-                I18n.tr("warfare.beacon.bar", team.displayNameComponent(), maxHealth, maxHealth).color(team.textColor()),
-                team.bossBarColor(), BossBar.Overlay.PROGRESS);
-        BeaconState beacon = new BeaconState(team, block.getLocation(), replacedState, bossBar, maxHealth);
+        BossBar bossBar =
+                services.bossBars()
+                        .create(
+                                I18n.tr(
+                                                "warfare.beacon.bar",
+                                                team.displayNameComponent(),
+                                                maxHealth,
+                                                maxHealth)
+                                        .color(team.textColor()),
+                                team.bossBarColor(),
+                                BossBar.Overlay.PROGRESS);
+        BeaconState beacon =
+                new BeaconState(team, block.getLocation(), replacedState, bossBar, maxHealth);
         beacons.put(team, beacon);
         ensureGlow(beacon);
     }
 
-    /** Spawns the beacon's glowing outline if missing; it is non-persistent, so a chunk unload drops it. */
+    /**
+     * Spawns the beacon's glowing outline if missing; it is non-persistent, so a chunk unload drops
+     * it.
+     */
     private void ensureGlow(BeaconState beacon) {
         if (beacon.destroyed || (beacon.glow != null && beacon.glow.isValid())) {
             return;
         }
         var world = beacon.location.getWorld();
         if (world == null
-                || !world.isChunkLoaded(beacon.location.getBlockX() >> 4, beacon.location.getBlockZ() >> 4)) {
+                || !world.isChunkLoaded(
+                        beacon.location.getBlockX() >> 4, beacon.location.getBlockZ() >> 4)) {
             return;
         }
         float scale = 1.0f - 2 * GLOW_INSET;
-        beacon.glow = world.spawn(beacon.location, BlockDisplay.class, display -> {
-            display.setPersistent(false);
-            display.setBlock(beacon.team.woolMaterial().createBlockData());
-            display.setTransformation(new Transformation(new Vector3f(GLOW_INSET, GLOW_INSET, GLOW_INSET),
-                    new AxisAngle4f(), new Vector3f(scale, scale, scale), new AxisAngle4f()));
-            display.setBrightness(new Display.Brightness(15, 15));
-            display.setViewRange(4.0f);
-            display.setGlowColorOverride(DyeColor.valueOf(beacon.team.name()).getColor());
-            display.setGlowing(true);
-        });
+        beacon.glow =
+                world.spawn(
+                        beacon.location,
+                        BlockDisplay.class,
+                        display -> {
+                            display.setPersistent(false);
+                            display.setBlock(beacon.team.woolMaterial().createBlockData());
+                            display.setTransformation(
+                                    new Transformation(
+                                            new Vector3f(GLOW_INSET, GLOW_INSET, GLOW_INSET),
+                                            new AxisAngle4f(),
+                                            new Vector3f(scale, scale, scale),
+                                            new AxisAngle4f()));
+                            display.setBrightness(new Display.Brightness(15, 15));
+                            display.setViewRange(4.0f);
+                            display.setGlowColorOverride(
+                                    DyeColor.valueOf(beacon.team.name()).getColor());
+                            display.setGlowing(true);
+                        });
     }
 
     private void removeGlow(BeaconState beacon) {
@@ -470,8 +527,13 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         int maxHealth = config.beaconMaxHealth.get();
         float progress = Math.max(0.0f, Math.min(1.0f, beacon.health / (float) maxHealth));
         beacon.bossBar.progress(progress);
-        beacon.bossBar.name(I18n.tr("warfare.beacon.bar", beacon.team.displayNameComponent(), beacon.health, maxHealth)
-                .color(beacon.team.textColor()));
+        beacon.bossBar.name(
+                I18n.tr(
+                                "warfare.beacon.bar",
+                                beacon.team.displayNameComponent(),
+                                beacon.health,
+                                maxHealth)
+                        .color(beacon.team.textColor()));
     }
 
     private void cancelPendingRespawn(UUID playerId) {
@@ -510,8 +572,10 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
     }
 
     private boolean isBeaconBlock(Block block, BeaconState beacon) {
-        return block.getWorld().equals(beacon.location.getWorld()) && block.getX() == beacon.location.getBlockX()
-                && block.getY() == beacon.location.getBlockY() && block.getZ() == beacon.location.getBlockZ();
+        return block.getWorld().equals(beacon.location.getWorld())
+                && block.getX() == beacon.location.getBlockX()
+                && block.getY() == beacon.location.getBlockY()
+                && block.getZ() == beacon.location.getBlockZ();
     }
 
     private boolean isSpawnProtected(Player player) {
@@ -530,7 +594,8 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         if (damager instanceof Player player) {
             return player;
         }
-        if (damager instanceof Projectile projectile && projectile.getShooter() instanceof Player player) {
+        if (damager instanceof Projectile projectile
+                && projectile.getShooter() instanceof Player player) {
             return player;
         }
         return null;
@@ -581,8 +646,9 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
     }
 
     /**
-     * Brings the border in at the endgame, centred on the intact beacons and wide enough for every alive
-     * player; it never shrinks past an intact beacon. Called again when a beacon breaks to shrink further.
+     * Brings the border in at the endgame, centred on the intact beacons and wide enough for every
+     * alive player; it never shrinks past an intact beacon. Called again when a beacon breaks to
+     * shrink further.
      */
     private void updateArenaBorder() {
         if (!config.arenaBorderEnabled.get() || !isEndgame()) {
@@ -602,19 +668,36 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         long seconds = Math.max(0, config.arenaBorderTimeToFinalSeconds.get());
 
         if (!borderActive) {
-            List<Location> anchors = !intact.isEmpty() ? intact
-                    : !players.isEmpty() ? players : List.of(configuredCenter().toLocation(world));
+            List<Location> anchors =
+                    !intact.isEmpty()
+                            ? intact
+                            : !players.isEmpty()
+                                    ? players
+                                    : List.of(configuredCenter().toLocation(world));
             Location center = boxCenter(anchors);
             List<Location> inside = new ArrayList<>(intact);
             inside.addAll(players);
-            double initialSize = Math.max(sizeContaining(center, inside), config.arenaBorderInitialSize.get());
+            double initialSize =
+                    Math.max(sizeContaining(center, inside), config.arenaBorderInitialSize.get());
             double finalSize = Math.min(initialSize, borderFloor(center, intact));
-            borderShrinkPerSecond = seconds == 0 ? 0.0
-                    : Math.max(initialSize - finalSize,
-                            config.arenaBorderInitialSize.get() - config.arenaBorderFinalSize.get()) / seconds;
-            services.arena().applyBorder(world, center, initialSize, finalSize, shrinkSeconds(initialSize, finalSize));
+            borderShrinkPerSecond =
+                    seconds == 0
+                            ? 0.0
+                            : Math.max(
+                                            initialSize - finalSize,
+                                            config.arenaBorderInitialSize.get()
+                                                    - config.arenaBorderFinalSize.get())
+                                    / seconds;
+            services.arena()
+                    .applyBorder(
+                            world,
+                            center,
+                            initialSize,
+                            finalSize,
+                            shrinkSeconds(initialSize, finalSize));
             borderActive = true;
-            services.messages().broadcast(I18n.tr("warfare.border_closing").color(NamedTextColor.RED));
+            services.messages()
+                    .broadcast(I18n.tr("warfare.border_closing").color(NamedTextColor.RED));
             return;
         }
 
@@ -636,27 +719,36 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
 
     /** The configured final size, but never small enough to leave an intact beacon outside. */
     private double borderFloor(Location center, List<Location> intact) {
-        return Math.max(Math.max(1.0, config.arenaBorderFinalSize.get()), sizeContaining(center, intact));
+        return Math.max(
+                Math.max(1.0, config.arenaBorderFinalSize.get()), sizeContaining(center, intact));
     }
 
     private static double sizeContaining(Location center, List<Location> points) {
         double halfSize = 0.0;
         for (Location point : points) {
-            halfSize = Math.max(halfSize, Math.max(Math.abs(point.getX() - center.getX()),
-                    Math.abs(point.getZ() - center.getZ())));
+            halfSize =
+                    Math.max(
+                            halfSize,
+                            Math.max(
+                                    Math.abs(point.getX() - center.getX()),
+                                    Math.abs(point.getZ() - center.getZ())));
         }
         return points.isEmpty() ? 1.0 : 2.0 * (halfSize + BORDER_MARGIN);
     }
 
     private static Location boxCenter(List<Location> points) {
-        double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+        double minX = Double.MAX_VALUE,
+                maxX = -Double.MAX_VALUE,
+                minZ = Double.MAX_VALUE,
+                maxZ = -Double.MAX_VALUE;
         for (Location point : points) {
             minX = Math.min(minX, point.getX());
             maxX = Math.max(maxX, point.getX());
             minZ = Math.min(minZ, point.getZ());
             maxZ = Math.max(maxZ, point.getZ());
         }
-        return new Location(points.getFirst().getWorld(), (minX + maxX) / 2.0, 0, (minZ + maxZ) / 2.0);
+        return new Location(
+                points.getFirst().getWorld(), (minX + maxX) / 2.0, 0, (minZ + maxZ) / 2.0);
     }
 
     private boolean isTeamStillAlive(BeaconState beacon) {
@@ -680,13 +772,17 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         List<int[]> candidates = new ArrayList<>();
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
-                candidates.add(new int[] { beaconLocation.getBlockX() + dx, beaconLocation.getBlockZ() + dz });
+                candidates.add(
+                        new int[] {
+                            beaconLocation.getBlockX() + dx, beaconLocation.getBlockZ() + dz
+                        });
             }
         }
         java.util.Collections.shuffle(candidates);
 
         for (int[] candidate : candidates) {
-            Location spawn = findSpawnAtColumn(world, candidate[0], candidate[1], beaconY, maxYOffset);
+            Location spawn =
+                    findSpawnAtColumn(world, candidate[0], candidate[1], beaconY, maxYOffset);
             if (spawn != null) {
                 return spawn;
             }
@@ -695,7 +791,8 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         return null;
     }
 
-    private Location findSpawnAtColumn(org.bukkit.World world, int x, int z, int startY, int maxDrop) {
+    private Location findSpawnAtColumn(
+            org.bukkit.World world, int x, int z, int startY, int maxDrop) {
         int minFeetY = Math.max(world.getMinHeight() + 1, startY - maxDrop);
         int maxFeetY = Math.min(world.getMaxHeight() - 1, startY + 1);
 
@@ -727,9 +824,12 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
         if (activeTeams.size() == 1 && !services.isTest()) {
             ended = true;
             TeamColor winner = activeTeams.getFirst();
-            summary.add(I18n.tr("common.summary.winner",
-                    I18n.tr("warfare.team.label", winner.displayNameComponent()).color(winner.textColor()))
-                    .color(NamedTextColor.GREEN));
+            summary.add(
+                    I18n.tr(
+                                    "common.summary.winner",
+                                    I18n.tr("warfare.team.label", winner.displayNameComponent())
+                                            .color(winner.textColor()))
+                            .color(NamedTextColor.GREEN));
             for (Player player : services.participants().onlinePlayers()) {
                 if (teamOf(player) == winner) {
                     services.award("war", player.getUniqueId(), 1);
@@ -753,7 +853,11 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
 
     @Override
     protected Component hudTitle(Player viewer) {
-        return I18n.tr(shouldHidePerPlayerDistances() ? "warfare.hud.teams" : "warfare.hud.distances").color(NamedTextColor.GOLD);
+        return I18n.tr(
+                        shouldHidePerPlayerDistances()
+                                ? "warfare.hud.teams"
+                                : "warfare.hud.distances")
+                .color(NamedTextColor.GOLD);
     }
 
     @Override
@@ -774,20 +878,25 @@ final class TeamBeaconWarfareSession extends WarfareSessionBase {
 
     private List<Component> buildTeamSummaryLines(Player viewer) {
         List<BeaconState> states = new ArrayList<>(beacons.values());
-        states.sort(Comparator.comparing((BeaconState state) -> state.destroyed)
-                .thenComparing(state -> state.team.name()));
+        states.sort(
+                Comparator.comparing((BeaconState state) -> state.destroyed)
+                        .thenComparing(state -> state.team.name()));
         List<Component> lines = new ArrayList<>();
         for (BeaconState state : states) {
             int alive = getAlivePlayers(state.team);
-            Component status = !state.destroyed ? Component.text(" ✔", NamedTextColor.GRAY)
-                    : alive > 0 ? Component.text(" " + alive, NamedTextColor.GRAY)
-                            : Component.text(" ✘", NamedTextColor.GRAY);
+            Component status =
+                    !state.destroyed
+                            ? Component.text(" ✔", NamedTextColor.GRAY)
+                            : alive > 0
+                                    ? Component.text(" " + alive, NamedTextColor.GRAY)
+                                    : Component.text(" ✘", NamedTextColor.GRAY);
             lines.add(state.team.displayNameComponent().append(status));
         }
 
         PendingRespawn pendingRespawn = pendingRespawns.get(viewer.getUniqueId());
         if (pendingRespawn != null) {
-            long millisLeft = Math.max(0L, pendingRespawn.respawnAtMillis - System.currentTimeMillis());
+            long millisLeft =
+                    Math.max(0L, pendingRespawn.respawnAtMillis - System.currentTimeMillis());
             int secondsLeft = (int) Math.ceil(millisLeft / 1000.0);
             lines.add(I18n.tr("warfare.hud.respawn", secondsLeft).color(NamedTextColor.GREEN));
         }

@@ -1,10 +1,8 @@
 package me.petr1furious.potatominigames.games.pillars;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import me.petr1furious.potatominigames.i18n.I18n;
+
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Chunk;
 import org.bukkit.World;
@@ -34,10 +32,15 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.PlayerInventory;
 
-import net.kyori.adventure.text.format.NamedTextColor;
-import me.petr1furious.potatominigames.i18n.I18n;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
-/** A shuffle replaces all items in its arena, including items stashed outside player inventories. */
+/**
+ * A shuffle replaces all items in its arena, including items stashed outside player inventories.
+ */
 final class ShuffleItems implements Listener {
     private final World world;
     private final Map<Long, Long> blockCycles = new HashMap<>();
@@ -126,8 +129,12 @@ final class ShuffleItems implements Listener {
                 continue;
             }
             // These can be broken/picked up to recover the original item after a shuffle.
-            if (entity instanceof Item || entity instanceof Projectile || entity instanceof Boat
-                    || entity instanceof Minecart || entity instanceof Hanging || entity instanceof ArmorStand) {
+            if (entity instanceof Item
+                    || entity instanceof Projectile
+                    || entity instanceof Boat
+                    || entity instanceof Minecart
+                    || entity instanceof Hanging
+                    || entity instanceof ArmorStand) {
                 entity.remove();
                 continue;
             }
@@ -162,10 +169,14 @@ final class ShuffleItems implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryOpen(InventoryOpenEvent event) {
-        if (event.getPlayer().getWorld().equals(world) && event.getInventory().getType() == InventoryType.ENDER_CHEST) {
-            // Ender chests belong to the persistent player, not the throwaway arena or its snapshot.
+        if (event.getPlayer().getWorld().equals(world)
+                && event.getInventory().getType() == InventoryType.ENDER_CHEST) {
+            // Ender chests belong to the persistent player, not the throwaway arena or its
+            // snapshot.
             event.setCancelled(true);
-            event.getPlayer().sendMessage(I18n.tr("pillars.play.shuffle.ender_chest").color(NamedTextColor.RED));
+            event.getPlayer()
+                    .sendMessage(
+                            I18n.tr("pillars.play.shuffle.ender_chest").color(NamedTextColor.RED));
         }
     }
 

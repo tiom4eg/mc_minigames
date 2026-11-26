@@ -1,12 +1,13 @@
 package me.petr1furious.potatominigames.gadgets;
 
-import me.petr1furious.potatominigames.i18n.I18n;
-
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyCodec;
+import me.petr1furious.potatominigames.i18n.I18n;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -35,19 +36,17 @@ public class RadarGadget extends AbstractGadget {
 
     @Override
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (!GadgetItems.isRightClick(event))
-            return;
-        if (!GadgetItems.checkForItem(event.getItem(), TAG))
-            return;
+        if (!GadgetItems.isRightClick(event)) return;
+        if (!GadgetItems.checkForItem(event.getItem(), TAG)) return;
 
         Player player = event.getPlayer();
         event.setCancelled(true);
-        if (player.getGameMode() == GameMode.SPECTATOR)
-            return;
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
 
         int remaining = getRemainingCooldownSeconds(player);
         if (remaining > 0) {
-            player.sendActionBar(I18n.tr("gadgets.radar.cooldown", remaining).color(NamedTextColor.RED));
+            player.sendActionBar(
+                    I18n.tr("gadgets.radar.cooldown", remaining).color(NamedTextColor.RED));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.2f, 0.5f);
             return;
         }
@@ -62,12 +61,21 @@ public class RadarGadget extends AbstractGadget {
 
         if (glowingEffectLength.get() > 0) {
             target.addPotionEffect(
-                    new PotionEffect(PotionEffectType.GLOWING, glowingEffectLength.get() * 20, 0, false, false));
+                    new PotionEffect(
+                            PotionEffectType.GLOWING,
+                            glowingEffectLength.get() * 20,
+                            0,
+                            false,
+                            false));
         }
 
-        player.sendActionBar(I18n.tr("gadgets.radar.target",
-                context.hideTargetNames(player) ? I18n.tr("gadgets.enemy").color(NamedTextColor.AQUA)
-                        : Component.text(target.getName(), NamedTextColor.AQUA)).color(NamedTextColor.YELLOW));
+        player.sendActionBar(
+                I18n.tr(
+                                "gadgets.radar.target",
+                                context.hideTargetNames(player)
+                                        ? I18n.tr("gadgets.enemy").color(NamedTextColor.AQUA)
+                                        : Component.text(target.getName(), NamedTextColor.AQUA))
+                        .color(NamedTextColor.YELLOW));
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.2f, 2f);
         target.playSound(target.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 0.6f, 1.5f);
     }
@@ -89,14 +97,13 @@ public class RadarGadget extends AbstractGadget {
 
         for (Player player : context.targetsFor(source)) {
 
-            Vector toTarget = player.getEyeLocation().toVector().subtract(source.getEyeLocation().toVector());
+            Vector toTarget =
+                    player.getEyeLocation().toVector().subtract(source.getEyeLocation().toVector());
             double distanceSquared = toTarget.lengthSquared();
-            if (distanceSquared <= 1.0E-6 || distanceSquared > maxDistanceSquared)
-                continue;
+            if (distanceSquared <= 1.0E-6 || distanceSquared > maxDistanceSquared) continue;
 
             double angle = getAngleDegrees(facing, toTarget);
-            if (angle > maxAngle)
-                continue;
+            if (angle > maxAngle) continue;
 
             if (distanceSquared < bestDistanceSquared) {
                 bestDistanceSquared = distanceSquared;
@@ -117,7 +124,10 @@ public class RadarGadget extends AbstractGadget {
         var item = new ItemStack(Material.SPYGLASS);
         GadgetItems.addTag(item, TAG);
         var meta = item.getItemMeta();
-        meta.displayName(I18n.tr("gadgets.radar.name").color(NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
+        meta.displayName(
+                I18n.tr("gadgets.radar.name")
+                        .color(NamedTextColor.GREEN)
+                        .decoration(TextDecoration.ITALIC, false));
         meta.setEnchantmentGlintOverride(true);
         item.setItemMeta(meta);
         item.setAmount(count);
