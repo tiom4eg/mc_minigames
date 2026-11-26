@@ -1,175 +1,180 @@
 package me.petr1furious.potatominigames.games.pillars;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
+
+import me.petr1furious.potatominigames.core.preset.PresetStore;
 import me.petr1furious.potatominigames.i18n.I18n;
+import net.kyori.adventure.text.Component;
 
-/** Player-owned fixed Fusion mixes; memory changes only after an atomic save succeeds. */
+/** The settings shared by saved, dialog-launched and randomly rolled Fusion matches. */
 final class PillarsPresets {
-    static final int LIMIT = 5;
-    static final List<String> MODIFIERS = List.of("chaos", "shuffle", "tactical", "big_house", "party", "rave", "adhd", "perks", "flood");
+    static final List<String> MODIFIERS = List.of("chaos", "shuffle", "tactical", "big_house", "party",
+            "adhd", "perks", "flood");
+    static final List<String> COMMAND_MODIFIERS = List.of("chaos", "shuffle", "tactical", "big_house",
+            "party", "rave", "adhd", "perks", "flood");
+    private static final String MODIFIERS_OPTION = "pillars.fusion";
+    private static final String OPTION_PREFIX = "pillars.";
 
-    record Preset(UUID owner, String ownerName, String name, List<String> modifiers) {
-        Preset {
+    enum Parameter {
+        ITEM_INTERVAL(null, "itemInterval", 1, 300, true),
+        DISTANCE("big_house", "distanceMultiplier", 0.25, 10, false),
+        EVENT_MEAN("party", "eventMeanSeconds", 1, 3600, false),
+        ADHD_MEAN("adhd", "adhdMeanSeconds", 1, 3600, false),
+        ADHD_DURATION("adhd", "adhdDurationSeconds", 1, 300, true),
+        PERK_CHANCE("perks", "perkChance", 0, 1, false),
+        FLOOD_DEPTH("flood", "floodStartBelow", 1, 64, true),
+        FLOOD_RISE("flood", "floodRiseSeconds", 1, 300, true);
+
+        static final List<Parameter> ALL = List.of(values());
+        private static final Set<String> KEYS = ALL.stream().map(parameter -> parameter.key)
+                .collect(Collectors.toUnmodifiableSet());
+
+        final String modifier;
+        final String key;
+        private final double min;
+        private final double max;
+        private final boolean whole;
+
+        Parameter(String modifier, String key, double min, double max, boolean whole) {
+            this.modifier = modifier;
+            this.key = key;
+            this.min = min;
+            this.max = max;
+            this.whole = whole;
+        }
+
+        Component label() {
+            return I18n.tr("pillars.play.editor.parameter." + key);
+        }
+
+        double parse(String raw) {
+            try {
+                double value = Double.parseDouble(raw.trim());
+                if (value >= min && value <= max && (!whole || value == Math.rint(value))) {
+                    return value == 0 ? 0 : value;
+                }
+            } catch (NumberFormatException ignored) {
+                // Report the same range for non-numeric and out-of-range values.
+            }
+            throw I18n.exception(whole ? "pillars.play.editor.whole_range" : "pillars.play.editor.range",
+                    label(), format(min), format(max));
+        }
+
+        static String format(double value) {
+            return value == (long) value ? Long.toString((long) value) : Double.toString(value);
+        }
+    }
+
+    record Settings(List<String> modifiers, boolean rave, Map<Parameter, Double> overrides) {
+        Settings {
             modifiers = List.copyOf(modifiers);
+            overrides = Map.copyOf(overrides);
+        }
+
+        boolean enabled(String modifier) {
+            return modifier == null || modifiers.contains(modifier);
+        }
+
+        String partyVariant() {
+            return rave ? "rave" : "party";
+        }
+
+        List<String> legacyModifiers() {
+            return rave ? modifiers.stream().map(id -> id.equals("party") ? "rave" : id).toList() : modifiers;
+        }
+
+        Settings select(List<String> selected) {
+            if (modifiers.equals(selected)) return this;
+            var retained = new EnumMap<Parameter, Double>(Parameter.class);
+            overrides.forEach((parameter, value) -> {
+                if (parameter.modifier == null || selected.contains(parameter.modifier)) retained.put(parameter, value);
+            });
+            return new Settings(selected, rave && selected.contains("party"), retained);
+        }
+
+        Map<String, String> options() {
+            var options = new LinkedHashMap<String, String>();
+            options.put(MODIFIERS_OPTION, String.join(",", legacyModifiers()));
+            overrides.forEach((parameter, value) -> options.put(OPTION_PREFIX + parameter.key, Parameter.format(value)));
+            return Map.copyOf(options);
         }
     }
 
-    private final Path file;
-    private final List<String> reserved;
-    private final Map<String, Preset> presets = new LinkedHashMap<>();
-
-    PillarsPresets(Path file, List<String> reserved) throws IOException {
-        this.file = file.toAbsolutePath();
-        this.reserved = List.copyOf(reserved);
-        if (!Files.exists(this.file)) {
-            return;
-        }
-        YamlConfiguration yaml = new YamlConfiguration();
-        try {
-            yaml.load(this.file.toFile());
-            ConfigurationSection section = yaml.getConfigurationSection("presets");
-            if (section == null) {
-                if (!yaml.getKeys(false).isEmpty()) {
-                    throw I18n.exception("pillars.play.preset_error.section");
-                }
-                return;
-            }
-            for (String key : section.getKeys(false)) {
-                String name = checkedName(key);
-                if (!name.equals(key)) {
-                    throw I18n.exception("pillars.play.preset_error.lowercase", key);
-                }
-                ConfigurationSection entry = section.getConfigurationSection(key);
-                if (entry == null) {
-                    throw I18n.exception("pillars.play.preset_error.invalid", key);
-                }
-                UUID owner = UUID.fromString(entry.getString("owner", ""));
-                List<?> raw = entry.getList("modifiers");
-                if (raw == null || raw.stream().anyMatch(value -> !(value instanceof String))) {
-                    throw I18n.exception("pillars.play.preset_error.modifiers", key);
-                }
-                List<String> modifiers = checkedModifiers(raw.stream().map(String.class::cast).toList());
-                if (count(owner) >= LIMIT) {
-                    throw I18n.exception("pillars.play.preset_error.saved_limit", LIMIT, owner.toString());
-                }
-                presets.put(name, new Preset(owner, entry.getString("ownerName", owner.toString()), name, modifiers));
-            }
-        } catch (InvalidConfigurationException | IllegalArgumentException exception) {
-            throw new IOException("Invalid Pillars presets in " + file + ": " + exception.getMessage(), exception);
-        }
-    }
-
-    List<Preset> all() {
-        return presets.values().stream().sorted(java.util.Comparator.comparing(Preset::name)).toList();
-    }
-
-    List<String> names() {
-        return presets.keySet().stream().sorted().toList();
-    }
-
-    Preset find(String name) {
-        return presets.get(name.toLowerCase(Locale.ROOT));
-    }
-
-    Preset save(UUID owner, String ownerName, String rawName, List<String> modifiers) throws IOException {
-        String name = checkedName(rawName);
-        Preset previous = presets.get(name);
-        if (previous != null && !previous.owner().equals(owner)) {
-            throw I18n.exception("pillars.play.preset_error.owner", previous.ownerName());
-        }
-        if (previous == null && count(owner) >= LIMIT) {
-            throw I18n.exception("pillars.play.preset_error.limit", LIMIT);
-        }
-        Preset preset = new Preset(owner, ownerName, name, checkedModifiers(modifiers));
-        persist(name, preset);
-        presets.put(name, preset);
-        return preset;
-    }
-
-    void delete(UUID owner, String rawName) throws IOException {
-        String name = checkedName(rawName);
-        Preset preset = presets.get(name);
-        if (preset == null) {
-            throw I18n.exception("pillars.play.preset_error.unknown", name);
-        }
-        if (!preset.owner().equals(owner)) {
-            throw I18n.exception("pillars.play.preset_error.delete_owner", preset.ownerName());
-        }
-        persist(name, null);
-        presets.remove(name);
-    }
-
-    private long count(UUID owner) {
-        return presets.values().stream().filter(preset -> preset.owner().equals(owner)).count();
-    }
-
-    private String checkedName(String raw) {
-        String name = raw.toLowerCase(Locale.ROOT);
-        if (!name.matches("[a-z0-9][a-z0-9_-]{0,23}")) {
-            throw I18n.exception("pillars.play.preset_error.name");
-        }
-        if (reserved.contains(name)) {
-            throw I18n.exception("pillars.play.preset_error.reserved", name);
-        }
-        return name;
-    }
-
-    private static List<String> checkedModifiers(List<String> raw) {
+    static Settings modifiers(List<String> raw) {
         var selected = new LinkedHashSet<String>();
         for (String value : raw) {
             String modifier = value.toLowerCase(Locale.ROOT);
-            if (!MODIFIERS.contains(modifier)) {
-                throw I18n.exception("pillars.play.preset_error.unknown_modifier", value, String.join(", ", MODIFIERS));
+            if (!COMMAND_MODIFIERS.contains(modifier)) {
+                throw I18n.exception("pillars.play.preset_error.unknown_modifier", value, String.join(", ", COMMAND_MODIFIERS));
             }
             if (!selected.add(modifier)) {
                 throw I18n.exception("pillars.play.preset_error.duplicate_modifier", modifier);
             }
         }
-        if (selected.contains("party") && selected.contains("rave")) {
+        boolean rave = selected.remove("rave");
+        if (rave && !selected.add("party")) {
             throw I18n.exception("pillars.play.preset_error.party_rave");
         }
-        return MODIFIERS.stream().filter(selected::contains).toList();
+        return new Settings(MODIFIERS.stream().filter(selected::contains).toList(), rave, Map.of());
     }
 
-    private void persist(String name, Preset replacement) throws IOException {
-        YamlConfiguration yaml = new YamlConfiguration();
-        yaml.createSection("presets");
-        for (Preset preset : presets.values()) {
-            if (!preset.name().equals(name)) {
-                write(yaml, preset);
+    /** Null means the built-in random Fusion, not a deliberately empty modifier selection. */
+    static Settings fromOptions(Map<String, String> options) {
+        String raw = options.get(MODIFIERS_OPTION);
+        if (raw == null) return null;
+        return parseValues(modifiers(raw.isEmpty() ? List.of() : List.of(raw.split(",", -1))),
+                parameter -> options.get(OPTION_PREFIX + parameter.key));
+    }
+
+    static PresetStore<Settings> open(Path file, List<String> reserved) throws IOException {
+        return new PresetStore<>(file, reserved, new PresetStore.Codec<Settings>() {
+            @Override
+            public Settings read(ConfigurationSection entry) {
+                List<?> raw = entry.getList("modifiers");
+                if (raw == null || raw.stream().anyMatch(value -> !(value instanceof String))) {
+                    throw I18n.exception("pillars.play.preset_error.modifiers", entry.getName());
+                }
+                ConfigurationSection scalars = entry.getConfigurationSection("settings");
+                if (entry.contains("settings") && (scalars == null
+                        || !Parameter.KEYS.containsAll(scalars.getKeys(false)))) {
+                    throw I18n.exception("pillars.play.editor.invalid_settings", entry.getName());
+                }
+                return parseValues(modifiers(raw.stream().map(String.class::cast).toList()), parameter -> {
+                    Object value = scalars == null ? null : scalars.get(parameter.key);
+                    return value == null ? null : value.toString();
+                });
             }
-        }
-        if (replacement != null) {
-            write(yaml, replacement);
-        }
-        Files.createDirectories(file.getParent());
-        Path temporary = Files.createTempFile(file.getParent(), "pillars-presets-", ".tmp");
-        try {
-            Files.writeString(temporary, yaml.saveToString(), StandardCharsets.UTF_8);
-            Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-        } finally {
-            Files.deleteIfExists(temporary);
-        }
+
+            @Override
+            public void write(ConfigurationSection entry, Settings settings) {
+                entry.set("modifiers", settings.legacyModifiers());
+                settings.overrides.forEach((parameter, value) -> entry.set("settings." + parameter.key, value));
+            }
+        });
     }
 
-    private static void write(YamlConfiguration yaml, Preset preset) {
-        String key = "presets." + preset.name();
-        yaml.set(key + ".owner", preset.owner().toString());
-        yaml.set(key + ".ownerName", preset.ownerName());
-        yaml.set(key + ".modifiers", preset.modifiers());
+    private static Settings parseValues(Settings settings, Function<Parameter, String> get) {
+        var values = new EnumMap<Parameter, Double>(Parameter.class);
+        for (Parameter parameter : Parameter.ALL) {
+            String raw = get.apply(parameter);
+            if (raw == null) continue;
+            if (!settings.enabled(parameter.modifier)) {
+                throw I18n.exception("pillars.play.editor.disabled_setting", parameter.label());
+            }
+            values.put(parameter, parameter.parse(raw));
+        }
+        return new Settings(settings.modifiers(), settings.rave(), values);
     }
 }

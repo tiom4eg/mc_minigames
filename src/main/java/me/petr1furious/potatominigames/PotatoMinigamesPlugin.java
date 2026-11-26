@@ -103,7 +103,8 @@ public final class PotatoMinigamesPlugin extends JavaPlugin {
         sessions.registerGame(new BingoGame(this, configs));
         sessions.registerGame(new WarfareGame(configs, fpvDrone));
         sessions.registerGame(new ChaseGame(configs, gadgets));
-        sessions.registerGame(new PartyGame(configs));
+        PartyGame party = new PartyGame(this, configs);
+        sessions.registerGame(party);
         FinalsGame finals = new FinalsGame(this, configs);
         sessions.registerGame(finals);
         sessions.registerGame(new CsGame(configs));
@@ -112,6 +113,7 @@ public final class PotatoMinigamesPlugin extends JavaPlugin {
         QueueService queues = new QueueService(this, sessions, lobby);
         queues.createQueues(configs);
         pillars.setQueues(queues);
+        party.setQueues(queues);
         QueueMenu menu = new QueueMenu(this, sessions, queues);
         queues.setAfterOnboarding(menu::openPicks);
         finals.configureTutorials(sessions, queues);

@@ -23,17 +23,17 @@ public record Ballot(String key, String title, Supplier<List<String>> choices, S
     /** {@code /play <key> any} drops the vote. */
     public static final String ANY = "any";
 
-    /** Built-in ballot labels are localized; extension-provided labels remain literal. */
+    /** Localize known ballot labels; extension-provided labels can remain literal. */
     public Component titleComponent() {
         return switch (key) {
             case "difficulty" -> I18n.tr("core.ballot.difficulty");
             case "map" -> I18n.tr("core.ballot.map");
             case "length" -> I18n.tr("core.ballot.length");
-            default -> Component.text(title);
+            default -> I18n.has("core.ballot." + key) ? I18n.tr("core.ballot." + key) : Component.text(title);
         };
     }
 
-    /** Localize built-in difficulty and length labels; map and extension names stay literal. */
+    /** Localize known choice IDs; map and extension names may remain literal. */
     public Component choiceComponent(String choice) {
         if (choice == null) {
             return I18n.tr("core.ballot.any");
@@ -50,7 +50,8 @@ public record Ballot(String key, String title, Supplier<List<String>> choices, S
                 default -> Component.text(choice);
             };
         }
-        return Component.text(choice);
+        String label = "core.ballot." + key + "." + choice;
+        return I18n.has(label) ? I18n.tr(label) : Component.text(choice);
     }
 
     /** Spread over the levels, easiest first. */

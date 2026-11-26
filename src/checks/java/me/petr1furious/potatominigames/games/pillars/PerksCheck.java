@@ -393,9 +393,11 @@ public final class PerksCheck {
         var dir = Files.createTempDirectory("pillars-perks-check");
         try {
             var path = dir.resolve("presets.yml");
-            var presets = new PillarsPresets(path, PillarsConfig.MODES);
-            presets.save(new UUID(0, 1), "Player", "perky", List.of("perks", "shuffle", "rave", "tactical"));
-            check(new PillarsPresets(path, PillarsConfig.MODES).find("perky").modifiers().containsAll(List.of("perks", "shuffle", "rave", "tactical")),
+            var presets = PillarsPresets.open(path, PillarsConfig.RESERVED);
+            var settings = PillarsPresets.modifiers(List.of("perks", "shuffle", "rave", "tactical"));
+            presets.save(new UUID(0, 1), "Player", "perky",
+                    me.petr1furious.potatominigames.core.preset.GamePreset.DEFAULT_ICON, settings);
+            check(PillarsPresets.open(path, PillarsConfig.RESERVED).find("perky").settings().equals(settings),
                     "The new modifier saves and reloads alongside existing modifiers");
             Files.deleteIfExists(path);
         } finally { Files.deleteIfExists(dir); }

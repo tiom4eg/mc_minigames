@@ -47,25 +47,32 @@ import me.petr1furious.potatominigames.core.command.CommandFailure;
 import me.petr1furious.potatominigames.core.command.GameCommands;
 import me.petr1furious.potatominigames.core.command.Suggest;
 import me.petr1furious.potatominigames.core.config.ConfigRegistry;
+import me.petr1furious.potatominigames.core.game.Ballot;
 import me.petr1furious.potatominigames.core.game.GameSession;
-import me.petr1furious.potatominigames.core.game.Minigame;
 import me.petr1furious.potatominigames.core.game.SessionServices;
 import me.petr1furious.potatominigames.core.game.StartOption;
+import me.petr1furious.potatominigames.core.preset.GamePreset;
+import me.petr1furious.potatominigames.core.preset.PresetGame;
+import me.petr1furious.potatominigames.core.preset.PresetStore;
 import me.petr1furious.potatominigames.core.queue.QueueService;
+import me.petr1furious.potatominigames.core.session.SessionManager;
 import me.petr1furious.potatominigames.core.world.SlimeWorldService;
+import me.petr1furious.potatominigames.games.pillars.PillarsPresets.Settings;
 import me.petr1furious.potatominigames.i18n.I18n;
 
 import static me.petr1furious.potatominigames.core.command.GameCommands.requirePlayer;
 import static me.petr1furious.potatominigames.core.command.GameCommands.run;
 
-public final class PillarsGame implements Minigame, Listener {
+public final class PillarsGame implements PresetGame, Listener {
     private static final List<String> TIME_SUGGESTIONS = List.of("30s", "1min", "2min", "5min", "10min", "30min");
 
     private final JavaPlugin plugin;
     private final PillarsConfig config;
     private final SlimeWorldService slimeWorlds;
     private final ConfigRegistry configs;
-    private final PillarsPresets presets;
+    private final PresetStore<Settings> presets;
+    private final List<Ballot> partyBallots;
+    private final List<Ballot> casinoBallots;
     private List<String> modeIds;
     private QueueService queues;
     private PillarsSession activeSession;
@@ -73,11 +80,13 @@ public final class PillarsGame implements Minigame, Listener {
     public PillarsGame(JavaPlugin plugin, ConfigRegistry configs, SlimeWorldService slimeWorlds) {
         this.plugin = plugin;
         this.config = new PillarsConfig(configs);
+        this.partyBallots = variantBallot("party", List.of(Material.NOTE_BLOCK, Material.JUKEBOX));
+        this.casinoBallots = variantBallot("casino", List.of(Material.EMERALD, Material.GOLD_INGOT, Material.REDSTONE));
         this.slimeWorlds = slimeWorlds;
         this.configs = configs;
         try {
-            this.presets = new PillarsPresets(plugin.getDataFolder().toPath().resolve("data/pillars-presets.yml"),
-                    PillarsConfig.MODES);
+            this.presets = PillarsPresets.open(plugin.getDataFolder().toPath().resolve("data/pillars-presets.yml"),
+                    PillarsConfig.RESERVED);
         } catch (IOException exception) {
             throw new IllegalStateException("Cannot load Pillars presets; existing data has been left untouched.",
                     exception);
@@ -126,7 +135,38 @@ public final class PillarsGame implements Minigame, Listener {
 
     @Override
     public String defaultMode() {
-        return PillarsConfig.MODES.contains(config.mode.get()) ? config.mode.get() : "original";
+        String mode = PillarsConfig.canonicalMode(config.mode.get());
+        return PillarsConfig.MODES.contains(mode) ? mode : "original";
+    }
+
+    @Override
+    public List<String> classicModes() {
+        return PillarsConfig.MODES;
+    }
+
+    @Override
+    public List<GamePreset<Settings>> presets() {
+        return presets.all();
+    }
+
+    @Override
+    public void openPresetEditor(Player player, SessionManager sessions, Runnable back) {
+        new PillarsPresetEditor(this, config, sessions, back).open(player);
+    }
+
+    @Override
+    public List<Ballot> ballots(String mode) {
+        return switch (mode) {
+            case "party" -> partyBallots;
+            case "casino" -> casinoBallots;
+            default -> List.of();
+        };
+    }
+
+    private List<Ballot> variantBallot(String mode, List<Material> icons) {
+        List<String> variants = PillarsConfig.variants(mode);
+        return List.of(new Ballot(PillarsConfig.VARIANT_OPTION, "Variant", () -> variants,
+                () -> config.defaultVariant(mode), icons));
     }
 
     @Override
@@ -136,7 +176,13 @@ public final class PillarsGame implements Minigame, Listener {
 
     @Override
     public Component modeTitle(String mode) {
-        return PillarsConfig.MODES.contains(mode) ? I18n.tr("pillars.play.mode." + mode) : Component.text(mode);
+        if (PillarsConfig.RESERVED.contains(mode)) return I18n.tr("pillars.play.mode." + mode);
+        var preset = presets.find(mode);
+        return Component.text(preset == null ? mode : preset.name());
+    }
+
+    Component variantTitle(String variant) {
+        return variant.equals("casino") ? I18n.tr("pillars.play.editor.neutral_casino") : modeTitle(variant);
     }
 
     Component modifierLabels(List<String> modifiers) {
@@ -148,9 +194,10 @@ public final class PillarsGame implements Minigame, Listener {
 
     @Override
     public Component description(String mode) {
-        PillarsPresets.Preset preset = presets.find(mode);
+        var preset = presets.find(mode);
         if (preset != null) {
-            return I18n.tr("pillars.play.description.preset", preset.ownerName(), modifierLabels(preset.modifiers()));
+            return I18n.tr("pillars.play.description.preset", preset.ownerName(),
+                    modifierLabels(preset.settings().legacyModifiers()));
         }
         return I18n.tr("pillars.play.description." + (PillarsConfig.MODES.contains(mode) ? mode : "original"));
     }
@@ -167,7 +214,8 @@ public final class PillarsGame implements Minigame, Listener {
 
     @Override
     public GameSession createSession(SessionServices services, String mode) {
-        return new PillarsSession(services, this, config, mode, presets.find(mode));
+        var preset = presets.find(mode);
+        return new PillarsSession(services, this, config, mode, preset == null ? null : preset.settings());
     }
 
     @Override
@@ -264,7 +312,7 @@ public final class PillarsGame implements Minigame, Listener {
                                 .then(Commands.argument("modifiers", StringArgumentType.greedyString())
                                         .suggests((ctx, builder) -> {
                                             int lastWord = builder.getInput().lastIndexOf(' ') + 1;
-                                            return Suggest.strings(PillarsPresets.MODIFIERS)
+                                            return Suggest.strings(PillarsPresets.COMMAND_MODIFIERS)
                                                     .getSuggestions(ctx, builder.createOffset(lastWord));
                                         })
                                         .executes(ctx -> run(ctx, c -> savePreset(c,
@@ -275,7 +323,7 @@ public final class PillarsGame implements Minigame, Listener {
                                 .suggests((ctx, builder) -> Suggest.strings(presets.all().stream()
                                         .filter(preset -> ctx.getSource().getExecutor() instanceof Player player
                                                 && preset.owner().equals(player.getUniqueId()))
-                                        .map(PillarsPresets.Preset::name).toList()).getSuggestions(ctx, builder))
+                                        .map(GamePreset::id).toList()).getSuggestions(ctx, builder))
                                 .executes(ctx -> run(ctx, this::deletePreset)))));
 
         root.then(Commands.literal("perk")
@@ -336,19 +384,20 @@ public final class PillarsGame implements Minigame, Listener {
 
     private void listPresets(CommandContext<CommandSourceStack> ctx) {
         CommandSender sender = ctx.getSource().getSender();
-        sender.sendMessage(I18n.tr("pillars.play.presets.help", PillarsPresets.LIMIT).color(NamedTextColor.GOLD));
-        sender.sendMessage(I18n.tr("pillars.play.presets.modifiers", String.join(", ", PillarsPresets.MODIFIERS))
+        sender.sendMessage(I18n.tr("pillars.play.presets.help", PresetStore.LIMIT).color(NamedTextColor.GOLD));
+        sender.sendMessage(I18n.tr("pillars.play.presets.modifiers", String.join(", ", PillarsPresets.COMMAND_MODIFIERS))
                 .color(NamedTextColor.GRAY));
-        for (PillarsPresets.Preset preset : presets.all()) {
+        for (GamePreset<Settings> preset : presets.all()) {
+            String command = "/play pillars " + preset.id();
             sender.sendMessage(I18n.tr("pillars.play.presets.entry", preset.name(), preset.ownerName(),
-                    modifierLabels(preset.modifiers()), "/play pillars " + preset.name()).color(NamedTextColor.AQUA)
-                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/play pillars " + preset.name())));
+                    modifierLabels(preset.settings().legacyModifiers()), command).color(NamedTextColor.AQUA)
+                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(command)));
         }
     }
 
     private void requirePresetIdle(String name) throws CommandFailure {
-        PillarsPresets.Preset preset = presets.find(name);
-        if (preset != null && queues.isModeInUse(this, preset.name())) {
+        var preset = presets.find(name.strip());
+        if (preset != null && queues != null && queues.isModeInUse(this, preset.id())) {
             throw new CommandFailure(I18n.tr("pillars.play.error.preset_busy"));
         }
     }
@@ -356,13 +405,24 @@ public final class PillarsGame implements Minigame, Listener {
     private void savePreset(CommandContext<CommandSourceStack> ctx, List<String> modifiers) throws CommandFailure {
         Player player = requirePlayer(ctx);
         String name = ctx.getArgument("name", String.class);
+        var previous = presets.find(name);
+        try {
+            savePreset(player, name, previous == null ? GamePreset.DEFAULT_ICON : previous.icon(),
+                    PillarsPresets.modifiers(modifiers));
+        } catch (IllegalArgumentException exception) {
+            throw new CommandFailure(I18n.message(exception));
+        }
+    }
+
+    void savePreset(Player player, String name, String icon, Settings settings) throws CommandFailure {
         requirePresetIdle(name);
         try {
-            PillarsPresets.Preset preset = presets.save(player.getUniqueId(), player.getName(), name, modifiers);
+            var preset = presets.save(player.getUniqueId(), player.getName(), name, icon, settings);
             refreshPresetModes();
+            String command = "/play pillars " + preset.id();
             player.sendMessage(I18n.tr("pillars.play.presets.saved", preset.name(),
-                    modifierLabels(preset.modifiers()), "/play pillars " + preset.name()).color(NamedTextColor.GREEN)
-                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/play pillars " + preset.name())));
+                    modifierLabels(preset.settings().legacyModifiers()), command).color(NamedTextColor.GREEN)
+                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(command)));
         } catch (IllegalArgumentException exception) {
             throw new CommandFailure(I18n.message(exception));
         } catch (IOException exception) {
@@ -372,8 +432,11 @@ public final class PillarsGame implements Minigame, Listener {
     }
 
     private void deletePreset(CommandContext<CommandSourceStack> ctx) throws CommandFailure {
-        Player player = requirePlayer(ctx);
-        String name = ctx.getArgument("name", String.class);
+        deletePreset(requirePlayer(ctx), ctx.getArgument("name", String.class));
+    }
+
+    @Override
+    public void deletePreset(Player player, String name) throws CommandFailure {
         requirePresetIdle(name);
         try {
             presets.delete(player.getUniqueId(), name);

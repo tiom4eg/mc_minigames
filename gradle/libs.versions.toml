@@ -8,3 +8,4 @@ asp = "4.2.0-SNAPSHOT"
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper" }
 paper-api-legacy = { module = "io.papermc.paper:paper-api", version.ref = "paper-legacy" }
 asp-api = { module = "com.infernalsuite.asp:api", version.ref = "asp" }
+adventure-nbt = { module = "net.kyori:adventure-nbt", version = "5.2.0" }

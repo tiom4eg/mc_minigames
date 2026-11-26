@@ -31,6 +31,7 @@ repositories {
 dependencies {
     compileOnly(if (mc == "26.2") libs.paper.api.legacy else libs.paper.api)
     compileOnly(libs.asp.api)
+    compileOnly(libs.adventure.nbt)
 }
 
 tasks.compileJava {

@@ -88,6 +88,8 @@ final class FloodModifier implements Listener, AutoCloseable {
 
     private final World world;
     private final int feetY;
+    private final int startBelow;
+    private final int riseTicks;
     private final BlockData water = Bukkit.createBlockData(Material.WATER);
     private final List<Column> columns;
     private final Map<Long, Column> byKey = new HashMap<>();
@@ -101,9 +103,11 @@ final class FloodModifier implements Listener, AutoCloseable {
     private boolean ready;
     private boolean closed;
 
-    FloodModifier(World world, int feetY, Location center, List<Location> pillars) {
+    FloodModifier(World world, int feetY, Location center, List<Location> pillars, int startBelow, int riseSeconds) {
         this.world = world;
         this.feetY = feetY;
+        this.startBelow = startBelow;
+        this.riseTicks = riseSeconds * 20;
         int centerX = center.getBlockX() >> 4;
         int centerZ = center.getBlockZ() >> 4;
         int minX = centerX - 3;
@@ -127,12 +131,12 @@ final class FloodModifier implements Listener, AutoCloseable {
             column.index = index;
             byKey.put(column.key, column);
         }
-        current = new Plane(surfaceAfterTicks(feetY, 0));
-        next = new Plane(surfaceAfterTicks(feetY, RISE_TICKS));
+        current = new Plane(surfaceY());
+        next = new Plane(surfaceAfterTicks(feetY, riseTicks, startBelow, riseTicks));
     }
 
-    static int surfaceAfterTicks(int feetY, long ticks) {
-        return (int) Math.min(Integer.MAX_VALUE, (long) feetY - START_BELOW + ticks / RISE_TICKS);
+    static int surfaceAfterTicks(int feetY, long ticks, int startBelow, int riseTicks) {
+        return (int) Math.min(Integer.MAX_VALUE, (long) feetY - startBelow + ticks / riseTicks);
     }
 
     static boolean touches(double playerFeetY, int surfaceY) {
@@ -140,7 +144,7 @@ final class FloodModifier implements Listener, AutoCloseable {
     }
 
     int surfaceY() {
-        return surfaceAfterTicks(feetY, ticks);
+        return surfaceAfterTicks(feetY, ticks, startBelow, riseTicks);
     }
 
     /** Cache and deliver the initial surface without spending any active-game time. */

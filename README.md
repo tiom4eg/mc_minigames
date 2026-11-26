@@ -17,7 +17,7 @@ Install [Potato Launcher](https://github.com/Petr1Furious/potato-launcher) and f
 
 | Game | Command | Modes | What it is |
 |---|---|---|---|
-| **Pillars** | `/pillars` | `original`, `chaos`, `item-shuffle`, `lucky`, `tactical`, `big_house`, `sniper_duel`, `party`, `rave`, `casino_lucky`, `casino`, `casino_unlucky`, `adhd`, `perks`, `flood`, `fusion` | Everyone on a bedrock pillar in the sky, a random item every few seconds, last one standing wins; `lucky` builds the pillars from [New Amazing Lucky Blocks](https://github.com/I2000C/NewAmazingLuckyBlocks) lucky blocks. `tactical` hands everyone the same random items each round (`sameItems`, also available in other modes). `big_house` puts the pillars 2.5x further apart (`distanceMultiplier`) with chaos-speed items. `flood` adds rising lethal water that shelters cannot block. Ordinary handed-out items that can be enchanted have a one-in-three enchantment chance (`enchantChance`). Ported from [PillarPeril](https://github.com/MarcPG1905/PillarPeril). |
+| **Pillars** | `/pillars` | `original`, `chaos`, `item-shuffle`, `lucky`, `tactical`, `big_house`, `sniper_duel`, `party`, `casino`, `adhd`, `perks`, `flood`, `fusion` | Everyone on a bedrock pillar in the sky, a random item every few seconds, last one standing wins; `lucky` builds the pillars from [New Amazing Lucky Blocks](https://github.com/I2000C/NewAmazingLuckyBlocks) lucky blocks. `tactical` hands everyone the same random items each round (`sameItems`, also available in other modes). `big_house` puts the pillars 2.5x further apart (`distanceMultiplier`) with chaos-speed items. `flood` adds rising lethal water that shelters cannot block. Ordinary handed-out items that can be enchanted have a one-in-three enchantment chance (`enchantChance`). Ported from [PillarPeril](https://github.com/MarcPG1905/PillarPeril). |
 | **Bingo** | `/bingo` | `default`, `butfast`, `collectall`, `lockout` | Teams race to collect items on a generated board. Cage drop into a random arena; deaths are short spectator punishments. In `lockout` each item goes to the team that collects it first: a line wins, else the most items when time runs out. |
 | **Warfare** | `/war` | `classic`, `team_beacon` | Formerly hide-and-seek. `classic`: invisible free-for-all with a bucketed-distance sidebar and gadgets; `team_beacon`: defend your wool beacon, respawn at it until it's destroyed. |
 | **Chase** | `/chase` | — | Formerly ultimate tag. A fixed number of rounds; hunters track runners by compass. |
@@ -463,6 +463,13 @@ The default match picks six distinct games at random from the twenty-one-game po
 this match; their standalone modes retain the existing round-robin BO3 rules.
 Eliminated players spectate until the next game. Each completed game awards
 **3 / 2 / 1 points** to first / second / third place, with no extra kill points.
+
+Use **Party → Create a mode** to assemble a Party Games sequence. Pick one round
+at a time from the tournament pool; click a numbered round to move or remove it.
+Start without saving, or save 1–21 rounds as a preset. Custom sequences play in
+exact order, including repeats, without the regular random draw or length vote.
+Find saved presets under **My modes** or **Other players' modes**, or queue with
+`/play party <name>`.
 
 Equal results share a place and skip occupied positions: `1, 2, 2, 4` awards
 `3, 2, 2, 0`. Simultaneous eliminations use server ticks; a failed color or
@@ -1609,9 +1616,9 @@ Burst timing lives in `games/pillars.yml`: `adhd.meanSeconds` and
 
 ## Pillars Casino
 
-`/play pillars casino_lucky`, `/play pillars casino` and `/play pillars casino_unlucky`
+Join `/play pillars casino` and vote for Lucky, Neutral, or Unlucky. All three
 enable perk drops and roll an event about every 40 seconds. If both categories
-are available, the chance of a good event is 75%, 50% or 25%, respectively.
+are available, the chance of a good event is 75%, 50%, or 25%, respectively.
 Casino events include a two-heart heal, a short speed boost and temporary weakness.
 
 ## Pillars Flood
@@ -1721,11 +1728,15 @@ not a size or memory estimate for a full match. Full recordings buffer data in
 RAM until saving: a JVM crash loses an unfinished recording. Decode verification
 does not replace checking rendered playback in the Fabric client.
 
-## Player Pillars presets
+## Player presets
 
-Every player can save up to **five** named, fixed Fusion mixes. Names are shared
-server-wide; anyone can play a preset, but only its owner can replace or delete it.
-Ownership and the limit use the player's UUID, including across restarts.
+**Pillars → Create a mode** opens the modifier editor. Set the item interval
+separately, choose modifiers with checkboxes, then open the parameters of the
+enabled modifiers. These selections are fixed, not rolled like Fusion. The
+usual perk pool stays server-configured. Use **Start game** to play the draft or
+**Save preset** to keep it. The built-in **Party** queue offers Party/Rave as
+variants, not two separate modes.
+The Party event interval is a mean: each second rolls a chance of `1 / interval`.
 
 ```
 /pillars preset save duel tactical big_house rave
@@ -1734,24 +1745,19 @@ Ownership and the limit use the player's UUID, including across restarts.
 /pillars preset delete duel
 ```
 
-Choose any of `chaos`, `shuffle`, `tactical`, `big_house`, `party`, `rave`, `adhd`, `perks`, `flood`.
-`party` and `rave` are mutually exclusive. With no modifiers, `save` creates plain
-Pillars with Fusion's base settings. Unlike Fusion, the selected modifiers always
-apply: there is no random roll. Their settings and precedence are the same as
-Fusion, including shuffle's fixed item pace and the live party/rave event intervals.
+Pillars and Party Games share the same preset rules: up to **five per player per
+game**. Use 1–24 Latin letters, digits, `_` or `-`, starting with a letter or digit.
+Names are unique case-insensitively within the game; built-in IDs are reserved.
+Set an icon using `/give` item syntax (including components) or a serialized SNBT
+item such as `{id:"minecraft:diamond",count:1}`. Blank means bedrock.
 
-Use 1–24 letters `a-z`, digits, `_` or `-`, starting with a letter or digit.
-Names are lowercased; built-in mode names are reserved. Saving your own existing
-name replaces it without taking another slot. A preset cannot be changed or
-deleted while anyone is queued for it or it is being played.
+**My modes** and **Other players' modes** show searchable, paged lists, separate
+from the classic modes. Open a preset to join its queue. Only its owner can
+replace or delete it, and not while it is queued or being played. Saving an
+existing name you own replaces it without taking another slot.
 
-Saved presets appear immediately in `/play`, the lobby menu and command suggestions;
-menus paginate when necessary. Queue starts and voting work normally. Admins can
-also use `/pillars start duel @a [arena]` or `/pillars test duel [arena]` immediately,
-without reloading commands. Other games and the built-in Pillars modes are unchanged.
-
-Presets live in `data/pillars-presets.yml` inside the plugin's data folder.
-Writes are atomic; a failed write leaves the previous presets intact.
+The atomically written files are `data/pillars-presets.yml` and
+`data/party-presets.yml` in the plugin data folder.
 
 
 ## Pillars perks
@@ -1946,7 +1952,7 @@ games/chase.yml               rounds, hunters, timings, build limits, hunterGadg
 games/party.yml               PvP/sumo/Arms Race timings, survival countdown, TNT Run, mob counting, ravagers/mines, Miners
 games/finals.yml              match, vault, cashout, steal and respawn timings; cashout value and winning score
 gadgets.yml                   one section per gadget
-data/                         points.yml, teams.yml, inventories.yml, snapshots/, pillars-presets.yml
+data/                         points.yml, teams.yml, inventories.yml, snapshots/, pillars-presets.yml, party-presets.yml
 ```
 
 Values are edited at runtime with the `config` commands below and written back to the files.

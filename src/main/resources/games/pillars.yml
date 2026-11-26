@@ -40,6 +40,11 @@ adhd:
 perks:
   dropChance: 0.20
 
+# The flood starts this far below the pillar tops and rises one block per interval.
+flood:
+  startBelow: 20
+  riseSeconds: 10
+
 # Each mode's settings. cooldownSeconds is the time between items, timeLimit takes "30s",
 # "5min" or "1h"; layout is circular (an even ring) or random (scattered in a circle).
 # pillarMaterial overrides platformMaterial; luckyBlocks makes the pillar blocks lucky blocks

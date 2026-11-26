@@ -28,6 +28,7 @@ final class PartyGamesState {
             Stream.concat(PREVIOUS_DEFAULT.stream(), QUICK_MODES.stream()).toList();
     static final List<String> MODES =
             Stream.concat(QUICK_GAMES_DEFAULT.stream(), Stream.of(FurryQuestSession.ID)).toList();
+    static final int MAX_CUSTOM_ROUNDS = MODES.size();
     private final List<String> schedule;
     private final Set<UUID> roster,
             connected,
@@ -38,8 +39,35 @@ final class PartyGamesState {
     private boolean closed = true;
 
     PartyGamesState(List<UUID> roster, List<String> modes, Random random) {
+        this(roster, shuffledSchedule(modes, random));
+    }
+
+    static PartyGamesState sequenced(List<UUID> roster, List<String> rounds) {
+        return new PartyGamesState(roster, checkedSequence(rounds));
+    }
+
+    private PartyGamesState(List<UUID> roster, List<String> schedule) {
         if (roster.isEmpty() || roster.size() > 12 || new HashSet<>(roster).size() != roster.size())
             throw I18n.exception("party.rounds.party_games.error.roster");
+        this.schedule = schedule;
+        this.roster = new LinkedHashSet<>(roster);
+        connected = new LinkedHashSet<>(roster);
+        score = new PartyMatchScore(roster);
+    }
+
+    static List<String> checkedSequence(List<?> rounds) {
+        if (rounds == null || rounds.isEmpty() || rounds.size() > MAX_CUSTOM_ROUNDS)
+            throw I18n.exception("party.rounds.preset.error.length", MAX_CUSTOM_ROUNDS);
+        for (Object round : rounds) {
+            if (!(round instanceof String mode) || !MODES.contains(mode))
+                throw I18n.exception("party.rounds.preset.error.round", String.valueOf(round));
+        }
+        @SuppressWarnings("unchecked")
+        List<String> checked = (List<String>) rounds;
+        return List.copyOf(checked);
+    }
+
+    private static List<String> shuffledSchedule(List<String> modes, Random random) {
         List<String> shuffled = new ArrayList<>(modes);
         // Older configs may still list Magic Battle alongside eligible rounds.
         shuffled.removeIf("magic_battle"::equals);
@@ -52,10 +80,7 @@ final class PartyGamesState {
             shuffled.addAll(MODES);
         }
         Collections.shuffle(shuffled, random);
-        schedule = List.copyOf(shuffled);
-        this.roster = new LinkedHashSet<>(roster);
-        connected = new LinkedHashSet<>(roster);
-        score = new PartyMatchScore(roster);
+        return List.copyOf(shuffled);
     }
 
     List<String> schedule() {

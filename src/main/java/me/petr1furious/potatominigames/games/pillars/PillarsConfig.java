@@ -23,17 +23,41 @@ import me.petr1furious.potatominigames.core.config.ConfigRegistry;
 import me.petr1furious.potatominigames.core.config.Property;
 import me.petr1furious.potatominigames.core.config.PropertyBag;
 import me.petr1furious.potatominigames.core.config.PropertyCodec;
+import me.petr1furious.potatominigames.games.pillars.PillarsPresets.Parameter;
+import me.petr1furious.potatominigames.games.pillars.PillarsPresets.Settings;
 
 /** Items and arenas are read from the file at each game start; other values are properties. */
 public final class PillarsConfig {
     static final String FILE = "games/pillars.yml";
     static final List<String> MODES = List.of("original", "chaos", "item-shuffle", "lucky", "tactical", "big_house",
-            "sniper_duel", "party", "rave", "casino_lucky", "casino", "casino_unlucky", "adhd", "perks", "flood", "fusion");
+            "sniper_duel", "party", "casino", "adhd", "perks", "flood", "fusion");
+    static final List<String> LEGACY_MODES = List.of("rave", "casino_lucky", "casino_unlucky");
+    static final List<String> RESERVED = java.util.stream.Stream.concat(MODES.stream(), LEGACY_MODES.stream()).toList();
+
+    static final String VARIANT_OPTION = "variant";
+    static final List<String> PARTY_VARIANTS = List.of("party", "rave");
+    static final List<String> CASINO_VARIANTS = List.of("casino_lucky", "casino", "casino_unlucky");
+
+    static List<String> variants(String mode) {
+        return switch (mode) {
+            case "party" -> PARTY_VARIANTS;
+            case "casino" -> CASINO_VARIANTS;
+            default -> List.of();
+        };
+    }
+
+    static String canonicalMode(String mode) {
+        return switch (mode) {
+            case "rave" -> "party";
+            case "casino_lucky", "casino_unlucky" -> "casino";
+            default -> mode;
+        };
+    }
 
     private final ConfigRegistry configs;
     private final PropertyBag bag = new PropertyBag("pillars");
     public final Property<String> mode = bag.define("mode", PropertyCodec.STRING, "original")
-            .oneOf(() -> MODES);
+            .oneOf(() -> RESERVED);
     public final Property<Integer> startCountdown = bag.define("startCountdown", PropertyCodec.INT, 3);
     public final Property<Integer> reconnectGraceSeconds = bag.define("reconnectGraceSeconds", PropertyCodec.INT, 60);
     public final Property<Double> platformHeight = bag.define("platformHeight", PropertyCodec.DOUBLE, 200.0);
@@ -55,6 +79,11 @@ public final class PillarsConfig {
 
     public final Property<Double> perkChance = bag.define("perks.dropChance", PropertyCodec.DOUBLE, 0.20)
             .validate(value -> Double.isFinite(value) && value >= 0 && value <= 1);
+
+    public final Property<Integer> floodStartBelow = bag.define("flood.startBelow", PropertyCodec.INT, FloodModifier.START_BELOW)
+            .validate(value -> value >= 1 && value <= 64);
+    public final Property<Integer> floodRiseSeconds = bag.define("flood.riseSeconds", PropertyCodec.INT, FloodModifier.RISE_TICKS / 20)
+            .validate(value -> value >= 1 && value <= 300);
 
     private final Map<String, Mode> modes = new LinkedHashMap<>();
 
@@ -185,6 +214,47 @@ public final class PillarsConfig {
     public Mode mode(String id) {
         Mode found = modes.get(id);
         return found != null ? found : modes.get("original");
+    }
+
+    String defaultVariant(String queueMode) {
+        String configured = mode.get();
+        return variants(queueMode).contains(configured) ? configured : queueMode;
+    }
+
+    Mode variantMode(String queueMode, String selected) {
+        return mode(selected != null && variants(queueMode).contains(selected) ? selected : defaultVariant(queueMode));
+    }
+
+    /** Dialog previews and sessions use the same game/admin defaults and per-match overrides. */
+    double value(Mode mode, Settings fusion, Parameter parameter) {
+        if (fusion != null) {
+            Double override = fusion.overrides().get(parameter);
+            if (override != null) return override;
+        }
+        return defaultValue(mode, fusion, parameter);
+    }
+
+    double defaultValue(Mode mode, Settings fusion, Parameter parameter) {
+        return switch (parameter) {
+            case ITEM_INTERVAL -> fusion == null ? mode.cooldownSeconds.get() : fusionCooldown(mode, fusion);
+            case DISTANCE -> fusion != null && fusion.enabled("big_house")
+                    ? mode("big_house").distanceMultiplier.get() : mode.distanceMultiplier.get();
+            case EVENT_MEAN -> fusion == null ? mode.eventMeanSeconds.get()
+                    : fusion.enabled("party") ? mode(fusion.partyVariant()).eventMeanSeconds.get() : 0;
+            case ADHD_MEAN -> adhdMeanSeconds.get();
+            case ADHD_DURATION -> adhdDurationSeconds.get();
+            case PERK_CHANCE -> perkChance.get();
+            case FLOOD_DEPTH -> floodStartBelow.get();
+            case FLOOD_RISE -> floodRiseSeconds.get();
+        };
+    }
+
+    private int fusionCooldown(Mode mode, Settings settings) {
+        if (settings.enabled("shuffle")) return mode("item-shuffle").cooldownSeconds.get();
+        int cooldown = mode.cooldownSeconds.get();
+        if (settings.enabled("chaos")) cooldown = Math.min(cooldown, mode("chaos").cooldownSeconds.get());
+        if (settings.rave()) cooldown = Math.min(cooldown, mode("rave").cooldownSeconds.get());
+        return cooldown;
     }
 
     public double deathHeight() {

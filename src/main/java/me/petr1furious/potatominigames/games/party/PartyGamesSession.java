@@ -18,6 +18,8 @@ import java.util.*;
 
 /** Owns the full party. Child completion never restores players or ends the outer queue. */
 final class PartyGamesSession extends PartyRoundForwarder {
+    static final String SEQUENCE_OPTION = "rounds";
+
     private enum Phase {
         ACTIVE,
         TRANSITION,
@@ -27,6 +29,7 @@ final class PartyGamesSession extends PartyRoundForwarder {
 
     private final SessionServices services;
     private final PartyConfig config;
+    private final List<String> savedSequence;
     private final Map<UUID, String> names = new LinkedHashMap<>();
     private PartyGamesState state;
     private PartyRoundOptions options;
@@ -41,8 +44,13 @@ final class PartyGamesSession extends PartyRoundForwarder {
     private List<Component> summary = List.of();
 
     PartyGamesSession(SessionServices services, PartyConfig config) {
+        this(services, config, null);
+    }
+
+    PartyGamesSession(SessionServices services, PartyConfig config, List<String> savedSequence) {
         this.services = services;
         this.config = config;
+        this.savedSequence = savedSequence;
     }
 
     private static Component text(Component s) {
@@ -77,12 +85,24 @@ final class PartyGamesSession extends PartyRoundForwarder {
     public void onStart() throws CommandFailure {
         try {
             services.participants().all().forEach(p -> names.put(p.id(), p.name()));
-            List<String> pool =
-                    Arrays.stream(config.partyModes.get().split(",", -1))
-                            .map(String::trim)
-                            .toList();
-            state = new PartyGamesState(new ArrayList<>(names.keySet()), pool, new Random());
-            roundCount = roundCount(services.option("length"), config.partyRounds.get(), state.schedule().size());
+            var roster = new ArrayList<>(names.keySet());
+            List<String> sequence = savedSequence;
+            if (sequence == null) {
+                String option = services.option(SEQUENCE_OPTION);
+                if (option != null)
+                    sequence = Arrays.asList(option.split(",", PartyGamesState.MAX_CUSTOM_ROUNDS + 1));
+            }
+            if (sequence != null) {
+                state = PartyGamesState.sequenced(roster, sequence);
+                roundCount = state.schedule().size();
+            } else {
+                List<String> pool =
+                        Arrays.stream(config.partyModes.get().split(",", -1))
+                                .map(String::trim)
+                                .toList();
+                state = new PartyGamesState(roster, pool, new Random());
+                roundCount = roundCount(services.option("length"), config.partyRounds.get(), state.schedule().size());
+            }
             intermission = config.partyIntermission.get();
             options =
                     new PartyRoundOptions(

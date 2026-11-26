@@ -66,6 +66,34 @@ public final class PartyGamesCheck {
         var reordered = new PartyGamesState(List.of(a, b), previousDefault.reversed(), new Random(2));
         check(reordered.schedule().size() == previousDefault.size(),
                 "A reordered pool is a custom pool even if it has the same modes as the previous default");
+
+        var chosen = new ArrayList<>(List.of("jump_rope", "sumo", "jump_rope"));
+        var fixed = PartyGamesState.sequenced(List.of(a, b), chosen);
+        chosen.clear();
+        check(fixed.schedule().equals(List.of("jump_rope", "sumo", "jump_rope")),
+                "A custom sequence snapshots the chosen order and retains repeated rounds");
+        for (int round = 0; round < fixed.schedule().size(); round++) {
+            fixed.beginRound(round);
+            check(fixed.acceptResult(round, new PartyRoundResult(List.of(List.of(a)))),
+                    "Each occurrence earns its own score");
+        }
+        check(fixed.score().points(a) == 9, "Repeated rounds count as separate rounds");
+        check(PartyGamesState.sequenced(List.of(a, b), previousDefault).schedule().equals(previousDefault),
+                "Custom schedules do not migrate legacy pools");
+        check(PartyGamesState.checkedSequence(Collections.nCopies(PartyGamesState.MAX_CUSTOM_ROUNDS, "sumo"))
+                        .size() == PartyGamesState.MAX_CUSTOM_ROUNDS,
+                "The custom sequence limit accepts repeated rounds up to its bound");
+        for (List<?> rounds : List.of(
+                List.of(), Collections.nCopies(PartyGamesState.MAX_CUSTOM_ROUNDS + 1, "sumo"),
+                List.of(1), List.of("party_games"), List.of("unknown"), List.of("magic_battle"),
+                List.of("gartic_phone"), List.of("pvp_ffa"), List.of("pvp_select"), List.of("sumo_ffa"))) {
+            try {
+                PartyGamesState.checkedSequence(rounds);
+                throw new AssertionError("Invalid custom sequence accepted: " + rounds);
+            } catch (IllegalArgumentException expected) {
+            }
+        }
+
         s.beginRound(0);
         s.disconnect(b);
         s.reconnect(b);

@@ -12,6 +12,8 @@ import me.petr1furious.potatominigames.core.game.SessionServices;
 import me.petr1furious.potatominigames.core.player.Participant;
 import me.petr1furious.potatominigames.core.text.Summary;
 import me.petr1furious.potatominigames.core.text.TimeFormat;
+import me.petr1furious.potatominigames.games.pillars.PillarsPresets.Parameter;
+import me.petr1furious.potatominigames.games.pillars.PillarsPresets.Settings;
 import me.petr1furious.potatominigames.i18n.I18n;
 
 import net.kyori.adventure.bossbar.BossBar;
@@ -103,7 +105,7 @@ final class PillarsSession implements GameSession {
     private final PillarsConfig config;
     private final PillarsConfig.Mode mode;
     private final String modeId;
-    private final PillarsPresets.Preset preset;
+    private final Settings savedSettings;
 
     private PillarsArena arena;
     private World world;
@@ -164,13 +166,14 @@ final class PillarsSession implements GameSession {
     private boolean luckyWorldAdded;
 
     PillarsSession(SessionServices services, PillarsGame game, PillarsConfig config, String modeId,
-            PillarsPresets.Preset preset) {
+            Settings savedSettings) {
         this.services = services;
         this.game = game;
         this.config = config;
         this.modeId = modeId;
-        this.preset = preset;
-        this.mode = config.mode(preset != null ? "fusion" : modeId);
+        this.savedSettings = savedSettings;
+        this.mode = savedSettings != null ? config.mode("fusion")
+                : config.variantMode(modeId, services.option(PillarsConfig.VARIANT_OPTION));
     }
 
     @Override
@@ -195,13 +198,25 @@ final class PillarsSession implements GameSession {
         if (!game.modes().contains(modeId)) {
             throw new CommandFailure(I18n.tr("pillars.play.error.mode", modeId));
         }
-        rules = preset != null ? mixRules(preset.modifiers()) : mode.id.equals("fusion") ? rollFusion()
-                : new Rules(mode.layout.get().equalsIgnoreCase("random"), mode.cooldownSeconds.get(),
-                        mode.id.equals("item-shuffle"), mode.sameItems.get(), mode.distanceMultiplier.get(),
-                        mode.eventMeanSeconds.get(), List.of());
+        Settings fusion = savedSettings;
+        if (fusion == null && mode.id.equals("fusion")) {
+            try {
+                fusion = PillarsPresets.fromOptions(services.options());
+            } catch (IllegalArgumentException exception) {
+                throw new CommandFailure(I18n.message(exception));
+            }
+            if (fusion == null) fusion = rollFusion();
+        }
+        rules = new Rules(fusion == null ? mode.layout.get().equalsIgnoreCase("random") : fusion.enabled("chaos"),
+                (int) config.value(mode, fusion, Parameter.ITEM_INTERVAL),
+                fusion == null ? mode.id.equals("item-shuffle") : fusion.enabled("shuffle"),
+                fusion == null ? mode.sameItems.get() : fusion.enabled("tactical"),
+                config.value(mode, fusion, Parameter.DISTANCE), config.value(mode, fusion, Parameter.EVENT_MEAN),
+                fusion == null ? List.of() : fusion.legacyModifiers());
         if (mode.adhd.get() || rules.modifiers().contains("adhd")) {
-            adhd = new AdhdModifier(config.adhdMeanSeconds.get(), config.adhdDurationSeconds.get(),
-                    config.mode("item-shuffle").cooldownSeconds.get(), ThreadLocalRandom.current());
+            int shuffleInterval = rules.shuffle() ? rules.cooldownSeconds() : config.mode("item-shuffle").cooldownSeconds.get();
+            adhd = new AdhdModifier(config.value(mode, fusion, Parameter.ADHD_MEAN),
+                    (int) config.value(mode, fusion, Parameter.ADHD_DURATION), shuffleInterval, ThreadLocalRandom.current());
         }
         List<PillarsArena> usable = game.importedArenas();
         if (usable.isEmpty()) {
@@ -278,7 +293,9 @@ final class PillarsSession implements GameSession {
         }
 
         if (mode.flood.get() || rules.modifiers().contains("flood")) {
-            flood = new FloodModifier(world, (int) Math.floor(config.platformHeight.get()) + 1, center, spots);
+            flood = new FloodModifier(world, (int) Math.floor(config.platformHeight.get()) + 1, center, spots,
+                    (int) config.value(mode, fusion, Parameter.FLOOD_DEPTH),
+                    (int) config.value(mode, fusion, Parameter.FLOOD_RISE));
             floodPosition = center.clone();
             Bukkit.getPluginManager().registerEvents(flood, services.plugin());
             floodTask = Bukkit.getScheduler().runTaskTimer(services.plugin(), this::tickFlood, 1L, 1L);
@@ -312,7 +329,7 @@ final class PillarsSession implements GameSession {
         game.setActiveSession(this);
         setLuckyWorld(mode.luckyBlocks.get());
         if (rules.eventMeanSeconds() > 0 || adhd != null) {
-            events = new PillarsEvents(this, services, PillarsEvents.Casino.fromMode(modeId));
+            events = new PillarsEvents(this, services, PillarsEvents.Casino.fromMode(mode.id));
         }
         if (rules.shuffle() || adhd != null) {
             shuffleItems = new ShuffleItems(world);
@@ -326,10 +343,10 @@ final class PillarsSession implements GameSession {
             adhdTask = Bukkit.getScheduler().runTaskTimer(services.plugin(), this::tickAdhd, 1L, 1L);
         }
         if (mode.perks.get() || rules.modifiers().contains("perks")) {
-            perks = new PillarsPerks(this, services, world, config.perkChance.get(),
+            perks = new PillarsPerks(this, services, world, config.value(mode, fusion, Parameter.PERK_CHANCE),
                     () -> create(draw(new ItemPool.GroupState(groups), 1)));
         }
-        if (preset != null || mode.id.equals("fusion")) {
+        if (mode.id.equals("fusion")) {
             announce(I18n.tr("pillars.play.modifiers.mix", game.modeTitle(modeId).color(mode.accentColor()),
                     fusionText().color(NamedTextColor.WHITE)));
         } else if (perks != null) {
@@ -722,48 +739,16 @@ final class PillarsSession implements GameSession {
                 : Math.max(1, rules.cooldownSeconds() / itemSpeed);
     }
 
-    /**
-     * Fusion: each of chaos, shuffle, tactical, big_house, adhd, perks and flood with a 50% chance, and party or rave
-     * with 25% each. Values come from those modes' own settings. Chaos and rave speed items up to
-     * their pace; shuffle keeps item-shuffle's, whatever else is on.
-     */
-    private Rules rollFusion() {
+    /** Each modifier has a 50% chance; Party and Rave are equally likely, never both. */
+    private Settings rollFusion() {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         List<String> modifiers = new ArrayList<>();
-        for (String modifier : List.of("chaos", "shuffle", "tactical", "big_house", "adhd", "perks", "flood")) {
-            if (random.nextBoolean()) {
-                modifiers.add(modifier);
-            }
+        for (String modifier : PillarsPresets.MODIFIERS) {
+            if (!modifier.equals("party") && random.nextBoolean()) modifiers.add(modifier);
         }
         int eventRoll = random.nextInt(4);
-        if (eventRoll == 2) {
-            modifiers.add("party");
-        } else if (eventRoll == 3) {
-            modifiers.add("rave");
-        }
-        return mixRules(modifiers);
-    }
-
-    /** Fixed presets and random Fusion use exactly the same precedence and live mode settings. */
-    private Rules mixRules(List<String> modifiers) {
-        boolean chaos = modifiers.contains("chaos");
-        boolean shuffle = modifiers.contains("shuffle");
-        int cooldown = mode.cooldownSeconds.get();
-        if (chaos) {
-            cooldown = Math.min(cooldown, config.mode("chaos").cooldownSeconds.get());
-        }
-        double eventMean = modifiers.contains("party") ? config.mode("party").eventMeanSeconds.get() : 0;
-        if (modifiers.contains("rave")) {
-            eventMean = config.mode("rave").eventMeanSeconds.get();
-            cooldown = Math.min(cooldown, config.mode("rave").cooldownSeconds.get());
-        }
-        if (shuffle) {
-            cooldown = config.mode("item-shuffle").cooldownSeconds.get();
-        }
-        double distance = modifiers.contains("big_house") ? config.mode("big_house").distanceMultiplier.get()
-                : mode.distanceMultiplier.get();
-        return new Rules(chaos, cooldown, shuffle, modifiers.contains("tactical"), distance, eventMean,
-                List.copyOf(modifiers));
+        if (eventRoll >= 2) modifiers.add(eventRoll == 2 ? "party" : "rave");
+        return PillarsPresets.modifiers(modifiers);
     }
 
     private Component fusionText() {
@@ -1073,7 +1058,7 @@ final class PillarsSession implements GameSession {
     }
 
     Component modeName() {
-        Component name = game.modeTitle(modeId);
+        Component name = PillarsConfig.variants(modeId).isEmpty() ? game.modeTitle(modeId) : game.variantTitle(mode.id);
         return adhdActive() ? I18n.tr("pillars.play.mode.adhd_active", name) : name;
     }
 
@@ -1305,7 +1290,7 @@ final class PillarsSession implements GameSession {
 
     List<Component> info() {
         List<Component> lines = new ArrayList<>();
-        lines.add((preset != null || mode.id.equals("fusion")
+        lines.add((mode.id.equals("fusion")
                 ? I18n.tr("pillars.play.info.mix", modeName(), fusionText(), arena.name())
                 : I18n.tr("pillars.play.info.mode", modeName(), arena.name())).color(NamedTextColor.GRAY));
         lines.add((started
@@ -1570,7 +1555,7 @@ final class PillarsSession implements GameSession {
                     Component.text().append(Component.text(ranked.get(i).kills, NamedTextColor.GOLD))
                             .append(Component.text("⚔", NamedTextColor.RED)).build()));
         }
-        if ((preset != null || mode.id.equals("fusion")) && rules != null) {
+        if (mode.id.equals("fusion") && rules != null) {
             lines.add(Component.empty());
             lines.add(I18n.tr("pillars.play.modifiers.mix", game.modeTitle(modeId), fusionText()).color(NamedTextColor.GRAY));
         }

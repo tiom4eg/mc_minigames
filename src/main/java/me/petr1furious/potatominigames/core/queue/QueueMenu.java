@@ -3,6 +3,9 @@ package me.petr1furious.potatominigames.core.queue;
 import me.petr1furious.potatominigames.core.command.CommandFailure;
 import me.petr1furious.potatominigames.core.game.Ballot;
 import me.petr1furious.potatominigames.core.game.Minigame;
+import me.petr1furious.potatominigames.core.preset.GamePreset;
+import me.petr1furious.potatominigames.core.preset.PresetDialog;
+import me.petr1furious.potatominigames.core.preset.PresetGame;
 import me.petr1furious.potatominigames.core.session.ActiveSession;
 import me.petr1furious.potatominigames.core.session.SessionManager;
 import me.petr1furious.potatominigames.core.team.TeamColor;
@@ -29,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,6 +45,7 @@ import java.util.function.Function;
  * queue's votes (difficulty, map) one after another and then the team picker, for games with them.
  */
 public final class QueueMenu implements Listener {
+    private final JavaPlugin plugin;
     private final SessionManager sessions;
     private final QueueService queues;
 
@@ -85,6 +90,7 @@ public final class QueueMenu implements Listener {
     }
 
     public QueueMenu(JavaPlugin plugin, SessionManager sessions, QueueService queues) {
+        this.plugin = plugin;
         this.sessions = sessions;
         this.queues = queues;
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::refreshOpen, 20L, 20L);
@@ -112,8 +118,15 @@ public final class QueueMenu implements Listener {
             return;
         }
         List<Entry> entries = new ArrayList<>();
+        if (game instanceof PresetGame presets) {
+            entries.add(presetEditorEntry(presets));
+            entries.add(presetBrowserEntry(presets, true));
+            entries.add(presetBrowserEntry(presets, false));
+        }
         Set<Minigame.ModeGroup> shown = new HashSet<>();
+        List<String> classic = game instanceof PresetGame presets ? presets.classicModes() : game.modes();
         for (QueueService.Queue queue : queues.queuesOf(game)) {
+            if (!classic.contains(queue.mode())) continue;
             Optional<Minigame.ModeGroup> group = modeGroup(game, queue.mode());
             if (group.isPresent()) {
                 if (shown.add(group.get()))
@@ -129,6 +142,92 @@ public final class QueueMenu implements Listener {
                 entries,
                 new Entry(viewer -> backIcon(), this::open),
                 null);
+    }
+
+    private Entry presetEditorEntry(PresetGame game) {
+        return new Entry(viewer -> infoIcon(Material.WRITABLE_BOOK, I18n.tr("core.preset.create"), List.of()),
+                player -> fromInventory(player, () -> game.openPresetEditor(player, sessions, () -> open(player, game))));
+    }
+
+    private Entry presetBrowserEntry(PresetGame game, boolean mine) {
+        return new Entry(viewer -> infoIcon(mine ? Material.CHEST : Material.ENDER_CHEST, presetListTitle(mine), List.of()),
+                player -> fromInventory(player, () -> openPresets(player, game, mine, "")));
+    }
+
+    private static Component presetListTitle(boolean mine) {
+        return I18n.tr(mine ? "core.preset.mine" : "core.preset.others");
+    }
+
+    private void fromInventory(Player player, Runnable action) {
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) return;
+            player.closeInventory();
+            action.run();
+        });
+    }
+
+    private void openPresets(Player player, PresetGame game, boolean mine, String query) {
+        Component title = presetListTitle(mine);
+        String filter = query.toLowerCase(Locale.ROOT);
+        List<Entry> entries = new ArrayList<>();
+        Runnable back = () -> openPresets(player, game, mine, query);
+        for (GamePreset<?> preset : game.presets()) {
+            if (preset.owner().equals(player.getUniqueId()) != mine || !preset.id().contains(filter)) continue;
+            ItemStack[] icon = {null};
+            entries.add(new Entry(viewer -> {
+                if (icon[0] == null) {
+                    icon[0] = preset.item();
+                    icon[0].editMeta(meta -> {
+                        meta.displayName(plain(Component.text(preset.name(), NamedTextColor.GOLD)));
+                        meta.lore(List.of(plain(I18n.tr("core.preset.author", preset.ownerName())).color(NamedTextColor.GRAY),
+                                plain(I18n.tr("core.preset.details")).color(NamedTextColor.AQUA)));
+                    });
+                    icon[0] = I18n.item(icon[0], viewer);
+                }
+                return icon[0];
+            }, clicker -> fromInventory(clicker, () -> openPreset(clicker, game, preset.id(), back))));
+        }
+        if (entries.isEmpty()) {
+            entries.add(new Entry(viewer -> infoIcon(Material.GRAY_DYE, I18n.tr("core.preset.empty"), List.of()), clicker -> {}));
+        }
+        Entry search = new Entry(viewer -> infoIcon(Material.COMPASS, I18n.tr("core.preset.search"),
+                query.isEmpty() ? List.of() : List.of(I18n.tr("core.preset.search_active", query))),
+                clicker -> fromInventory(clicker, () -> PresetDialog.show(clicker, title, List.of(),
+                        List.of(PresetDialog.text(clicker, "query", "core.preset.search", query, GamePreset.NAME_LENGTH)),
+                        List.of(new PresetDialog.Button(I18n.tr("core.preset.search"), (viewer, form) -> {
+                            String submitted = form.text("query").strip();
+                            if (submitted.length() > GamePreset.NAME_LENGTH) throw I18n.exception("core.preset.invalid_form");
+                            openPresets(viewer, game, mine, submitted);
+                        })), back)));
+        show(player, title, entries,
+                new Entry(viewer -> backIcon(), clicker -> fromInventory(clicker, () -> open(clicker, game))), search);
+    }
+
+    private void openPreset(Player player, PresetGame game, String id, Runnable back) {
+        GamePreset<?> preset = game.presets().stream().filter(candidate -> candidate.id().equals(id)).findFirst().orElse(null);
+        if (preset == null) {
+            player.sendMessage(I18n.tr("core.preset.unknown", id));
+            back.run();
+            return;
+        }
+        List<PresetDialog.Button> buttons = new ArrayList<>();
+        buttons.add(new PresetDialog.Button(I18n.tr("core.preset.join"), (viewer, form) -> {
+            var queue = queues.find(game, id).filter(QueueService.Queue::enabled)
+                    .orElseThrow(() -> new CommandFailure(I18n.tr("core.queue.closed")));
+            if (!queue.contains(viewer.getUniqueId())) queues.join(viewer, queue);
+            openPicks(viewer, queue);
+        }));
+        if (preset.owner().equals(player.getUniqueId())) {
+            buttons.add(new PresetDialog.Button(I18n.tr("core.preset.delete").color(NamedTextColor.RED),
+                    (viewer, form) -> PresetDialog.show(viewer, I18n.tr("core.preset.confirm_delete", preset.name()),
+                            List.of(), List.of(), List.of(new PresetDialog.Button(I18n.tr("core.preset.delete"), (owner, ignored) -> {
+                                game.deletePreset(owner, id);
+                                owner.sendMessage(I18n.tr("core.preset.deleted", preset.name()));
+                                back.run();
+                            })), () -> openPreset(viewer, game, id, back))));
+        }
+        PresetDialog.show(player, Component.text(preset.name()),
+                List.of(I18n.tr("core.preset.author", preset.ownerName()), game.description(id)), List.of(), buttons, back);
     }
 
     private void openParty(Player player, Minigame game, boolean quickGames) {
@@ -408,6 +507,11 @@ public final class QueueMenu implements Listener {
             holder.entries.put(4, partyEntry(available.get("party_games"), "tournament"));
         }
 
+        if (!holder.quickGames && game instanceof PresetGame presets) {
+            holder.entries.put(0, presetEditorEntry(presets));
+            holder.entries.put(1, presetBrowserEntry(presets, true));
+            holder.entries.put(2, presetBrowserEntry(presets, false));
+        }
         if (!holder.quickGames && QUICK_GAMES.modes().stream().anyMatch(available::containsKey)) {
             holder.entries.put(6, new Entry(viewer -> infoIcon(Material.CLOCK,
                     I18n.tr("core.menu.party.group.quick").color(NamedTextColor.AQUA),
@@ -535,7 +639,9 @@ public final class QueueMenu implements Listener {
                         : "core.menu.click_spectate").color(NamedTextColor.AQUA)));
             } else {
                 if (game.showModes() && !game.id().equals("party")) {
+                    List<String> classic = game instanceof PresetGame presets ? presets.classicModes() : game.modes();
                     for (QueueService.Queue queue : gameQueues) {
+                        if (!classic.contains(queue.mode())) continue;
                         lore.add(plain(I18n.tr("core.menu.mode_status", queue.game().modeTitle(queue.mode()).colorIfAbsent(NamedTextColor.GRAY),
                                 Component.text(queue.countText(), NamedTextColor.WHITE),
                                 leadingSummary(queue).color(NamedTextColor.DARK_GRAY))));
