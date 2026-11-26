@@ -130,9 +130,6 @@ final class CsDeathmatchCheck {
         check(
                 match.phase == CsMatch.Phase.FINISHED && !match.respawnDeathmatch(b.id),
                 "the time limit ends deathmatch and prevents further respawns");
-        check(
-                CsArena.deathmatchSpawns().size() >= 24,
-                "deathmatch has distributed spawn candidates beyond the classic T/CT starts");
         I18n.register();
         try {
             for (var locale : List.of(Locale.ENGLISH, Locale.forLanguageTag("ru")))

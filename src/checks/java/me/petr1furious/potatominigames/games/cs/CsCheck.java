@@ -1,5 +1,7 @@
 package me.petr1furious.potatominigames.games.cs;
 
+import me.petr1furious.potatominigames.core.command.CommandFailure;
+
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -10,8 +12,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.awt.image.BufferedImage;
+import java.io.DataOutputStream;
 import java.lang.reflect.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.zip.GZIPOutputStream;
 
 import javax.imageio.ImageIO;
 
@@ -50,7 +57,22 @@ public final class CsCheck {
         mr12();
         lifecycle();
         spawnTraversal();
-        importedMap();
+        spawnRules();
+        mapLoader();
+        String assetDirectory = System.getenv("POTATOMINIGAMES_CHECK_DATA_DIR");
+        if (assetDirectory != null && !assetDirectory.isBlank()) {
+            Path dataFolder = Path.of(assetDirectory);
+            var map = CsArena.Blueprint.load(dataFolder);
+            importedMap(map);
+            var image = CsRadar.load(dataFolder);
+            check(image.getWidth() == 128 && image.getHeight() == 128, "native map radar size");
+            checks += CsWingmanCheck.checkImportedMap(map);
+            System.out.println("CsCheck: installed Dust II geometry and radar verified");
+        } else {
+            System.out.println(
+                    "CsCheck: fixture loader checked; set POTATOMINIGAMES_CHECK_DATA_DIR"
+                            + " to check installed Dust II geometry and radar");
+        }
         smokeGeometry();
         bombAudioGeometry();
         System.out.println("CsCheck: " + checks + " checks passed");
@@ -77,7 +99,7 @@ public final class CsCheck {
                         start.distance(direction.clone().multiply(CsTracers.START)) < .0001
                                 && end.distance(direction.clone().multiply(distance)) < .0001,
                         "display endpoints match the hitscan path, including vertical/reversed"
-                            + " rays");
+                                + " rays");
                 var width = matrix.transformDirection(new org.joml.Vector3f(1, 0, 0));
                 check(
                         Math.abs(width.length() - CsTracers.WIDTH) < .00001,
@@ -157,8 +179,7 @@ public final class CsCheck {
                                     locale);
                     String hit =
                             me.petr1furious.potatominigames.i18n.I18n.plain(
-                                    CsItems.tr("kill.headshot"),
-                                    locale);
+                                    CsItems.tr("kill.headshot"), locale);
                     check(
                             line.contains("AK-47")
                                     && !line.contains("AWP")
@@ -649,8 +670,13 @@ public final class CsCheck {
     private static void pistolTrigger() {
         for (var weapon :
                 List.of(
-                        CsWeapon.GLOCK, CsWeapon.USP, CsWeapon.P250, CsWeapon.DUAL_BERETTAS,
-                        CsWeapon.FIVE_SEVEN, CsWeapon.TEC9, CsWeapon.DEAGLE)) {
+                        CsWeapon.GLOCK,
+                        CsWeapon.USP,
+                        CsWeapon.P250,
+                        CsWeapon.DUAL_BERETTAS,
+                        CsWeapon.FIVE_SEVEN,
+                        CsWeapon.TEC9,
+                        CsWeapon.DEAGLE)) {
             check(weapon.requiresTriggerRelease(), "semi-automatic pistols require release");
             CsGun gun = new CsGun(weapon);
             for (long now = 0; now < 100; now += 4) if (gun.pressTrigger()) gun.fire(now);
@@ -682,8 +708,14 @@ public final class CsCheck {
     private static void firingAccuracy() {
         for (var weapon :
                 List.of(
-                        CsWeapon.GLOCK, CsWeapon.DEAGLE, CsWeapon.CZ75, CsWeapon.MP9,
-                        CsWeapon.AK47, CsWeapon.M4A4, CsWeapon.AUG, CsWeapon.SG553)) {
+                        CsWeapon.GLOCK,
+                        CsWeapon.DEAGLE,
+                        CsWeapon.CZ75,
+                        CsWeapon.MP9,
+                        CsWeapon.AK47,
+                        CsWeapon.M4A4,
+                        CsWeapon.AUG,
+                        CsWeapon.SG553)) {
             CsGun fast = new CsGun(weapon);
             fast.scoped = weapon.scope();
             check(fast.fire(0), "a settled weapon can fire its first accurate shot");
@@ -789,15 +821,17 @@ public final class CsCheck {
                         200, List.of(CsWeapon.AWP),
                         150, List.of(CsWeapon.NEGEV));
         Set<CsWeapon> checked = EnumSet.noneOf(CsWeapon.class);
-        speeds.forEach((speed, weapons) -> {
-            for (CsWeapon weapon : weapons) {
-                checked.add(weapon);
-                check(
-                        weapon.maxSpeed == speed
-                                && Math.abs(weapon.mobility - speed / 250.0) < 1e-10,
-                        "held-weapon speed follows the CS2 table relative to a 250-speed knife");
-            }
-        });
+        speeds.forEach(
+                (speed, weapons) -> {
+                    for (CsWeapon weapon : weapons) {
+                        checked.add(weapon);
+                        check(
+                                weapon.maxSpeed == speed
+                                        && Math.abs(weapon.mobility - speed / 250.0) < 1e-10,
+                                "held-weapon speed follows the CS2 table relative to a 250-speed"
+                                        + " knife");
+                    }
+                });
         check(checked.size() == CsWeapon.values().length, "the speed table covers every gun");
         check(
                 CsWeapon.AWP.scopedSpeed() == 100
@@ -1358,45 +1392,93 @@ public final class CsCheck {
                 "ascending requires clearance above the starting player");
     }
 
-    private static void importedMap() throws Exception {
-        var bp = CsArena.Blueprint.load();
-        check(
-                bp.cells().size() > 190000 && bp.palette().size() > 700,
-                "full imported architecture, not a generated substitute");
-        Map<CsArena.Pos, String> blocks = new HashMap<>();
-        for (var cell : bp.cells()) blocks.put(cell.pos(), bp.palette().get(cell.state()));
+    private static void mapLoader() throws Exception {
+        Path dataFolder = Files.createTempDirectory("cs-map-check-");
+        Path map = dataFolder.resolve("maps/cs/dust2.bin.gz");
+        Path radar = dataFolder.resolve("maps/cs/radar.png");
+        try {
+            try {
+                CsArena.Blueprint.load(dataFolder);
+                throw new AssertionError("Missing Dust II must fail");
+            } catch (CommandFailure failure) {
+                check(
+                        failure.getMessage().contains(map.toString()),
+                        "report where to install Dust II");
+            }
+            try {
+                CsRadar.load(dataFolder);
+                throw new AssertionError("Missing radar must fail");
+            } catch (CommandFailure failure) {
+                check(
+                        failure.getMessage().contains(radar.toString()),
+                        "report where to install the radar");
+            }
+            Files.createDirectories(map.getParent());
+            try (var out = new DataOutputStream(new GZIPOutputStream(Files.newOutputStream(map)))) {
+                out.writeBytes("CSMAP001");
+                out.writeInt(2);
+                out.writeUTF("minecraft:stone");
+                out.writeUTF("minecraft:sandstone");
+                out.writeInt(2);
+                for (var cell :
+                        List.of(new CsArena.Pos(102, 81, 84), new CsArena.Pos(-2, 75, -3))) {
+                    out.writeShort(cell.x());
+                    out.writeShort(cell.y());
+                    out.writeShort(cell.z());
+                    out.writeShort(cell.x() < 0 ? 1 : 0);
+                }
+            }
+            var mapFixture = CsArena.Blueprint.load(dataFolder);
+            check(
+                    mapFixture.palette().equals(List.of("minecraft:stone", "minecraft:sandstone"))
+                            && mapFixture
+                                    .cells()
+                                    .equals(
+                                            List.of(
+                                                    new CsArena.Cell(
+                                                            new CsArena.Pos(102, 81, 84), 0),
+                                                    new CsArena.Cell(
+                                                            new CsArena.Pos(-2, 75, -3), 1))),
+                    "map loader preserves imported palette, indices and signed coordinates");
+            var spawns = CsArena.buildDeathmatchSpawns(mapFixture);
+            check(
+                    spawns.size() == 21 && spawns.contains(new CsArena.Spawn(102.5, 82, 84.5, 0)),
+                    "a supported exposed sampled point adds a spawn beyond the twenty team slots");
+            var image = new BufferedImage(128, 128, BufferedImage.TYPE_INT_ARGB);
+            image.setRGB(43, 61, 0xff123456);
+            check(ImageIO.write(image, "png", radar.toFile()), "PNG writer is available");
+            check(
+                    CsRadar.load(dataFolder).getRGB(43, 61) == 0xff123456,
+                    "load a native-sized radar");
+        } finally {
+            Files.deleteIfExists(radar);
+            Files.deleteIfExists(map);
+            Files.deleteIfExists(map.getParent());
+            Files.deleteIfExists(dataFolder.resolve("maps"));
+            Files.deleteIfExists(dataFolder);
+        }
+    }
+
+    private static void spawnRules() {
         for (int side = 0; side < 2; side++) {
             var points = CsArena.spawnPoints(side);
             check(points.size() == (side == 0 ? 15 : 5), "CS2-style T and CT spawn pools");
             for (var point : points) {
-                int x = (int) Math.floor(point.x()),
-                        y = (int) Math.ceil(point.y()),
-                        z = (int) Math.floor(point.z());
+                double y = point.y();
                 check(
-                        point.y() == (side == 0 ? 82 : 75.5),
+                        y == (side == 0 ? 82 : 75.5),
                         "T starts on the street and CT in the intended underpass below Short");
                 if (side == 1) {
                     check(
-                            blocks.containsKey(new CsArena.Pos(x, 80, z)),
-                            "the CT spawn has the original underpass roof above it");
-                    check(point.x() >= 102.5 && point.x() <= 103.5 && point.yaw() == 90,
+                            point.x() >= 102.5 && point.x() <= 103.5 && point.yaw() == 90,
                             "CT starts inside the recess facing out, not in the through-passage");
-                    check(blocks.get(new CsArena.Pos(x, 75, z)).contains("type=bottom"),
-                            "CT feet sit exactly on the original lower slab surface");
                     check(
                             !CsArena.buyPosition(side, point.x(), 82, point.z()),
                             "Short above CT spawn is outside the CT buy zone");
                 }
                 check(
-                        !blocks.containsKey(new CsArena.Pos(x, y, z))
-                                && !blocks.containsKey(new CsArena.Pos(x, y + 1, z)),
-                        "every spawn in both full pools has headroom in the imported map");
-                check(
-                        blocks.containsKey(new CsArena.Pos(x, y - 1, z)),
-                        "every spawn has original floor support");
-                check(
-                        CsArena.buyPosition(side, point.x(), point.y(), point.z())
-                                && !CsArena.buyPosition(1 - side, point.x(), point.y(), point.z()),
+                        CsArena.buyPosition(side, point.x(), y, point.z())
+                                && !CsArena.buyPosition(1 - side, point.x(), y, point.z()),
                         "all possible round starts belong to only their own buy area");
                 for (var other : points)
                     if (other != point)
@@ -1408,9 +1490,43 @@ public final class CsCheck {
         check(
                 !CsArena.buyPosition(0, .5, 78, 50.5) && !CsArena.buyPosition(1, 93.5, 75, 39.5),
                 "old out-of-spawn road/mid positions no longer extend the buy areas");
+    }
+
+    private static void importedMap(CsArena.Blueprint bp) {
+        check(
+                bp.cells().size() > 190000 && bp.palette().size() > 700,
+                "full imported architecture, not a generated substitute");
+        Map<CsArena.Pos, String> blocks = new HashMap<>();
+        for (var cell : bp.cells()) blocks.put(cell.pos(), bp.palette().get(cell.state()));
+        for (int side = 0; side < 2; side++) {
+            for (var point : CsArena.spawnPoints(side)) {
+                int x = (int) Math.floor(point.x()),
+                        y = (int) Math.ceil(point.y()),
+                        z = (int) Math.floor(point.z());
+                if (side == 1) {
+                    check(
+                            blocks.containsKey(new CsArena.Pos(x, 80, z)),
+                            "the CT spawn has the original underpass roof above it");
+                    check(
+                            blocks.get(new CsArena.Pos(x, 75, z)).contains("type=bottom"),
+                            "CT feet sit exactly on the original lower slab surface");
+                }
+                check(
+                        !blocks.containsKey(new CsArena.Pos(x, y, z))
+                                && !blocks.containsKey(new CsArena.Pos(x, y + 1, z)),
+                        "every spawn in both full pools has headroom in the imported map");
+                check(
+                        blocks.containsKey(new CsArena.Pos(x, y - 1, z)),
+                        "every spawn has original floor support");
+            }
+        }
         Set<CsArena.Spawn> teamSpawns = new HashSet<>(CsArena.spawnPoints(0));
         teamSpawns.addAll(CsArena.spawnPoints(1));
-        for (var point : CsArena.deathmatchSpawns()) {
+        var spawns = CsArena.buildDeathmatchSpawns(bp);
+        check(
+                spawns.size() >= 24,
+                "deathmatch has distributed spawn candidates beyond the classic T/CT starts");
+        for (var point : spawns) {
             int x = (int) Math.floor(point.x()),
                     y = (int) Math.ceil(point.y()),
                     z = (int) Math.floor(point.z());
@@ -1420,8 +1536,9 @@ public final class CsCheck {
             if (!teamSpawns.contains(point))
                 check(
                         blocks.keySet().stream()
-                                .noneMatch(block ->
-                                        block.x() == x && block.z() == z && block.y() >= y),
+                                .noneMatch(
+                                        block ->
+                                                block.x() == x && block.z() == z && block.y() >= y),
                         "distributed respawns are above the imported deck, never below it");
             check(
                     !blocks.containsKey(new CsArena.Pos(x, y, z))
@@ -1441,10 +1558,6 @@ public final class CsCheck {
                         .noneMatch(
                                 s -> s.contains("command_block") || s.contains("structure_block")),
                 "no executable source world blocks");
-        try (var in = CsCheck.class.getResourceAsStream("/maps/cs/radar.png")) {
-            var image = ImageIO.read(Objects.requireNonNull(in));
-            check(image.getWidth() == 128 && image.getHeight() == 128, "native map radar size");
-        }
     }
 
     private static void bombAudioGeometry() {

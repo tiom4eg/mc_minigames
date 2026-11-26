@@ -1,67 +1,75 @@
 package me.petr1furious.potatominigames.games.cs;
 
+import me.petr1furious.potatominigames.core.command.CommandFailure;
+import me.petr1furious.potatominigames.i18n.I18n;
+
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Slab;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 /** LesRaisins Dust II imported verbatim, with outer clipping and optional Wingman gates. */
 final class CsArena {
+    static final String MAP_FILE = "maps/cs/dust2.bin.gz";
+
     record Pos(int x, int y, int z) {}
 
     record Cell(Pos pos, int state) {}
 
     record Blueprint(List<String> palette, List<Cell> cells) {
-        static Blueprint load() {
-            try (var stream = CsArena.class.getResourceAsStream("/maps/cs/dust2.bin.gz")) {
-                if (stream == null) throw new IOException("Missing imported Dust II");
-                try (var in = new DataInputStream(new GZIPInputStream(stream))) {
-                    if (!Arrays.equals(
-                            in.readNBytes(8),
-                            "CSMAP001".getBytes(java.nio.charset.StandardCharsets.US_ASCII)))
-                        throw new IOException("Invalid CS map signature");
-                    int n = in.readInt();
-                    if (n < 1 || n > 4096) throw new IOException("Invalid palette");
-                    List<String> palette = new ArrayList<>();
-                    for (int i = 0; i < n; i++) palette.add(in.readUTF());
-                    n = in.readInt();
-                    if (n < 1 || n > 500000) throw new IOException("Invalid block count");
-                    List<Cell> cells = new ArrayList<>();
-                    Set<Pos> seen = new HashSet<>();
-                    for (int i = 0; i < n; i++) {
-                        Pos p = new Pos(in.readShort(), in.readShort(), in.readShort());
-                        int state = in.readUnsignedShort();
-                        if (state >= palette.size()
-                                || p.x < -25
-                                || p.x > 130
-                                || p.z < -34
-                                || p.z > 119
-                                || p.y < 73
-                                || p.y > 109
-                                || !seen.add(p)) throw new IOException("Invalid imported cell");
-                        cells.add(new Cell(p, state));
-                    }
-                    if (in.read() != -1) throw new IOException("Unexpected map data");
-                    return new Blueprint(List.copyOf(palette), List.copyOf(cells));
+        static Blueprint load(Path dataFolder) throws CommandFailure {
+            Path file = dataFolder.resolve(MAP_FILE);
+            try (var stream = Files.newInputStream(file);
+                    var in = new DataInputStream(new GZIPInputStream(stream))) {
+                if (!Arrays.equals(
+                        in.readNBytes(8),
+                        "CSMAP001".getBytes(java.nio.charset.StandardCharsets.US_ASCII)))
+                    throw new IOException("Invalid CS map signature");
+                int n = in.readInt();
+                if (n < 1 || n > 4096) throw new IOException("Invalid palette");
+                List<String> palette = new ArrayList<>();
+                for (int i = 0; i < n; i++) palette.add(in.readUTF());
+                n = in.readInt();
+                if (n < 1 || n > 500000) throw new IOException("Invalid block count");
+                List<Cell> cells = new ArrayList<>();
+                Set<Pos> seen = new HashSet<>();
+                for (int i = 0; i < n; i++) {
+                    Pos p = new Pos(in.readShort(), in.readShort(), in.readShort());
+                    int state = in.readUnsignedShort();
+                    if (state >= palette.size()
+                            || p.x < -25
+                            || p.x > 130
+                            || p.z < -34
+                            || p.z > 119
+                            || p.y < 73
+                            || p.y > 109
+                            || !seen.add(p)) throw new IOException("Invalid imported cell");
+                    cells.add(new Cell(p, state));
                 }
-            } catch (IOException e) {
-                throw new IllegalStateException("Cannot load imported Dust II", e);
+                if (in.read() != -1) throw new IOException("Unexpected map data");
+                return new Blueprint(List.copyOf(palette), List.copyOf(cells));
+            } catch (IOException error) {
+                var failure =
+                        new CommandFailure(
+                                I18n.tr(
+                                        "core.session.required_asset",
+                                        I18n.tr("cs.name"),
+                                        file.toAbsolutePath()));
+                failure.initCause(error);
+                throw failure;
             }
         }
-    }
-
-    private static final class Source {
-        static final Blueprint DATA = Blueprint.load();
     }
 
     record Spawn(double x, double y, double z, float yaw) {}
 
     // CS2's three T groups and CT arc, fitted to the older Minecraft map's walkable floors.
-    // See assets/maps/lesraisins-dust2/SPAWNS-Dust2.md for the reference and adaptation.
     private static final List<List<Spawn>> SPAWNS =
             List.of(
                     List.of(
@@ -106,22 +114,20 @@ final class CsArena {
     }
 
     private final World world;
-    private final Blueprint source = Source.DATA;
+    private final Blueprint source;
     private final List<BlockData> states;
     private final Map<Pos, BlockData> broken = new LinkedHashMap<>();
     private final List<Pos> clip = new ArrayList<>();
     private final Set<Pos> wingmanBorders;
     private final List<Pos> gates;
     private final boolean wingman;
+    private List<Spawn> deathmatchSpawns;
     private int cursor;
     private boolean spawnsValidated;
 
-    CsArena(World world) {
-        this(world, false);
-    }
-
-    CsArena(World world, boolean wingman) {
+    CsArena(World world, Blueprint source, boolean wingman) {
         this.world = world;
+        this.source = source;
         this.wingman = wingman;
         wingmanBorders = wingman ? WingmanBorders.DATA : Set.of();
         gates = List.copyOf(wingmanBorders);
@@ -190,12 +196,9 @@ final class CsArena {
         throw new IllegalStateException("No safe imported team spawn");
     }
 
-    private static final class DeathmatchSpawns {
-        static final List<Spawn> POINTS = buildDeathmatchSpawns(Source.DATA);
-    }
-
-    static List<Spawn> deathmatchSpawns() {
-        return DeathmatchSpawns.POINTS;
+    List<Spawn> deathmatchSpawns() {
+        if (deathmatchSpawns == null) deathmatchSpawns = buildDeathmatchSpawns(source);
+        return deathmatchSpawns;
     }
 
     private static boolean supportedFloor(String state) {
@@ -224,7 +227,7 @@ final class CsArena {
                 || name.endsWith("_stairs");
     }
 
-    private static List<Spawn> buildDeathmatchSpawns(Blueprint source) {
+    static List<Spawn> buildDeathmatchSpawns(Blueprint source) {
         Map<Pos, String> blocks = new HashMap<>();
         for (var cell : source.cells()) blocks.put(cell.pos(), source.palette().get(cell.state()));
         boolean[] full = new boolean[source.palette().size()];
@@ -315,9 +318,10 @@ final class CsArena {
         if (wingman && !CsWingman.contains(point.x(), point.y(), point.z())) return null;
         Location at = new Location(world, point.x(), point.y(), point.z(), point.yaw(), 0);
         // A bottom slab shares the feet's block while its upper half is clear.
-        boolean slabFloor = at.getY() - at.getBlockY() >= .5
-                && at.getBlock().getBlockData() instanceof Slab slab
-                && slab.getType() == Slab.Type.BOTTOM;
+        boolean slabFloor =
+                at.getY() - at.getBlockY() >= .5
+                        && at.getBlock().getBlockData() instanceof Slab slab
+                        && slab.getType() == Slab.Type.BOTTOM;
         if ((!at.getBlock().isPassable() && !slabFloor)
                 || !at.clone().add(0, 1, 0).getBlock().isPassable()
                 || !at.clone().add(0, 1.79, 0).getBlock().isPassable()

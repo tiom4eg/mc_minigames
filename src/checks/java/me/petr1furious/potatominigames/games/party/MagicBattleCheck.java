@@ -1,5 +1,6 @@
 package me.petr1furious.potatominigames.games.party;
 
+import me.petr1furious.potatominigames.core.command.CommandFailure;
 import me.petr1furious.potatominigames.i18n.I18n;
 
 import org.bukkit.Location;
@@ -8,9 +9,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 
+import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,11 +22,22 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.zip.GZIPOutputStream;
 
 /** Imported map provenance/geometry, mana budgets, personal clocks and queue/round integration. */
 public final class MagicBattleCheck {
     public static void main(String[] args) throws Exception {
-        map();
+        mapLoader();
+        String assetDirectory = System.getenv("POTATOMINIGAMES_CHECK_DATA_DIR");
+        if (assetDirectory != null && !assetDirectory.isBlank()) {
+            importedMap(Path.of(assetDirectory));
+            System.out.println(
+                    "Magic Battle: installed Lighthouse geometry and spawn columns verified");
+        } else {
+            System.out.println(
+                    "Magic Battle: fixture loader checked; set POTATOMINIGAMES_CHECK_DATA_DIR"
+                            + " to check installed Lighthouse geometry");
+        }
         spells();
         mana();
         wandsAndStarters();
@@ -30,15 +45,72 @@ public final class MagicBattleCheck {
         integration();
         survival();
         System.out.println(
-                "Magic Battle: imported Lighthouse asset, safe spawn columns, 42 spell choices,"
-                        + " finite mana, independent cooldowns and one-life integration passed");
+                "Magic Battle: 42 spell choices, finite mana, independent cooldowns"
+                        + " and one-life integration passed");
     }
 
-    private static void map() {
-        var source = MagicBattleArena.Blueprint.load();
+    private static void mapLoader() throws Exception {
+        Path dataFolder = Files.createTempDirectory("magic-map-check-");
+        Path file = dataFolder.resolve("maps/magic/lighthouse.bin.gz");
+        try {
+            try {
+                MagicBattleArena.Blueprint.load(dataFolder);
+                throw new AssertionError("Missing Lighthouse must fail");
+            } catch (CommandFailure failure) {
+                check(
+                        failure.getMessage().contains(file.toString()),
+                        "report where to install Lighthouse");
+            }
+            Files.createDirectories(file.getParent());
+            try (var out =
+                    new DataOutputStream(new GZIPOutputStream(Files.newOutputStream(file)))) {
+                out.writeBytes("MAGICMAP1");
+                out.writeInt(1);
+                out.writeUTF("minecraft:oak_planks");
+                out.writeInt(1);
+                out.writeShort(-2);
+                out.writeShort(59);
+                out.writeShort(3);
+                out.writeShort(0);
+                out.writeInt(12);
+                for (int i = 0; i < 12; i++) {
+                    out.writeFloat(i - 1.5f);
+                    out.writeFloat(60);
+                    out.writeFloat(3.5f);
+                    out.writeFloat(-90);
+                }
+            }
+            var source = MagicBattleArena.Blueprint.load(dataFolder);
+            check(
+                    source.palette().equals(List.of("minecraft:oak_planks"))
+                            && source.blocks()
+                                    .equals(
+                                            List.of(
+                                                    new MagicBattleArena.Cell(
+                                                            new MagicBattleArena.Pos(-2, 59, 3),
+                                                            0))),
+                    "map loader preserves terrain coordinates and palette");
+            check(source.spawns().size() == 12, "map loader reads all twelve spawns");
+            for (int i = 0; i < 12; i++) {
+                check(
+                        source.spawns()
+                                .get(i)
+                                .equals(new MagicBattleArena.Spawn(i - 1.5f, 60, 3.5f, -90)),
+                        "map loader preserves spawn positions and yaw");
+            }
+        } finally {
+            Files.deleteIfExists(file);
+            Files.deleteIfExists(file.getParent());
+            Files.deleteIfExists(dataFolder.resolve("maps"));
+            Files.deleteIfExists(dataFolder);
+        }
+    }
+
+    private static void importedMap(Path dataFolder) throws CommandFailure {
+        var source = MagicBattleArena.Blueprint.load(dataFolder);
         check(
                 source.blocks().size() == 40571 && source.spawns().size() == 12,
-                "The bundled arena is the full imported Lighthouse asset, not generated islands");
+                "The installed arena is the full imported Lighthouse asset, not generated islands");
         Map<MagicBattleArena.Pos, String> blocks = new HashMap<>();
         for (var cell : source.blocks()) {
             String data = source.palette().get(cell.palette());
@@ -74,7 +146,6 @@ public final class MagicBattleCheck {
             check(
                     school.spells().size() == 7 && new HashSet<>(school.spells()).size() == 7,
                     "Seven spells per school remain available as loot");
-
         }
         for (var spell : MagicSpell.values()) {
             check(
@@ -97,22 +168,33 @@ public final class MagicBattleCheck {
     }
 
     private static void wandsAndStarters() {
-        check(MagicWand.STARTERS.size() == 6 && MagicWand.STARTERS.stream().map(s -> s.school).distinct().count() == 6,
+        check(
+                MagicWand.STARTERS.size() == 6
+                        && MagicWand.STARTERS.stream().map(s -> s.school).distinct().count() == 6,
                 "Starter pool has one basic spell from each school");
         UUID a = new UUID(0, 1), b = new UUID(0, 2), c = new UUID(0, 3);
         MagicStarterChoices choices = new MagicStarterChoices(List.of(a, b, c));
         check(!choices.confirm(a), "An empty selection cannot be confirmed");
-        check(choices.toggle(a, MagicSpell.FIREBOLT) && choices.toggle(a, MagicSpell.MEND)
-                && !choices.toggle(a, MagicSpell.GALE), "No third starter wand can be selected");
-        check(!choices.toggle(b, MagicSpell.METEOR) && !choices.toggle(new UUID(0, 99), MagicSpell.GALE),
+        check(
+                choices.toggle(a, MagicSpell.FIREBOLT)
+                        && choices.toggle(a, MagicSpell.MEND)
+                        && !choices.toggle(a, MagicSpell.GALE),
+                "No third starter wand can be selected");
+        check(
+                !choices.toggle(b, MagicSpell.METEOR)
+                        && !choices.toggle(new UUID(0, 99), MagicSpell.GALE),
                 "Strong spells and unknown players cannot enter the starter selection");
         check(choices.confirm(a) && !choices.ready(), "One confirmation does not start everyone");
-        check(choices.toggle(b, MagicSpell.RIFT) && choices.confirm(b), "A single wand is a valid starter set");
+        check(
+                choices.toggle(b, MagicSpell.RIFT) && choices.confirm(b),
+                "A single wand is a valid starter set");
         choices.withdraw(c);
         check(choices.ready(), "A withdrawn player cannot stall the start");
         var selected = choices.finish();
-        check(selected.get(a).equals(List.of(MagicSpell.FIREBOLT, MagicSpell.MEND))
-                && selected.get(b).equals(List.of(MagicSpell.RIFT)) && !selected.containsKey(c),
+        check(
+                selected.get(a).equals(List.of(MagicSpell.FIREBOLT, MagicSpell.MEND))
+                        && selected.get(b).equals(List.of(MagicSpell.RIFT))
+                        && !selected.containsKey(c),
                 "Locking preserves choices and never grants extra wands");
         check(!choices.toggle(a, MagicSpell.FIREBOLT), "Starter choices lock before combat");
         MagicStarterChoices timeout = new MagicStarterChoices(List.of(a));
@@ -124,20 +206,31 @@ public final class MagicBattleCheck {
             MagicWand wand = MagicWand.loot(random);
             check(wand.cast(false) == wand.first(), "Right-click casts only the primary spell");
             if (wand.enchanted()) {
-                check(wand.first() != wand.second() && wand.first().school == wand.second().school,
+                check(
+                        wand.first() != wand.second()
+                                && wand.first().school == wand.second().school,
                         "Enchanted loot pairs distinct spells from one school");
-                check(wand.cast(true) == wand.second(), "Left-click casts only the secondary spell");
-                dual.add(wand.first()); dual.add(wand.second());
+                check(
+                        wand.cast(true) == wand.second(),
+                        "Left-click casts only the secondary spell");
+                dual.add(wand.first());
+                dual.add(wand.second());
             } else {
                 check(wand.cast(true) == null, "Ordinary wands cannot access a second spell");
                 normal.add(wand.first());
             }
         }
-        check(normal.size() == 42 && dual.size() == 42, "All spells remain reachable in ordinary and enchanted loot");
+        check(
+                normal.size() == 42 && dual.size() == 42,
+                "All spells remain reachable in ordinary and enchanted loot");
         MagicChestLoot chest = new MagicChestLoot(random, 900);
-        check(chest.wand(0) != null && chest.wand(1) != null && chest.wool(), "Chest starts with two wand offers and blocks");
-        chest.takeWand(0); chest.takeWool();
-        check(chest.wand(0) == null && chest.wand(1) != null && !chest.wool(),
+        check(
+                chest.wand(0) != null && chest.wand(1) != null && chest.wool(),
+                "Chest starts with two wand offers and blocks");
+        chest.takeWand(0);
+        chest.takeWool();
+        check(
+                chest.wand(0) == null && chest.wand(1) != null && !chest.wool(),
                 "Taking shared loot removes only that offer for all viewers");
     }
 
@@ -155,7 +248,9 @@ public final class MagicBattleCheck {
         check(
                 a.spend(MagicSpell.FIREBALL, 4) && a.mana() == 18,
                 "Another wand can cast after the shared lock");
-        check(!a.spend(MagicSpell.METEOR, 8), "Changing physical wands cannot reset a spell cooldown");
+        check(
+                !a.spend(MagicSpell.METEOR, 8),
+                "Changing physical wands cannot reset a spell cooldown");
         check(b.ready(MagicSpell.METEOR, 0) && b.mana() == 100, "Pools and cooldowns are personal");
         a.restore(-999);
         check(

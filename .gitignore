@@ -9,3 +9,6 @@ build/
 __pycache__/
 *.py[cod]
 /start-server.bat
+/assets/
+/src/main/resources/maps/
+/deploy/

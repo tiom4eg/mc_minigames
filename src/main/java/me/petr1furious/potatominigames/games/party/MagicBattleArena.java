@@ -1,5 +1,8 @@
 package me.petr1furious.potatominigames.games.party;
 
+import me.petr1furious.potatominigames.core.command.CommandFailure;
+import me.petr1furious.potatominigames.i18n.I18n;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -9,6 +12,8 @@ import org.bukkit.block.data.BlockData;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +22,8 @@ import java.util.zip.GZIPInputStream;
 
 /** Exact coordinates imported from NetherGames Lighthouse; this class never generates islands. */
 final class MagicBattleArena {
+    static final String MAP_FILE = "maps/magic/lighthouse.bin.gz";
+
     record Pos(int x, int y, int z) {
         static Pos of(Block b) {
             return new Pos(b.getX(), b.getY(), b.getZ());
@@ -28,11 +35,10 @@ final class MagicBattleArena {
     record Spawn(float x, float y, float z, float yaw) {}
 
     record Blueprint(List<String> palette, List<Cell> blocks, List<Spawn> spawns) {
-        static Blueprint load() {
-            var stream =
-                    MagicBattleArena.class.getResourceAsStream("/maps/magic/lighthouse.bin.gz");
-            if (stream == null) throw new IllegalStateException("Missing bundled Lighthouse asset");
-            try (var in = new DataInputStream(new GZIPInputStream(stream))) {
+        static Blueprint load(Path dataFolder) throws CommandFailure {
+            Path file = dataFolder.resolve(MAP_FILE);
+            try (var stream = Files.newInputStream(file);
+                    var in = new DataInputStream(new GZIPInputStream(stream))) {
                 if (!new String(in.readNBytes(9), java.nio.charset.StandardCharsets.US_ASCII)
                         .equals("MAGICMAP1")) throw new IOException("Invalid map signature");
                 int count = in.readInt();
@@ -69,13 +75,16 @@ final class MagicBattleArena {
                 return new Blueprint(
                         List.copyOf(palette), List.copyOf(blocks), List.copyOf(spawns));
             } catch (IOException error) {
-                throw new IllegalStateException("Cannot load bundled Lighthouse asset", error);
+                var failure =
+                        new CommandFailure(
+                                I18n.tr(
+                                        "core.session.required_asset",
+                                        I18n.tr("party.rounds.mode.magic_battle"),
+                                        file.toAbsolutePath()));
+                failure.initCause(error);
+                throw failure;
             }
         }
-    }
-
-    private static final class Source {
-        static final Blueprint BLUEPRINT = Blueprint.load();
     }
 
     private final World world;
@@ -84,9 +93,9 @@ final class MagicBattleArena {
     private final List<Pos> chests = new ArrayList<>();
     private int cursor;
 
-    MagicBattleArena(World world) {
+    MagicBattleArena(World world, Blueprint source) {
         this.world = world;
-        source = Source.BLUEPRINT;
+        this.source = source;
         palette = source.palette().stream().map(Bukkit::createBlockData).toList();
         for (Cell cell : source.blocks())
             if (source.palette().get(cell.palette()).startsWith("minecraft:chest["))

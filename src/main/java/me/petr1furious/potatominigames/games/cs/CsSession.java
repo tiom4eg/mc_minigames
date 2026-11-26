@@ -299,9 +299,11 @@ final class CsSession implements GameSession, Listener {
                     && players().stream()
                             .filter(this::active)
                             .filter(p -> match.side(actor(p)) == 1)
-                            .anyMatch(p ->
-                                    p.getEyeLocation().distanceSquared(bombAt) < 576
-                                            && p.hasLineOfSight(plantedBomb))) ctBombKnown = true;
+                            .anyMatch(
+                                    p ->
+                                            p.getEyeLocation().distanceSquared(bombAt) < 576
+                                                    && p.hasLineOfSight(plantedBomb)))
+                ctBombKnown = true;
             return ctBombKnown ? bombAt : null;
         }
         if (match.side(a) != 0) return null;
@@ -359,14 +361,17 @@ final class CsSession implements GameSession, Listener {
 
     @Override
     public void onStart() throws CommandFailure {
-        // Keep the generic color teams hidden too, including during roster refreshes.
-        services.sidebar().setNameTagsVisible(false);
         List<me.petr1furious.potatominigames.core.player.Participant> roster =
                 new ArrayList<>(services.participants().all());
         if (roster.isEmpty()
                 || roster.size() > (deathmatch ? 16 : 10)
                 || !services.isTest() && roster.size() < 2)
             throw new CommandFailure(tr(deathmatch ? "dm.error.roster" : "error.roster"));
+        var dataFolder = plugin().getDataFolder().toPath();
+        var map = CsArena.Blueprint.load(dataFolder);
+        var radarImage = CsRadar.load(dataFolder);
+        // Keep the generic color teams hidden too, including during roster refreshes.
+        services.sidebar().setNameTagsVisible(false);
         Collections.shuffle(roster, random);
         Map<UUID, Integer> teams = new LinkedHashMap<>();
         int[] counts = {0, 0};
@@ -417,8 +422,8 @@ final class CsSession implements GameSession, Listener {
         world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, false);
         world.setGameRule(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0);
         world.setGameRule(GameRules.SPAWN_MOBS, false);
-        arena = new CsArena(world, wingman);
-        radar = new CsRadar(this);
+        arena = new CsArena(world, map, wingman);
+        radar = new CsRadar(this, radarImage);
         combat = new CsCombat(this);
         grenades = new CsGrenades(this);
         teammateGlow = new PrivatePlayerGlow(plugin());
@@ -623,13 +628,14 @@ final class CsSession implements GameSession, Listener {
             }
         }
         drops.values()
-                .removeIf(d -> {
-                    if (!d.item.isValid() || tick >= d.expires && !d.bomb) {
-                        d.item.remove();
-                        return true;
-                    }
-                    return false;
-                });
+                .removeIf(
+                        d -> {
+                            if (!d.item.isValid() || tick >= d.expires && !d.bomb) {
+                                d.item.remove();
+                                return true;
+                            }
+                            return false;
+                        });
         if (match.dropped && !match.planted())
             for (Drop drop : drops.values())
                 if (drop.bomb && drop.item.getLocation().getY() < 73)
@@ -718,11 +724,20 @@ final class CsSession implements GameSession, Listener {
                         Comparator.<CsMatch.Actor>comparingInt(a -> a.kills)
                                 .reversed()
                                 .thenComparingInt(a -> a.deaths))
-                .forEach(a -> {
-                    lines.add(tr("standing", name(a.id), a.kills, a.deaths, a.assists, a.mvps));
-                    if (a.online)
-                        services.award("cs", a.id, winner < 0 ? 1 : a.team == winner ? 3 : 0);
-                });
+                .forEach(
+                        a -> {
+                            lines.add(
+                                    tr(
+                                            "standing",
+                                            name(a.id),
+                                            a.kills,
+                                            a.deaths,
+                                            a.assists,
+                                            a.mvps));
+                            if (a.online)
+                                services.award(
+                                        "cs", a.id, winner < 0 ? 1 : a.team == winner ? 3 : 0);
+                        });
         result = List.copyOf(lines);
         services.session().endGame(EndReason.FINISHED);
     }
@@ -778,10 +793,17 @@ final class CsSession implements GameSession, Listener {
                     false,
                     false);
         if (!deathmatch)
-            a.utility.forEach((u, n) -> {
-                for (int i = 0; i < n; i++)
-                    addDrop(p.getLocation(), CsItems.utility(u, null), null, u, false, false);
-            });
+            a.utility.forEach(
+                    (u, n) -> {
+                        for (int i = 0; i < n; i++)
+                            addDrop(
+                                    p.getLocation(),
+                                    CsItems.utility(u, null),
+                                    null,
+                                    u,
+                                    false,
+                                    false);
+                    });
         if (!deathmatch && a.kit)
             addDrop(p.getLocation(), CsItems.kit(null), null, null, true, false);
         a.loseEquipment();

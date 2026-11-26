@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/** Queue wiring and navigable routes through the actual imported Wingman geometry. */
+/** Queue wiring, boundary rules and (with private assets) real Wingman routes. */
 final class CsWingmanCheck {
     private static int checks;
 
@@ -40,9 +40,6 @@ final class CsWingmanCheck {
                         && config.getInt("queues.cs.wingman.maxPlayers") == 10,
                 "Wingman ships as an enabled, independently joinable queue");
 
-        var source = CsArena.Blueprint.load();
-        Set<CsArena.Pos> blocks = new HashSet<>();
-        for (var cell : source.cells()) blocks.add(cell.pos());
         Set<CsArena.Pos> borders = CsWingman.borders();
         check(
                 !borders.isEmpty() && borders.size() < 30000,
@@ -61,14 +58,22 @@ final class CsWingmanCheck {
                         && !CsWingman.contains(73.5, 75, 30.5)
                         && !CsWingman.contains(93.5, 75, 45.5),
                 "B, dark tunnels and CT-Mid stay outside the playable area");
-        blocks.addAll(borders);
         for (int side = 0; side < 2; side++)
-            for (var p : CsArena.spawnPoints(side)) {
+            for (var p : CsArena.spawnPoints(side))
                 for (double dx : new double[] {-.3, .3})
                     for (double dz : new double[] {-.3, .3})
                         check(
                                 CsWingman.contains(p.x() + dx, p.y(), p.z() + dz),
                                 "the full body of every possible spawn is inside the zone");
+        return checks;
+    }
+
+    static int checkImportedMap(CsArena.Blueprint source) {
+        checks = 0;
+        Set<CsArena.Pos> blocks = new HashSet<>(CsWingman.borders());
+        for (var cell : source.cells()) blocks.add(cell.pos());
+        for (int side = 0; side < 2; side++)
+            for (var p : CsArena.spawnPoints(side)) {
                 var feet = pos(p);
                 check(
                         !blocks.contains(feet)
@@ -113,7 +118,8 @@ final class CsWingmanCheck {
     }
 
     private static CsArena.Pos pos(CsArena.Spawn p) {
-        return new CsArena.Pos((int) Math.floor(p.x()), (int) Math.ceil(p.y()), (int) Math.floor(p.z()));
+        return new CsArena.Pos(
+                (int) Math.floor(p.x()), (int) Math.ceil(p.y()), (int) Math.floor(p.z()));
     }
 
     private static Set<CsArena.Pos> reachable(

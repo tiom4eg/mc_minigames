@@ -1,5 +1,8 @@
 package me.petr1furious.potatominigames.games.cs;
 
+import me.petr1furious.potatominigames.core.command.CommandFailure;
+import me.petr1furious.potatominigames.i18n.I18n;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -8,12 +11,16 @@ import org.bukkit.map.*;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import javax.imageio.ImageIO;
 
 /** Per-viewer vanilla map radar: team information and only legitimately spotted enemies. */
 final class CsRadar extends MapRenderer {
+    static final String RADAR_FILE = "maps/cs/radar.png";
+
     private final CsSession session;
     private final BufferedImage image;
     final MapView view;
@@ -25,15 +32,29 @@ final class CsRadar extends MapRenderer {
     private final Map<UUID, Map<UUID, Spotted>> deathmatchSpotted = new HashMap<>();
     private long updated = -1;
 
-    CsRadar(CsSession session) {
+    static BufferedImage load(Path dataFolder) throws CommandFailure {
+        Path file = dataFolder.resolve(RADAR_FILE);
+        try (var in = Files.newInputStream(file)) {
+            var image = ImageIO.read(in);
+            if (image == null || image.getWidth() != 128 || image.getHeight() != 128)
+                throw new IOException("Expected a 128x128 radar image");
+            return image;
+        } catch (IOException error) {
+            var failure =
+                    new CommandFailure(
+                            I18n.tr(
+                                    "core.session.required_asset",
+                                    I18n.tr("cs.name"),
+                                    file.toAbsolutePath()));
+            failure.initCause(error);
+            throw failure;
+        }
+    }
+
+    CsRadar(CsSession session, BufferedImage image) {
         super(true);
         this.session = session;
-        try (var in = CsRadar.class.getResourceAsStream("/maps/cs/radar.png")) {
-            if (in == null) throw new IOException("Missing radar");
-            image = ImageIO.read(in);
-        } catch (IOException error) {
-            throw new IllegalStateException("Cannot read map radar", error);
-        }
+        this.image = image;
         view = Bukkit.createMap(session.world());
         for (var renderer : List.copyOf(view.getRenderers())) view.removeRenderer(renderer);
         view.addRenderer(this);
